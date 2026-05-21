@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.dossier/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/settings.json
+.claude/

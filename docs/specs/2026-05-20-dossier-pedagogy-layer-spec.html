@@ -1,0 +1,4192 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-reader="beginner" data-content-mode="concept">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier 教学化层 — content_mode × reader_profile 双轴扩展</title>
+<style>:root {
+  --bg: #faf9f6;
+  --ink: #1a1a1a;
+  --ink-muted: #5e5e58;
+  --ink-faint: #9a9a93;
+  --paper: #ffffff;
+  --border: #e8e6df;
+  --border-strong: #d4d1c7;
+  --accent: #b85c3d;
+  --accent-soft: #f5e9e3;
+  --warn: #991b1b;
+  --warn-soft: #fef2f2;
+  --ok: #14532d;
+  --ok-soft: #f0fdf4;
+  --code-bg: #f4f2eb;
+  --hairline: 1px solid var(--border);
+  --font-display: Charter, "Source Serif Pro", "Iowan Old Style", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+}
+code, pre, .mono { font-family: var(--font-mono); }
+em { font-style: italic; font-family: var(--font-display); }
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  max-width: 1240px;
+  margin: 0 auto;
+  gap: 56px;
+  padding: 48px 32px 96px;
+}
+aside.toc {
+  position: sticky;
+  top: 32px;
+  align-self: start;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  font-size: 13px;
+  padding-right: 8px;
+}
+main { min-width: 0; max-width: 760px; }
+main,
+.frontmatter,
+.semantic-lens,
+section {
+  overflow-wrap: anywhere;
+}
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(184, 92, 61, 0.08);
+  z-index: 50;
+}
+.reading-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 80ms linear;
+}
+.toc-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border: var(--hairline);
+  background: var(--paper);
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 65;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.toc-toggle svg { width: 18px; height: 18px; }
+.toc-toggle:hover { color: var(--accent); border-color: var(--border-strong); }
+.toc-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  z-index: 55;
+}
+body[data-toc-open] .toc-backdrop { opacity: 1; pointer-events: auto; }
+
+.reader-toggle{position:sticky;top:0;z-index:70;display:flex;justify-content:center;gap:6px;padding:8px 12px;background:rgba(250,249,246,.96);border-bottom:var(--hairline)}
+.reader-toggle button{border:var(--hairline);border-radius:999px;background:var(--paper);color:var(--ink-muted);font-family:var(--font-mono);font-size:11px;line-height:1;padding:8px 12px;cursor:pointer}
+.reader-toggle button:hover,.reader-toggle button[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.reader-toggle button[aria-pressed="true"]{background:var(--accent-soft)}
+.prerequisite-card{border:var(--hairline);border-left:3px solid var(--accent);border-radius:8px;background:var(--paper);padding:16px 18px;margin:-22px 0 34px}
+.prerequisite-card h4,.learning-checkpoint h5{margin:0 0 10px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.prerequisite-card ul,.learning-checkpoint ul{margin:0;padding-left:20px}.prerequisite-card li,.learning-checkpoint li{margin:6px 0}
+.prerequisite-card p{margin:2px 0 0;color:var(--ink-muted);font-size:13.5px}
+.callout.analogy{border-left-color:#1e3a8a;background:#eef2ff;color:var(--ink)}
+.callout.analogy .callout-icon{font-family:var(--font-mono);font-weight:700;color:#1e3a8a;margin-right:6px}
+.learning-checkpoint{border:var(--hairline);border-radius:8px;background:var(--paper);padding:14px 16px;margin:18px 0 24px 72px;max-width:620px}
+.term{position:relative;cursor:help;text-decoration:underline dotted #1e3a8a;text-underline-offset:3px}
+.term [role="tooltip"]{position:absolute;left:0;bottom:calc(100% + 8px);min-width:220px;max-width:320px;padding:9px 11px;border:var(--hairline);border-radius:6px;background:var(--paper);color:var(--ink);box-shadow:0 8px 24px rgba(26,26,26,.12);font-family:var(--font-sans);font-size:12.5px;line-height:1.45;opacity:0;pointer-events:none;z-index:30}
+.term:hover [role="tooltip"],.term:focus [role="tooltip"],.term:focus-within [role="tooltip"]{opacity:1}
+[data-detail-level="prereq"],[data-detail-level="analogy"],[data-detail-level="checkpoint"],[data-detail-level="glossary"],[data-detail-level="section-summary"]{display:revert}
+[data-detail-level="deep"],html[data-reader="intermediate"] [data-detail-level="prereq"],html[data-reader="expert"] [data-detail-level="prereq"],html[data-reader="expert"] [data-detail-level="analogy"],html[data-reader="expert"] [data-detail-level="checkpoint"],html[data-reader="expert"] [data-detail-level="section-summary"],html[data-reader="expert"] .section-summary,html[data-reader="expert"] .section-key-points,html[data-reader="expert"] .section-key-points-extra,html[data-reader="expert"] .section-reader-hint{display:none}
+html[data-reader="intermediate"] [data-detail-level="analogy"]{opacity:.7}
+html[data-reader="intermediate"] .section-key-points-extra{display:none}
+html[data-reader="expert"] .term{display:contents;text-decoration:none;cursor:inherit}
+html[data-reader="expert"] .term [role="tooltip"]{display:none}
+html[data-reader="expert"] main{max-width:640px;line-height:1.5}
+html[data-reader="expert"] section h2{margin-top:34px}
+html[data-content-mode="reference"] aside.toc{position:sticky;top:0;max-height:100vh;overflow:auto}
+
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 1fr; gap: 16px; padding: 24px 16px 64px; }
+  .toc-toggle { display: inline-flex; }
+  aside.toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 320px;
+    max-width: 86vw;
+    height: 100vh;
+    max-height: none;
+    background: var(--paper);
+    border-right: var(--hairline);
+    padding: 56px 18px 24px;
+    margin: 0;
+    transform: translateX(-100%);
+    transition: transform 220ms cubic-bezier(.4, 0, .2, 1);
+    z-index: 60;
+    overflow-y: auto;
+    box-shadow: 0 0 24px rgba(0,0,0,0.06);
+  }
+  aside.toc[data-open] { transform: translateX(0); }
+  body[data-toc-open] { overflow: hidden; }
+}
+
+.toc-header {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 1px 0; }
+.toc a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 120ms, color 120ms;
+  line-height: 1.4;
+  align-items: baseline;
+}
+.toc a:hover, .toc a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.toc a.active { font-weight: 600; }
+.toc-num {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.toc-children {
+  margin-left: 18px;
+  display: none;
+}
+.toc-section.is-current > .toc-children { display: block; }
+.toc-lens-group {
+  border-bottom: var(--hairline);
+  margin: 0 0 12px;
+  padding: 0 0 12px;
+}
+.toc-lens-title {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.toc-lens-group ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.toc-lens-group a {
+  grid-template-columns: 20px 1fr;
+  padding-left: 8px;
+}
+
+.frontmatter {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 28px 32px 20px;
+  margin-bottom: 40px;
+}
+.artifact-header {
+  padding: 16px 18px 14px;
+  margin-bottom: 20px;
+}
+.artifact-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, max-content);
+  gap: 18px;
+  align-items: start;
+}
+.artifact-title-stack { min-width: 0; }
+.artifact-header .eyebrow {
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+.artifact-header h1 {
+  font-size: 27px;
+  line-height: 1.18;
+  margin-bottom: 0;
+}
+.artifact-header .subtitle {
+  font-size: 15px;
+  margin: 5px 0 0;
+}
+.artifact-meta-rail {
+  min-width: 0;
+  max-width: 360px;
+}
+.artifact-header .stat-row {
+  border-top: none;
+  padding-top: 1px;
+  justify-content: flex-end;
+  gap: 8px 14px;
+  line-height: 1.35;
+}
+.artifact-header .stat-label {
+  font-size: 9.5px;
+}
+.artifact-header .stat-value {
+  font-size: 11.5px;
+}
+.artifact-header .badge {
+  font-size: 9.5px;
+  padding: 2px 7px;
+}
+.artifact-header .executive-brief {
+  margin-top: 12px;
+  padding: 10px 0 12px;
+}
+.artifact-header .executive-brief-body {
+  font-size: 15px;
+}
+.artifact-header .document-notes {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.artifact-header .frontmatter-details {
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.artifact-header .compact-relations summary {
+  font-size: 9.5px;
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 18px;
+  font-weight: 600;
+}
+h1 {
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.18;
+  margin: 0 0 10px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.subtitle {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 19px;
+  color: var(--ink-muted);
+  margin: 0 0 18px;
+  line-height: 1.45;
+}
+.executive-brief {
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: 16px 0 18px;
+  margin: 18px 0 0;
+}
+.executive-brief-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+.executive-brief-body {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.executive-brief-body p { margin: 0; }
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 22px;
+  padding-top: 18px;
+  border-top: var(--hairline);
+  font-size: 13px;
+  color: var(--ink);
+}
+.executive-brief + .stat-row {
+  border-top: none;
+}
+.stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.stat-value { font-family: var(--font-mono); font-size: 12.5px; }
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.badge.draft { background: #fef3c7; color: #92400e; }
+.badge.ready { background: var(--ok-soft); color: var(--ok); }
+.badge.ok { background: var(--accent-soft); color: var(--accent); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.frontmatter-details {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: var(--hairline);
+}
+.frontmatter-details summary,
+.document-notes summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 4px 0;
+  list-style: none;
+  user-select: none;
+}
+.frontmatter-details summary::-webkit-details-marker,
+.document-notes summary::-webkit-details-marker { display: none; }
+.frontmatter-details summary::before,
+.document-notes summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--ink-faint);
+  transition: transform 120ms ease;
+}
+.frontmatter-details[open] summary::before,
+.document-notes[open] summary::before { transform: rotate(90deg); }
+.frontmatter-details summary:hover,
+.document-notes summary:hover { color: var(--accent); }
+.document-notes {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: var(--hairline);
+}
+.document-notes-body {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.document-notes-body .callout {
+  margin: 0;
+  font-size: 13.5px;
+}
+.relation-block {
+  margin-top: 16px;
+}
+.relation-block + .relation-block { margin-top: 18px; }
+.relation-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.relation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.relation-list li { margin: 0; }
+.relation-list code {
+  background: var(--code-bg);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  color: var(--ink);
+  word-break: break-all;
+  display: inline-block;
+}
+
+.semantic-lens {
+  margin: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.semantic-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.semantic-overview {
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: 18px 0 20px;
+  display: grid;
+  gap: 16px;
+}
+.semantic-overview-summary {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.semantic-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.semantic-fact {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 12px;
+  min-width: 0;
+}
+.semantic-fact dt {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+.semantic-fact dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.reading-path-lens { margin-top: 2px; }
+.reading-path-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+.reading-path-card {
+  display: block;
+  text-decoration: none;
+  color: var(--ink-muted);
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 10px 11px;
+  min-height: 72px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.reading-path-card:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.reading-path-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.reading-path-number,
+.reading-path-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 700;
+}
+.reading-path-label {
+  text-transform: uppercase;
+}
+.reading-path-number {
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+.semantic-model-flow {
+  display: block;
+}
+.semantic-primary-flow {
+  display: block;
+}
+.semantic-judgment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.semantic-judgment-grid .semantic-block {
+  margin: 0;
+  min-width: 0;
+}
+.semantic-judgment-grid .semantic-block-header {
+  min-height: 52px;
+  margin-bottom: 10px;
+}
+.semantic-judgment-grid .semantic-block-header h2 {
+  font-size: 20px;
+  line-height: 1.22;
+}
+.semantic-judgment-grid .semantic-source-link {
+  font-size: 10.5px;
+  padding: 2px 8px;
+}
+.semantic-judgment-grid .scope-boundary-grid {
+  grid-template-columns: 1fr;
+}
+.semantic-judgment-grid .open-questions-lens {
+  grid-column: span 2;
+}
+.source-prose-boundary {
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  margin: -18px 0 28px;
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+.source-prose-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-prose-count {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.source-section-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: -6px 0 44px;
+}
+.source-section-map-intro {
+  grid-column: 1 / -1;
+  max-width: 640px;
+}
+.source-section-map-intro p:last-child {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.source-section-map-lanes {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.source-section-lane {
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+  min-width: 0;
+}
+.source-section-lane-title {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-section-lane-links {
+  display: grid;
+  gap: 6px;
+}
+.source-section-lane-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-radius: 5px;
+  padding: 5px 6px;
+  margin: 0 -6px;
+}
+.source-section-lane-link:hover {
+  color: var(--ink);
+  background: #fffdf9;
+}
+.source-section-lane-number {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-section-lane-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.source-section-lane-section {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+.source-section-lane-role {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--ink-faint);
+}
+.source-section-lane-purpose {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+.semantic-block-extra {
+  grid-column: 1 / -1;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 8px 10px;
+}
+.semantic-block-extra summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  list-style: none;
+}
+.semantic-block-extra summary::-webkit-details-marker { display: none; }
+.semantic-block-extra-items {
+  margin-top: 10px;
+  display: contents;
+}
+.source-section-map-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.source-section-map-card {
+  display: grid;
+  gap: 7px;
+  min-height: 158px;
+  padding: 13px 14px;
+  color: var(--ink-muted);
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+}
+.source-section-map-card:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.source-section-map-main {
+  display: grid;
+  gap: 7px;
+  color: inherit;
+  text-decoration: none;
+}
+.source-section-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.source-section-num {
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-section-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.source-section-summary {
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.source-section-semantic-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.source-section-role-summary {
+  margin-top: -2px;
+}
+.source-section-role-summary summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+  list-style: none;
+}
+.source-section-role-summary summary::-webkit-details-marker { display: none; }
+.source-section-role-summary summary:hover { color: var(--accent); }
+.source-section-role-summary-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.source-section-role-chip {
+  display: inline-flex;
+  width: fit-content;
+  text-decoration: none;
+}
+.source-section-role-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--accent);
+}
+.source-section-role-extra {
+  width: 100%;
+}
+.source-section-role-extra summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+  list-style: none;
+}
+.source-section-role-extra summary::-webkit-details-marker { display: none; }
+.source-section-role-extra summary:hover {
+  color: var(--accent);
+}
+.source-section-role-extra-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.source-section-subsections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.source-section-subsections a,
+.source-section-subsections span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.source-section-subsections a {
+  text-decoration: none;
+}
+.source-section-subsections a:hover {
+  color: var(--accent);
+}
+.source-section-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.source-section-chips span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.source-section-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--accent);
+}
+.semantic-block {
+  min-width: 0;
+}
+.semantic-block-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.semantic-block-header h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+.semantic-block-header p:last-child {
+  margin-bottom: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.semantic-source-link {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-decoration: none;
+  color: var(--accent);
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: var(--paper);
+}
+.semantic-source-link:hover { border-color: var(--border-strong); }
+.structure-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.structure-node {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 13px 14px 12px;
+  min-width: 0;
+  border-top: 3px solid var(--border-strong);
+}
+.structure-node-path,
+.structure-node-action,
+.structure-node-output { border-top-color: var(--accent); }
+.structure-node-risk,
+.structure-node-question { border-top-color: var(--warn); }
+.structure-node-evidence { border-top-color: var(--ok); }
+.structure-node-kind {
+  margin: 0 0 7px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+.structure-node h3 {
+  margin: 0 0 7px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+}
+.structure-node p {
+  margin: 0 0 9px;
+  font-size: 13.5px;
+  line-height: 1.48;
+  color: var(--ink-muted);
+}
+.structure-connections {
+  margin-top: 12px;
+  border-top: var(--hairline);
+  padding-top: 12px;
+}
+.structure-edges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.structure-edge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.structure-edge-from,
+.structure-edge-to {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.structure-edge-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: var(--paper);
+}
+.relationship-edges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.relationship-edge {
+  margin: 0;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.relationship-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+.relationship-node {
+  min-width: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+.relationship-to { text-align: right; }
+.relationship-relation {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: var(--accent-soft);
+  white-space: nowrap;
+}
+.relationship-evidence {
+  margin: 9px 0 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.relationship-evidence span {
+  display: inline-block;
+  margin-right: 7px;
+  font-family: var(--font-mono);
+  color: var(--ok);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 10px;
+}
+.roadmap-stage-strip {
+  list-style: none;
+  margin: -2px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.roadmap-stage-strip li {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+.roadmap-stage-strip a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: baseline;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: var(--hairline);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: var(--ink-muted);
+  text-decoration: none;
+  line-height: 1.25;
+}
+.roadmap-stage-strip a:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+.roadmap-stage-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.roadmap-stage-title {
+  min-width: 0;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.roadmap-card,
+.requirement-card,
+.reference-card,
+.takeaway-card,
+.principle-card,
+.decision-card,
+.evidence-card,
+.risk-card,
+.concept-card {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 14px 14px 13px;
+  min-width: 0;
+}
+.roadmap-card h3,
+.requirement-card h3,
+.reference-card h3,
+.takeaway-card h3,
+.principle-card h3 {
+  margin: 0 0 7px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+}
+.concept-card h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.22;
+}
+.roadmap-card p,
+.requirement-card p,
+.reference-card p,
+.takeaway-card p,
+.principle-card p,
+.decision-card p,
+.evidence-card p,
+.risk-card p,
+.concept-card p {
+  margin-bottom: 9px;
+  font-size: 13.5px;
+  line-height: 1.48;
+  color: var(--ink-muted);
+}
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.concept-example,
+.concept-field {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-word;
+}
+.concept-example span,
+.concept-field span {
+  display: inline-block;
+  margin-right: 7px;
+  color: var(--accent);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.concept-field code {
+  background: var(--code-bg);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 11px;
+}
+.roadmap-label,
+.requirement-label,
+.decision-label,
+.evidence-label,
+.risk-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.roadmap-card .roadmap-label,
+.requirement-card .requirement-label,
+.decision-card .decision-label,
+.evidence-card .evidence-label,
+.risk-card .risk-label { margin-bottom: 7px; }
+.roadmap-outputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0 9px;
+}
+.roadmap-outputs span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.requirement-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.requirement-items {
+  margin: 10px 0 8px;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+.requirement-items li {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.42;
+}
+.reference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.reference-card {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+}
+.reference-card:hover {
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.reference-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.reference-href {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink-faint);
+  word-break: break-word;
+}
+.takeaway-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.takeaway-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.takeaway-card {
+  background: #fffdf9;
+}
+.principle-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.principle-card {
+  background: #fffef8;
+}
+.decision-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.evidence-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.risk-register-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.decision-value {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  font-size: 12.5px;
+  word-break: break-word;
+}
+.evidence-source,
+.risk-trigger,
+.risk-impact,
+.risk-mitigation {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-word;
+}
+.evidence-source span,
+.risk-trigger span,
+.risk-impact span,
+.risk-mitigation span {
+  display: inline-block;
+  margin-right: 7px;
+  color: var(--ok);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.risk-label,
+.risk-trigger span,
+.risk-impact span {
+  color: var(--warn);
+}
+.risk-mitigation span {
+  color: var(--ok);
+}
+.scope-boundary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.scope-column {
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 14px 14px 12px;
+}
+.scope-column h3,
+.checklist-item h3,
+.open-question-item h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.scope-column ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+.scope-column li {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+  padding-left: 15px;
+  position: relative;
+}
+.scope-column li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.75em;
+  width: 7px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.scope-out h3 { color: var(--warn); }
+.scope-out li::before { background: var(--warn); }
+.checklist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.checklist-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  margin: 0;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.checklist-status {
+  align-self: start;
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 5px 7px;
+}
+.checklist-done .checklist-status {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.checklist-open .checklist-status {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.checklist-item p {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.open-question-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.open-question-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  margin: 0;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.open-question-status {
+  align-self: start;
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: 999px;
+  padding: 5px 7px;
+}
+.open-question-answered .open-question-status {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.open-question-blocked .open-question-status {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.open-question-item p {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.open-question-impact span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.top-callouts {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.callout {
+  padding: 12px 16px;
+  border-left: 3px solid var(--ink-faint);
+  background: var(--paper);
+  font-size: 14px;
+  border-radius: 0 4px 4px 0;
+  margin: 14px 0;
+}
+.callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+.callout.note { border-color: var(--accent); background: var(--accent-soft); }
+.callout.goal { border-color: var(--ok); background: var(--ok-soft); }
+.callout p:last-child { margin-bottom: 0; }
+
+.tagline {
+  background: var(--accent);
+  color: white;
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+.tagline-label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+section {
+  margin-bottom: 88px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  margin: 0 0 22px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: var(--hairline);
+  line-height: 1.2;
+}
+section h2 .sec-num {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: var(--accent-soft);
+  padding: 5px 0;
+  border-radius: 3px;
+  text-align: center;
+  justify-self: stretch;
+}
+.section-summary {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  margin: -8px 0 10px 72px;
+  max-width: 620px;
+}
+.section-key-points {
+  margin: 0 0 12px 72px;
+  padding-left: 18px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 620px;
+}
+main section .section-key-points > li {
+  margin: 3px 0;
+}
+.section-key-points-extra {
+  margin: -2px 0 14px 72px;
+  max-width: 620px;
+  color: var(--ink-muted);
+}
+.section-key-points-extra summary,
+.section-brief-collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  user-select: none;
+}
+.section-key-points-extra summary::-webkit-details-marker,
+.section-brief-collapsible > summary::-webkit-details-marker { display: none; }
+.section-key-points-extra summary::before,
+.section-brief-collapsible > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 7px;
+  transition: transform 120ms ease;
+}
+.section-key-points-extra[open] summary::before,
+.section-brief-collapsible[open] > summary::before { transform: rotate(90deg); }
+.section-key-points-extra ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.section-brief-collapsible {
+  margin: -8px 0 22px 72px;
+  max-width: 620px;
+  border: var(--hairline);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: 8px 12px;
+}
+.section-brief-collapsible > .section-summary,
+.section-brief-collapsible > .section-key-points,
+.section-brief-collapsible > .section-key-points-extra,
+.section-brief-collapsible > .section-reader-hint {
+  margin-left: 0;
+}
+.section-brief-collapsible > .section-summary {
+  margin-top: 10px;
+}
+.section-reader-hint {
+  margin: 0 0 22px 72px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+  max-width: 620px;
+}
+.section-reader-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--paper);
+}
+.section-reader-hint-label {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.section-semantic-trace {
+  margin: 0 0 20px 72px;
+  max-width: 620px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.section-semantic-trace-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+  margin-right: 2px;
+}
+.section-semantic-chip {
+  border: var(--hairline);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  padding: 3px 8px;
+  text-decoration: none;
+}
+.section-semantic-chip:hover {
+  color: var(--accent);
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.section-semantic-path {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.section-brief-collapsible > .section-semantic-trace {
+  margin-left: 0;
+}
+.subsection-semantic-trace {
+  margin: -4px 0 14px;
+  max-width: 620px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .artifact-title-row { grid-template-columns: 1fr; }
+  .artifact-meta-rail { max-width: none; }
+  .artifact-header .stat-row { justify-content: flex-start; }
+  .artifact-header h1 { font-size: 24px; }
+  .semantic-facts { grid-template-columns: 1fr; }
+  .semantic-overview-summary { font-size: 18px; }
+  .semantic-block-header { flex-direction: column; }
+  .scope-boundary-grid { grid-template-columns: 1fr; }
+  .relationship-main { grid-template-columns: 1fr; }
+  .relationship-to { text-align: left; }
+  .relationship-relation { width: fit-content; }
+  .semantic-judgment-grid .open-questions-lens { grid-column: span 1; }
+  .section-summary,
+  .section-key-points,
+  .section-key-points-extra,
+  .section-brief-collapsible,
+  .section-reader-hint,
+  .section-semantic-trace {
+    margin-left: 0;
+  }
+  .section-key-points { display: none; }
+}
+section h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  margin: 36px 0 12px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+section h3 .sub-num {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-right: 10px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+section h4 {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  margin: 22px 0 8px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 0; margin: 0 0 14px; }
+li { margin: 4px 0; }
+main section ul, main section ol,
+section > p + ul, section > p + ol {
+  list-style: none;
+  padding-left: 22px;
+}
+main section ul > li, main section ol > li {
+  position: relative;
+  padding-left: 4px;
+}
+main section ul > li::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 0.78em;
+  width: 8px;
+  height: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+main section ol {
+  counter-reset: dossier-ol;
+  padding-left: 30px;
+}
+main section ol > li {
+  padding-left: 4px;
+  counter-increment: dossier-ol;
+}
+main section ol > li::before {
+  content: counter(dossier-ol) ".";
+  position: absolute;
+  left: -28px;
+  width: 22px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  top: 0.1em;
+}
+main section ol ol {
+  counter-reset: dossier-ol-2;
+  padding-left: 24px;
+}
+main section ol ol > li { counter-increment: dossier-ol-2; }
+main section ol ol > li::before { content: counter(dossier-ol-2) "."; }
+a {
+  color: var(--accent);
+  text-decoration-color: rgba(30, 58, 138, 0.3);
+  text-underline-offset: 2px;
+}
+a:hover { text-decoration-color: var(--accent); }
+strong { font-weight: 600; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 22px;
+  font-size: 14px;
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: var(--hairline);
+  vertical-align: top;
+  line-height: 1.55;
+}
+th {
+  background: var(--code-bg);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+tr:last-child td { border-bottom: none; }
+td code { font-size: 12px; }
+
+:not(pre) > code {
+  background: var(--code-bg);
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+pre {
+  background: var(--code-bg);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 16px 0;
+  color: #2d2d2d;
+  position: relative;
+}
+pre code { background: none; padding: 0; color: inherit; }
+.code-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border: var(--hairline);
+  background: var(--paper);
+  border-radius: 4px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 140ms, color 120ms, border-color 120ms;
+}
+pre:hover .code-copy, .code-copy:focus-visible { opacity: 1; }
+.code-copy:hover { color: var(--accent); border-color: var(--border-strong); }
+.code-copy svg { width: 14px; height: 14px; }
+.code-copy.copied { color: var(--ok); border-color: var(--ok-soft); opacity: 1; }
+.ascii-diagram {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 22px 24px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 18px 0;
+  color: var(--ink);
+}
+
+blockquote {
+  margin: 14px 0;
+  padding: 14px 20px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+blockquote p:last-child { margin-bottom: 0; }
+hr { border: none; border-top: var(--hairline); margin: 24px 0; }
+
+.spec-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: var(--hairline);
+  font-size: 13px;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.spec-footer a { color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<nav class="reader-toggle" role="radiogroup" aria-label="读者熟练度">
+  <button type="button" data-reader-set="beginner" aria-pressed="true">零基础</button>
+  <button type="button" data-reader-set="intermediate" aria-pressed="false">系统化</button>
+  <button type="button" data-reader-set="expert" aria-pressed="false">速查</button>
+</nav>
+<div class="reading-progress" aria-hidden="true"><div class="reading-progress-fill"></div></div>
+<button class="toc-toggle" type="button" aria-label="打开或关闭目录" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+</button>
+<div class="toc-backdrop" aria-hidden="true"></div>
+<div class="layout">
+  <aside class="toc" data-progressive-toc>
+  <p class="toc-header">文档 · 16 节</p>
+<div class="toc-lens-group" aria-label="Dossier 透镜导航">
+  <p class="toc-lens-title">Dossier 透镜</p>
+  <ol>
+    <li><a href="#lens-overview"><span class="toc-num">•</span><span>总览</span></a></li>
+    <li><a href="#lens-roadmap-4"><span class="toc-num">•</span><span>路线图</span></a></li>
+    <li><a href="#lens-requirement-grid-7"><span class="toc-num">•</span><span>要求</span></a></li>
+    <li><a href="#lens-structure-map-1"><span class="toc-num">•</span><span>结构图</span></a></li>
+    <li><a href="#lens-relationship-map-2"><span class="toc-num">•</span><span>关系图</span></a></li>
+    <li><a href="#lens-concept-glossary-3"><span class="toc-num">•</span><span>术语表</span></a></li>
+    <li><a href="#lens-decision-grid-5"><span class="toc-num">•</span><span>决策</span></a></li>
+    <li><a href="#lens-principle-grid-6"><span class="toc-num">•</span><span>原则</span></a></li>
+    <li><a href="#lens-evidence-grid-8"><span class="toc-num">•</span><span>证据</span></a></li>
+    <li><a href="#lens-risk-register-9"><span class="toc-num">•</span><span>风险</span></a></li>
+    <li><a href="#lens-scope-boundary-10"><span class="toc-num">•</span><span>范围</span></a></li>
+    <li><a href="#lens-checklist-11"><span class="toc-num">•</span><span>P0 验收清单</span></a></li>
+    <li><a href="#lens-checklist-12"><span class="toc-num">•</span><span>禁止事项</span></a></li>
+    <li><a href="#lens-open-questions-13"><span class="toc-num">•</span><span>开放问题</span></a></li>
+    <li><a href="#source-sections"><span class="toc-num">•</span><span>原文章节</span></a></li>
+    <li><a href="#source-section-map"><span class="toc-num">•</span><span>章节地图</span></a></li>
+  </ol>
+</div>
+  <ol>
+    <li class="toc-section"><a href="#s1"><span class="toc-num">§0</span><span>一句话</span></a></li>
+    <li class="toc-section"><a href="#s2"><span class="toc-num">§1</span><span>为什么需要这一层</span></a><ol class="toc-children"><li><a href="#s2-1"><span class="toc-num">1.1</span><span>现状</span></a></li><li><a href="#s2-2"><span class="toc-num">1.2</span><span>两个被忽视的轴</span></a></li><li><a href="#s2-3"><span class="toc-num">1.3</span><span>为什么不做成新 skill</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s3"><span class="toc-num">§2</span><span>范围</span></a><ol class="toc-children"><li><a href="#s3-1"><span class="toc-num">2.1</span><span>包含</span></a></li><li><a href="#s3-2"><span class="toc-num">2.2</span><span>不包含</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s4"><span class="toc-num">§3</span><span>设计原则</span></a></li>
+    <li class="toc-section"><a href="#s5"><span class="toc-num">§4</span><span>content_mode 自动分类器</span></a><ol class="toc-children"><li><a href="#s5-1"><span class="toc-num">4.1</span><span>四种模式</span></a></li><li><a href="#s5-2"><span class="toc-num">4.2</span><span>分类信号（按优先级）</span></a></li><li><a href="#s5-3"><span class="toc-num">4.3</span><span>启发式打分（实现 src/enrich/content-mode.ts）</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s6"><span class="toc-num">§5</span><span>reader_profile 运行时切换</span></a><ol class="toc-children"><li><a href="#s6-1"><span class="toc-num">5.1</span><span>三档定义</span></a></li><li><a href="#s6-2"><span class="toc-num">5.2</span><span>实现方式（关键决策）</span></a></li><li><a href="#s6-3"><span class="toc-num">5.3</span><span>默认值来源</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s7"><span class="toc-num">§6</span><span>4 个新展示元素</span></a><ol class="toc-children"><li><a href="#s7-1"><span class="toc-num">6.1</span><span>prerequisite-card</span></a></li><li><a href="#s7-2"><span class="toc-num">6.2</span><span>learning-checkpoint</span></a></li><li><a href="#s7-3"><span class="toc-num">6.3</span><span>glossary-popover</span></a></li><li><a href="#s7-4"><span class="toc-num">6.4</span><span>analogy-callout</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s8"><span class="toc-num">§7</span><span>enrich 管线扩展</span></a><ol class="toc-children"><li><a href="#s8-1"><span class="toc-num">7.1</span><span>新增 annotation 字段</span></a></li><li><a href="#s8-2"><span class="toc-num">7.2</span><span>三种 provider 行为</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s9"><span class="toc-num">§8</span><span>render-spec skill 扩展</span></a></li>
+    <li class="toc-section"><a href="#s10"><span class="toc-num">§9</span><span>CLI 扩展</span></a></li>
+    <li class="toc-section"><a href="#s11"><span class="toc-num">§10</span><span>实施里程碑</span></a><ol class="toc-children"><li><a href="#s11-1"><span class="toc-num">10.1</span><span>P0（codex 一次实施完，目标 1 周）</span></a></li><li><a href="#s11-2"><span class="toc-num">10.2</span><span>P1（后续迭代）</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s12"><span class="toc-num">§11</span><span>验收清单</span></a></li>
+    <li class="toc-section"><a href="#s13"><span class="toc-num">§12</span><span>决不要做的事</span></a></li>
+    <li class="toc-section"><a href="#s14"><span class="toc-num">§13</span><span>风险</span></a></li>
+    <li class="toc-section"><a href="#s15"><span class="toc-num">§14</span><span>开放问题</span></a></li>
+    <li class="toc-section"><a href="#s16"><span class="toc-num">§15</span><span>下一步</span></a></li>
+  </ol>
+</aside>
+  <main>
+    <header class="frontmatter artifact-header" data-semantic-lens="present">
+  <div class="artifact-title-row">
+    <div class="artifact-title-stack">
+      <p class="eyebrow">SPEC</p>
+      <h1>Dossier 教学化层</h1>
+      <p class="subtitle">content_mode × reader_profile 双轴扩展</p>
+    </div>
+    <div class="artifact-meta-rail">
+      <div class="stat-row"><span class="badge ready">已就绪</span><span class="stat"><span class="stat-label">阅读</span><span class="stat-value">约 15 分钟</span></span><span class="stat"><span class="stat-label">更新</span><span class="stat-value">2026-05-20</span></span><span class="stat"><span class="stat-label">负责人</span><span class="stat-value">claude</span></span><span class="stat"><span class="stat-label">实现</span><span class="stat-value">1</span></span></div>
+    </div>
+  </div>
+  <div class="executive-brief" aria-label="文档摘要">
+  <p class="executive-brief-label">摘要</p>
+  <div class="executive-brief-body"><p><strong>给 dossier 的 HTML 输出加两个正交维度——<code>content_mode</code>（文档的教学形态，自动识别）和 <code>reader_profile</code>（读者熟练度，运行时切换）——让同一份 HTML 同时服务零基础、系统化、速查三类读者。</strong></p></div>
+</div>
+  <details class="document-notes">
+  <summary>1 条文档提示</summary>
+  <div class="document-notes-body"><div class="callout note" data-document-note><p>📝 本 spec 是对 dossier vision spec §8 渲染层的<strong>正交扩展</strong>，不是替代。
+现有的 <code>kind</code> / <code>render_skill</code> 体系<strong>不动</strong>；本层加在它之上。
+🎯 设计目标：让 dossier 输出的 HTML 从&quot;可扫读的档案&quot;升级为&quot;可学习的教材&quot;，对零基础读者尤其友好。</p>
+</div></div>
+</details>
+  <details class="frontmatter-details compact-relations">
+  <summary>1 个实现</summary>
+  <div class="relation-block">
+  <p class="relation-label">实现</p>
+  <ul class="relation-list"><li><code>docs/specs/2026-05-17-dossier-vision-spec.md</code></li></ul>
+</div>
+</details>
+</header>
+    <aside class="prerequisite-card" data-detail-level="prereq">
+  <h4>阅读前你最好知道</h4>
+  <ul><li><strong>frontmatter</strong>：文件开头的配置区<p>本 spec 多处依赖它覆盖 content_mode 和记录状态。</p></li><li><strong>HTML data attribute</strong>：标签上的状态标记<p>reader_profile 通过 html[data-reader] 控制显示。</p></li><li><strong>enrich provider</strong>：生成阅读注解的步骤<p>prerequisite、checkpoint 和 analogy 都从这里进入渲染。</p></li><li><strong>single-file HTML</strong>：一个文件装下页面<p>它解释了为什么 JS/CSS 必须 inline、不能输出三份 HTML。</p></li><li><strong>heuristic scoring</strong>：按信号打分判断<p>content_mode P0 不用 AI，而靠规则分数分类。</p></li></ul>
+</aside>
+    <div class="semantic-lens" aria-label="Dossier 语义透镜">
+<div id="lens-overview" class="semantic-overview" data-annotation="document-overview">
+  <div class="semantic-overview-lead">
+    <p class="semantic-label">Dossier 总览</p>
+    <p class="semantic-overview-summary">这份 spec 决定在 Dossier 现有渲染体系上增加 content_mode 与 reader_profile 双轴教学化层，让同一份 HTML 同时适配零基础、系统化和速查读者。</p>
+  </div>
+  <dl class="semantic-facts"><div class="semantic-fact"><dt>读者收益</dt><dd>读者可以理解为什么不新增 render skill、如何实现双轴扩展、P0 要交付哪些代码与验收证据。</dd></div><div class="semantic-fact"><dt>当前状态</dt><dd>状态为 ready；这是对 vision spec 渲染层的正交扩展，不替代现有 kind / render_skill 体系。</dd></div><div class="semantic-fact"><dt>下一步</dt><dd>按 P0 里程碑实现启发式分类、reader 切换、4 个教学元素、CLI flag 和验收清单。</dd></div></dl>
+  <div class="reading-path-lens" data-annotation="reading-path">
+  <p class="semantic-label">推荐阅读路径</p>
+  <div class="reading-path-cards">
+    <a href="#s2" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 1</span><span class="reading-path-label">问题背景</span></span>
+      <span>先理解产出物类型和读者阅读方式是两套不同问题。</span>
+    </a>
+<a href="#s3" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 2</span><span class="reading-path-label">范围边界</span></span>
+      <span>确认 P0 包含什么、明确不做什么，避免实现漂移。</span>
+    </a>
+<a href="#s5" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 4</span><span class="reading-path-label">核心机制</span></span>
+      <span>理解 content_mode 如何通过 frontmatter 与启发式打分确定。</span>
+    </a>
+<a href="#s6" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 5</span><span class="reading-path-label">运行时切换</span></span>
+      <span>理解 reader_profile 为什么用单文件 HTML 内的 data attribute 切换。</span>
+    </a>
+<a href="#s12" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 11</span><span class="reading-path-label">验收标准</span></span>
+      <span>用清单验证 P0 是否真正完成。</span>
+    </a>
+  </div>
+</div>
+</div>
+<div class="semantic-primary-flow">
+<div id="lens-roadmap-4" class="semantic-block roadmap-lens" data-annotation="semantic-roadmap">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">路线图</p>
+      <h2>实施里程碑</h2>
+      <p>P0 一次完成基础能力与验收闭环，P1 再扩展 AI provider、course 跨文档和 profile 配置。</p>
+    </div>
+    <a class="semantic-source-link" href="#s11">查看原文 § 10</a>
+  </div>
+  <ol class="roadmap-stage-strip" aria-label="路线图阶段">
+      <li>
+        <a href="#lens-roadmap-4-item-1">
+          <span class="roadmap-stage-index">P0</span>
+          <span class="roadmap-stage-title">一次实施完的基础教学化层</span>
+        </a>
+      </li>
+<li>
+        <a href="#lens-roadmap-4-item-2">
+          <span class="roadmap-stage-index">P1</span>
+          <span class="roadmap-stage-title">后续增强</span>
+        </a>
+      </li>
+    </ol>
+  <div class="roadmap-grid"><article id="lens-roadmap-4-item-1" class="roadmap-card">
+      <p class="roadmap-label">P0</p>
+      <h3>一次实施完的基础教学化层</h3>
+      <p>完成启发式分类、annotation 类型扩展、scaffold 输出、4 个展示元素、render-spec 扩展、reader-toggle 和 CLI flag。</p>
+      <div class="roadmap-outputs"><span>src/enrich/content-mode.ts 与单元测试</span><span>src/types.ts schema_version 2 兼容</span><span>src/emit.ts 新增展示元素渲染函数</span><span>render-spec template/style/reader-toggle 扩展</span></div>
+      <a class="semantic-source-link" href="#s11-1">跳到小节 10.1</a>
+    </article>
+<article id="lens-roadmap-4-item-2" class="roadmap-card">
+      <p class="roadmap-label">P1</p>
+      <h3>后续增强</h3>
+      <p>在 P0 稳定后再补 AI 生成教学注解、跨文档 course、profile.md 和移动端长按。</p>
+      <div class="roadmap-outputs"><span>codex/claude provider 生成 prereq/checkpoint/analogy</span><span>course mode 跨文档支持</span><span>profile.md 读取默认值</span><span>glossary-popover 移动端长按支持</span></div>
+      <a class="semantic-source-link" href="#s11-2">跳到小节 10.2</a>
+    </article></div>
+</div>
+<div id="lens-requirement-grid-7" class="semantic-block requirement-grid" data-annotation="semantic-requirement-grid">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">要求</p>
+      <h2>实现要求</h2>
+    </div>
+    <a class="semantic-source-link" href="#s8">查看原文 § 7</a>
+  </div>
+  <div class="requirement-grid-cards"><article id="lens-requirement-grid-7-item-1" class="requirement-card">
+      <p class="requirement-label">要求</p>
+      <h3>content_mode 分类器</h3>
+      <p>实现位置为 src/enrich/content-mode.ts。</p>
+      <ul class="requirement-items"><li>支持 frontmatter 显式覆盖</li><li>支持 lesson/module/week 间接判断 course</li><li>基于 token 与 frontmatter 打分</li><li>低于阈值回退 concept</li></ul>
+      <a class="semantic-source-link" href="#s5">跳到小节 § 4</a>
+    </article>
+<article id="lens-requirement-grid-7-item-2" class="requirement-card">
+      <p class="requirement-label">要求</p>
+      <h3>reader_profile 切换</h3>
+      <p>优先级为 URL &gt; localStorage &gt; frontmatter reader_default &gt; beginner。</p>
+      <ul class="requirement-items"><li>顶部按钮使用 radiogroup 语义</li><li>切换 html[data-reader]</li><li>更新 aria-pressed</li><li>支持 URL 与 localStorage 优先级</li></ul>
+      <a class="semantic-source-link" href="#s6">跳到小节 § 5</a>
+    </article>
+<article id="lens-requirement-grid-7-item-3" class="requirement-card">
+      <p class="requirement-label">要求</p>
+      <h3>教学展示元素</h3>
+      
+      <ul class="requirement-items"><li>prerequisite-card 支持 frontmatter 或 enrich 注解触发</li><li>learning-checkpoint 每节 0-3 条</li><li>glossary-popover 只标首次出现</li><li>analogy-callout 支持 blockquote 前缀或 enrich 注解</li></ul>
+      <a class="semantic-source-link" href="#s7">跳到小节 § 6</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 3 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-requirement-grid-7-item-4" class="requirement-card">
+      <p class="requirement-label">要求</p>
+      <h3>annotation schema</h3>
+      
+      <ul class="requirement-items"><li>schema_version 升到 2</li><li>新增 content_mode、prerequisites、checkpoints、analogies</li><li>schema_version 1 仍可读</li><li>缺字段按缺省处理</li></ul>
+      <a class="semantic-source-link" href="#s8">跳到小节 § 7</a>
+    </article>
+<article id="lens-requirement-grid-7-item-5" class="requirement-card">
+      <p class="requirement-label">要求</p>
+      <h3>render-spec 模板</h3>
+      
+      <ul class="requirement-items"><li>增加 reader toggle 占位符</li><li>增加 prerequisite、analogy、checkpoint 注入点</li><li>写入 data-reader 与 data-content-mode</li><li>全部 CSS/JS inline</li></ul>
+      <a class="semantic-source-link" href="#s9">跳到小节 § 8</a>
+    </article>
+<article id="lens-requirement-grid-7-item-6" class="requirement-card">
+      <p class="requirement-label">要求</p>
+      <h3>CLI</h3>
+      
+      <ul class="requirement-items"><li>dossier render 支持 --reader</li><li>dossier render 支持 --content-mode</li><li>dossier enrich 命令不变</li></ul>
+      <a class="semantic-source-link" href="#s10">跳到小节 § 9</a>
+    </article></div>
+</details></div>
+</div>
+</div>
+<div class="semantic-model-flow">
+<div id="lens-structure-map-1" class="semantic-block structure-map-lens" data-annotation="semantic-structure-map">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">结构图</p>
+      <h2>文档模型</h2>
+      <p>文档先区分现有 kind 体系与新增教学轴，再把设计原则落实为 annotation、渲染、CLI 和验收要求。</p>
+    </div>
+    <a class="semantic-source-link" href="#s2">查看原文 § 1</a>
+  </div>
+  <div class="structure-map-grid"><article id="lens-structure-map-1-node-kind_dispatch" class="structure-node structure-node-context" data-map-node-id="kind_dispatch">
+      <p class="structure-node-kind">背景</p>
+      <h3>产出物分类</h3>
+      <p>现有 spec / adr / change / review 决定用哪个 skill 渲染。</p>
+      <a class="semantic-source-link" href="#s2">原文 § 1</a>
+    </article>
+<article id="lens-structure-map-1-node-content_mode" class="structure-node structure-node-decision" data-map-node-id="content_mode">
+      <p class="structure-node-kind">决策</p>
+      <h3>教学形态</h3>
+      <p>content_mode 决定文档默认强化哪些教学元素。</p>
+      <a class="semantic-source-link" href="#s5">原文 § 4</a>
+    </article>
+<article id="lens-structure-map-1-node-reader_profile" class="structure-node structure-node-decision" data-map-node-id="reader_profile">
+      <p class="structure-node-kind">决策</p>
+      <h3>读者熟练度</h3>
+      <p>reader_profile 决定同一份 HTML 默认显示多少信息。</p>
+      <a class="semantic-source-link" href="#s6">原文 § 5</a>
+    </article>
+<article id="lens-structure-map-1-node-annotation_layer" class="structure-node structure-node-output" data-map-node-id="annotation_layer">
+      <p class="structure-node-kind">产出</p>
+      <h3>教学注解层</h3>
+      <p>enrich 管线产出 prerequisites、checkpoints 和 analogies 等结构化注解。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </article>
+<article id="lens-structure-map-1-node-single_file_render" class="structure-node structure-node-output" data-map-node-id="single_file_render">
+      <p class="structure-node-kind">产出</p>
+      <h3>单文件渲染</h3>
+      <p>render-spec 用 inline CSS/JS 在一个 HTML 中完成切换和展示。</p>
+      <a class="semantic-source-link" href="#s9">原文 § 8</a>
+    </article>
+<article id="lens-structure-map-1-node-acceptance_gate" class="structure-node structure-node-evidence" data-map-node-id="acceptance_gate">
+      <p class="structure-node-kind">证据</p>
+      <h3>验收门槛</h3>
+      <p>P0 通过测试、渲染、浏览器切换、离线使用和兼容性检查收口。</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article></div>
+  <div class="structure-connections">
+      <p class="semantic-label">连接关系</p>
+      <ol class="structure-edges">
+        <li class="structure-edge">
+            <span class="structure-edge-from">产出物分类</span>
+            <span class="structure-edge-label">之上扩展</span>
+            <span class="structure-edge-to">教学形态</span>
+          </li>
+<li class="structure-edge">
+            <span class="structure-edge-from">教学形态</span>
+            <span class="structure-edge-label">驱动</span>
+            <span class="structure-edge-to">教学注解层</span>
+          </li>
+<li class="structure-edge">
+            <span class="structure-edge-from">读者熟练度</span>
+            <span class="structure-edge-label">控制显示</span>
+            <span class="structure-edge-to">单文件渲染</span>
+          </li>
+<li class="structure-edge">
+            <span class="structure-edge-from">教学注解层</span>
+            <span class="structure-edge-label">注入</span>
+            <span class="structure-edge-to">单文件渲染</span>
+          </li>
+<li class="structure-edge">
+            <span class="structure-edge-from">单文件渲染</span>
+            <span class="structure-edge-label">由其验证</span>
+            <span class="structure-edge-to">验收门槛</span>
+          </li>
+      </ol>
+    </div>
+</div>
+<div id="lens-relationship-map-2" class="semantic-block relationship-map-lens" data-annotation="semantic-relationship-map">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">关系图</p>
+      <h2>组件关系</h2>
+      <p>新增教学化层作为 decorator 挂在现有 skill 之后，通过 annotation 和 template 扩展影响最终 HTML。</p>
+    </div>
+    <a class="semantic-source-link" href="#s2">查看原文 § 1</a>
+  </div>
+  <ol class="relationship-edges"><li id="lens-relationship-map-2-item-1" class="relationship-edge">
+      <div class="relationship-main">
+        <span class="relationship-node relationship-from">vision spec §8 渲染层</span>
+        <span class="relationship-relation">frames</span>
+        <span class="relationship-node relationship-to">本 spec</span>
+      </div>
+      <p class="relationship-evidence"><span>证据</span> 原文说明本 spec 是对 dossier vision spec §8 渲染层的正交扩展，不是替代。</p>
+      <a class="semantic-source-link" href="#s1">原文 § 0</a>
+    </li>
+<li id="lens-relationship-map-2-item-2" class="relationship-edge">
+      <div class="relationship-main">
+        <span class="relationship-node relationship-from">kind / render_skill 体系</span>
+        <span class="relationship-relation">remains_under</span>
+        <span class="relationship-node relationship-to">教学化层</span>
+      </div>
+      <p class="relationship-evidence"><span>证据</span> 现有的 kind / render_skill 体系不动；本层加在它之上。</p>
+      <a class="semantic-source-link" href="#s1">原文 § 0</a>
+    </li>
+<li id="lens-relationship-map-2-item-3" class="relationship-edge">
+      <div class="relationship-main">
+        <span class="relationship-node relationship-from">content_mode 自动分类器</span>
+        <span class="relationship-relation">writes</span>
+        <span class="relationship-node relationship-to">RenderAnnotations.content_mode</span>
+      </div>
+      <p class="relationship-evidence"><span>证据</span> 输出位置为 RenderAnnotations.content_mode。</p>
+      <a class="semantic-source-link" href="#s5">原文 § 4</a>
+    </li>
+<details class="semantic-block-extra">
+  <summary>展开 3 项</summary>
+  <div class="semantic-block-extra-items"><li id="lens-relationship-map-2-item-4" class="relationship-edge">
+      <div class="relationship-main">
+        <span class="relationship-node relationship-from">reader_profile</span>
+        <span class="relationship-relation">controls</span>
+        <span class="relationship-node relationship-to">html data-reader</span>
+      </div>
+      <p class="relationship-evidence"><span>证据</span> 顶部按钮切换 html data-reader，并由 CSS 控制可见性。</p>
+      <a class="semantic-source-link" href="#s6">原文 § 5</a>
+    </li>
+<li id="lens-relationship-map-2-item-5" class="relationship-edge">
+      <div class="relationship-main">
+        <span class="relationship-node relationship-from">concept_glossary annotation</span>
+        <span class="relationship-relation">feeds</span>
+        <span class="relationship-node relationship-to">glossary-popover</span>
+      </div>
+      <p class="relationship-evidence"><span>证据</span> glossary-popover 触发方式复用现有 concept_glossary annotation。</p>
+      <a class="semantic-source-link" href="#s7">原文 § 6</a>
+    </li>
+<li id="lens-relationship-map-2-item-6" class="relationship-edge">
+      <div class="relationship-main">
+        <span class="relationship-node relationship-from">scaffold provider</span>
+        <span class="relationship-relation">provides</span>
+        <span class="relationship-node relationship-to">0-AI 退化版</span>
+      </div>
+      <p class="relationship-evidence"><span>证据</span> 默认 provider 为 scaffold，输出启发式 content_mode 与空教学注解数组。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </li></div>
+</details></ol>
+</div>
+</div>
+<div class="semantic-model-flow semantic-glossary-flow">
+<div id="lens-concept-glossary-3" class="semantic-block concept-glossary-lens" data-annotation="semantic-concept-glossary">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">概念词表</p>
+      <h2>核心概念</h2>
+    </div>
+    <a class="semantic-source-link" href="#s2">查看原文 § 1</a>
+  </div>
+  <div class="concept-grid"><article id="lens-concept-glossary-3-item-1" class="concept-card">
+      <h3>kind</h3>
+      <p>标识文件产出物类型，用来选择已有渲染 skill。</p>
+      <p class="concept-example"><span>示例</span> spec / adr / change / review</p>
+      <p class="concept-field"><span>模型</span> <code>frontmatter.kind</code></p>
+      <a class="semantic-source-link" href="#s2">原文 § 1</a>
+    </article>
+<article id="lens-concept-glossary-3-item-2" class="concept-card">
+      <h3>render_skill</h3>
+      <p>Dossier 用来选择 HTML 模板和渲染方式的现有机制。</p>
+      <p class="concept-example"><span>示例</span> render-spec skill 负责 spec 的模板与样式。</p>
+      
+      <a class="semantic-source-link" href="#s1">原文 § 0</a>
+    </article>
+<article id="lens-concept-glossary-3-item-3" class="concept-card">
+      <h3>content_mode</h3>
+      <p>描述文档教学形态的字段，决定默认强化哪些阅读元素。</p>
+      <p class="concept-example"><span>示例</span> tutorial / concept / reference / course</p>
+      <p class="concept-field"><span>模型</span> <code>RenderAnnotations.content_mode</code></p>
+      <a class="semantic-source-link" href="#s5">原文 § 4</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 5 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-concept-glossary-3-item-4" class="concept-card">
+      <h3>reader_profile</h3>
+      <p>描述读者熟练度的运行时状态，决定页面显示多少解释。</p>
+      <p class="concept-example"><span>示例</span> beginner / intermediate / expert</p>
+      <p class="concept-field"><span>模型</span> <code>html[data-reader]</code></p>
+      <a class="semantic-source-link" href="#s6">原文 § 5</a>
+    </article>
+<article id="lens-concept-glossary-3-item-5" class="concept-card">
+      <h3>prerequisite-card</h3>
+      <p>放在文档开头的前置知识卡片，帮助新读者判断能否读懂。</p>
+      <p class="concept-example"><span>示例</span> 列出 marked 与 frontmatter 的简短解释。</p>
+      
+      <a class="semantic-source-link" href="#s7">原文 § 6</a>
+    </article>
+<article id="lens-concept-glossary-3-item-6" class="concept-card">
+      <h3>learning-checkpoint</h3>
+      <p>章节末尾的自测块，用来检查读者是否消化本节。</p>
+      <p class="concept-example"><span>示例</span> 解释 reader_profile 为什么用运行时切换。</p>
+      <p class="concept-field"><span>模型</span> <code>checkpoints[]</code></p>
+      <a class="semantic-source-link" href="#s7">原文 § 6</a>
+    </article>
+<article id="lens-concept-glossary-3-item-7" class="concept-card">
+      <h3>glossary-popover</h3>
+      <p>术语首次出现时的悬浮解释，减少读者跳转查词。</p>
+      <p class="concept-example"><span>示例</span> frontmatter hover 后显示 YAML 元数据解释。</p>
+      <p class="concept-field"><span>模型</span> <code>concept_glossary</code></p>
+      <a class="semantic-source-link" href="#s7">原文 § 6</a>
+    </article>
+<article id="lens-concept-glossary-3-item-8" class="concept-card">
+      <h3>analogy-callout</h3>
+      <p>把抽象概念连到熟悉对象的类比提示块。</p>
+      <p class="concept-example"><span>示例</span> content_mode 像菜单分类，reader_profile 像分量选择。</p>
+      <p class="concept-field"><span>模型</span> <code>analogies[]</code></p>
+      <a class="semantic-source-link" href="#s7">原文 § 6</a>
+    </article></div>
+</details></div>
+</div>
+</div>
+<div class="semantic-judgment-grid" aria-label="关键判断面板">
+<div id="lens-decision-grid-5" class="semantic-block decision-grid" data-annotation="semantic-decision-grid">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">决策</p>
+      <h2>关键决策</h2>
+    </div>
+    <a class="semantic-source-link" href="#s6">查看原文 § 5</a>
+  </div>
+  <div class="decision-grid-cards"><article id="lens-decision-grid-5-item-1" class="decision-card">
+      <p class="decision-label">不新增 skill</p>
+      <p class="decision-value">将 mode 和 profile 做成渲染管线 decorator</p>
+      <p>避免 4 kind × 4 mode × 3 profile 造成 48 个 skill 的组合爆炸。</p>
+      <a class="semantic-source-link" href="#s2">原文 § 1</a>
+    </article>
+<article id="lens-decision-grid-5-item-2" class="decision-card">
+      <p class="decision-label">content_mode 默认策略</p>
+      <p class="decision-value">启发式自动分类，frontmatter 可覆盖</p>
+      <p>0 token 可运行，同时允许用户显式修正边缘文档。</p>
+      <a class="semantic-source-link" href="#s5">原文 § 4</a>
+    </article>
+<article id="lens-decision-grid-5-item-3" class="decision-card">
+      <p class="decision-label">低置信 fallback</p>
+      <p class="decision-value">全部分数低于 30 时回退 concept</p>
+      <p>concept 是最通用的解释型文档模式。</p>
+      <a class="semantic-source-link" href="#s5">原文 § 4</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 3 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-decision-grid-5-item-4" class="decision-card">
+      <p class="decision-label">reader_profile 实现</p>
+      <p class="decision-value">一次性渲染全部内容，用 html[data-reader] 切换</p>
+      <p>保留单文件分享、切换瞬时、不需要重新加载。</p>
+      <a class="semantic-source-link" href="#s6">原文 § 5</a>
+    </article>
+<article id="lens-decision-grid-5-item-5" class="decision-card">
+      <p class="decision-label">默认 reader</p>
+      <p class="decision-value">beginner</p>
+      <p>零基础读者最需要默认展开的解释、前置知识和自测。</p>
+      <a class="semantic-source-link" href="#s6">原文 § 5</a>
+    </article>
+<article id="lens-decision-grid-5-item-6" class="decision-card">
+      <p class="decision-label">P0 默认值来源</p>
+      <p class="decision-value">硬编码 beginner，不读取 profile.md</p>
+      <p>profile.md 读取留到 P1，避免阻塞基础实现。</p>
+      <a class="semantic-source-link" href="#s6">原文 § 5</a>
+    </article></div>
+</details></div>
+</div>
+<div id="lens-principle-grid-6" class="semantic-block principle-grid" data-annotation="semantic-principle-grid">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">原则</p>
+      <h2>设计原则</h2>
+    </div>
+    <a class="semantic-source-link" href="#s4">查看原文 § 3</a>
+  </div>
+  <div class="principle-grid-cards"><article id="lens-principle-grid-6-item-1" class="principle-card">
+      <h3>正交性</h3>
+      <p>mode 和 profile 不互相决定；任意组合都应可工作。</p>
+      <a class="semantic-source-link" href="#s4">原文 § 3</a>
+    </article>
+<article id="lens-principle-grid-6-item-2" class="principle-card">
+      <h3>退化优先</h3>
+      <p>所有新元素必须有 markdown、blockquote 或列表 fallback，旧 HTML 也要渲染得出。</p>
+      <a class="semantic-source-link" href="#s4">原文 § 3</a>
+    </article>
+<article id="lens-principle-grid-6-item-3" class="principle-card">
+      <h3>零 token 默认</h3>
+      <p>默认 enrich provider 为 scaffold，纯启发式；AI 增强必须 opt-in。</p>
+      <a class="semantic-source-link" href="#s4">原文 § 3</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 2 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-principle-grid-6-item-4" class="principle-card">
+      <h3>单文件不动摇</h3>
+      <p>reader 切换、术语 popover 和 checkpoint 折叠都必须 inline CSS/JS，无外链。</p>
+      <a class="semantic-source-link" href="#s4">原文 § 3</a>
+    </article>
+<article id="lens-principle-grid-6-item-5" class="principle-card">
+      <h3>不写 raw HTML 给 AI</h3>
+      <p>教学注解走 enrich JSON schema，避免让 AI 在 markdown 中手写复杂 HTML。</p>
+      <a class="semantic-source-link" href="#s4">原文 § 3</a>
+    </article></div>
+</details></div>
+</div>
+<div id="lens-evidence-grid-8" class="semantic-block evidence-grid" data-annotation="semantic-evidence-grid">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">证据</p>
+      <h2>验证证据</h2>
+    </div>
+    <a class="semantic-source-link" href="#s12">查看原文 § 11</a>
+  </div>
+  <div class="evidence-grid-cards"><article id="lens-evidence-grid-8-item-1" class="evidence-card">
+      <p class="evidence-label">类型检查</p>
+      <p>pnpm typecheck clean。</p>
+      <p class="evidence-source"><span>原文</span>验收清单命令</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<article id="lens-evidence-grid-8-item-2" class="evidence-card">
+      <p class="evidence-label">单元测试</p>
+      <p>pnpm test 全绿，并新增不少于 6 个覆盖分类、fallback、a11y 与 v1 兼容的测试。</p>
+      <p class="evidence-source"><span>原文</span>验收清单命令</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<article id="lens-evidence-grid-8-item-3" class="evidence-card">
+      <p class="evidence-label">真实 spec 渲染</p>
+      <p>pnpm dev render docs/specs/2026-05-17-dossier-vision-spec.md 跑通。</p>
+      <p class="evidence-source"><span>原文</span>验收清单命令</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 5 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-evidence-grid-8-item-4" class="evidence-card">
+      <p class="evidence-label">HTML 根属性</p>
+      <p>输出 HTML 的 html 标签有 data-reader=&quot;beginner&quot; 和 data-content-mode=&quot;concept&quot;。</p>
+      <p class="evidence-source"><span>原文</span>渲染结果检查</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<article id="lens-evidence-grid-8-item-5" class="evidence-card">
+      <p class="evidence-label">运行时切换</p>
+      <p>reader 按钮默认高亮零基础，速查隐藏教学元素，系统化进入中间状态。</p>
+      <p class="evidence-source"><span>原文</span>浏览器交互检查</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<article id="lens-evidence-grid-8-item-6" class="evidence-card">
+      <p class="evidence-label">离线可用</p>
+      <p>关网络并双击 HTML 后三档切换仍完全可用。</p>
+      <p class="evidence-source"><span>原文</span>离线文件检查</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<article id="lens-evidence-grid-8-item-7" class="evidence-card">
+      <p class="evidence-label">覆盖分类</p>
+      <p>--content-mode tutorial 与 frontmatter content_mode: reference 都能覆盖启发式。</p>
+      <p class="evidence-source"><span>原文</span>CLI 与 fixture 检查</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article>
+<article id="lens-evidence-grid-8-item-8" class="evidence-card">
+      <p class="evidence-label">兼容旧注解</p>
+      <p>annotations.json schema_version: 1 旧文件仍可读，新字段缺省不报错。</p>
+      <p class="evidence-source"><span>原文</span>兼容性测试</p>
+      <a class="semantic-source-link" href="#s12">原文 § 11</a>
+    </article></div>
+</details></div>
+</div>
+<div id="lens-risk-register-9" class="semantic-block risk-register" data-annotation="semantic-risk-register">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">风险</p>
+      <h2>风险</h2>
+    </div>
+    <a class="semantic-source-link" href="#s14">查看原文 § 13</a>
+  </div>
+  <div class="risk-register-cards"><article id="lens-risk-register-9-item-1" class="risk-card">
+      <p class="risk-label">启发式分类对边缘文档判错</p>
+      <p class="risk-trigger"><span>触发条件</span> 文档信号弱或同时像多个 mode。</p>
+      <p class="risk-impact"><span>影响</span> HTML 默认强化元素可能不符合读者预期。</p>
+      <p class="risk-mitigation"><span>缓解</span> frontmatter content_mode 显式覆盖；verbose 输出分数让用户能 debug。</p>
+      <a class="semantic-source-link" href="#s14">原文 § 13</a>
+    </article>
+<article id="lens-risk-register-9-item-2" class="risk-card">
+      <p class="risk-label">reader-toggle JS 在 IE / 老浏览器跑不起</p>
+      <p class="risk-trigger"><span>触发条件</span> 浏览器不支持所用 JS 特性。</p>
+      <p class="risk-impact"><span>影响</span> 读者无法切换 profile。</p>
+      <p class="risk-mitigation"><span>缓解</span> 用 ES2018 子集，避免可选链；feature detect + fallback 显示全部。</p>
+      <a class="semantic-source-link" href="#s14">原文 § 13</a>
+    </article>
+<article id="lens-risk-register-9-item-3" class="risk-card">
+      <p class="risk-label">术语 popover 满屏</p>
+      <p class="risk-trigger"><span>触发条件</span> 每次术语出现都加 hover 标记。</p>
+      <p class="risk-impact"><span>影响</span> 正文变得杂乱，阅读负担上升。</p>
+      <p class="risk-mitigation"><span>缓解</span> 只标首次出现；expert 模式禁用。</p>
+      <a class="semantic-source-link" href="#s14">原文 § 13</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 3 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-risk-register-9-item-4" class="risk-card">
+      <p class="risk-label">单文件 HTML 因新元素变大</p>
+      <p class="risk-trigger"><span>触发条件</span> 新增样式、脚本和教学注解过多。</p>
+      <p class="risk-impact"><span>影响</span> 分享文件变重，违背轻量化预期。</p>
+      <p class="risk-mitigation"><span>缓解</span> 测 vision spec 渲染后小于 150KB。</p>
+      <a class="semantic-source-link" href="#s14">原文 § 13</a>
+    </article>
+<article id="lens-risk-register-9-item-5" class="risk-card">
+      <p class="risk-label">schema_version 升级破坏旧 annotations.json</p>
+      <p class="risk-trigger"><span>触发条件</span> 解析器只接受 v2 或强制要求新字段。</p>
+      <p class="risk-impact"><span>影响</span> 旧注解文件无法渲染。</p>
+      <p class="risk-mitigation"><span>缓解</span> parseAnnotationsJson 兼容 v1，缺字段视为缺省。</p>
+      <a class="semantic-source-link" href="#s14">原文 § 13</a>
+    </article>
+<article id="lens-risk-register-9-item-6" class="risk-card">
+      <p class="risk-label">codex 实施时偷偷改 ADR</p>
+      <p class="risk-trigger"><span>触发条件</span> 实现时顺手修改非目标文档或既有决策。</p>
+      <p class="risk-impact"><span>影响</span> 改变项目边界，制造无关变更。</p>
+      <p class="risk-mitigation"><span>缓解</span> handoff brief 显式列禁止项。</p>
+      <a class="semantic-source-link" href="#s14">原文 § 13</a>
+    </article></div>
+</details></div>
+</div>
+<div id="lens-scope-boundary-10" class="semantic-block scope-boundary" data-annotation="semantic-scope-boundary">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">范围</p>
+      <h2>范围边界</h2>
+    </div>
+    <a class="semantic-source-link" href="#s3">查看原文 § 2</a>
+  </div>
+  <div class="scope-boundary-grid">
+    <div class="scope-column scope-in">
+  <h3>范围内</h3>
+  <ul><li>content_mode 启发式自动分类与 frontmatter override</li><li>reader_profile 运行时切换</li><li>prerequisite-card、learning-checkpoint、glossary-popover、analogy-callout 四个展示元素</li><li>enrich 阶段产出教学注解，scaffold 提供 0-AI 退化版</li><li>默认 reader 为 beginner，并允许 URL reader 参数覆盖</li></ul>
+</div>
+    <div class="scope-column scope-out">
+  <h3>范围外</h3>
+  <ul><li>AI 自动分类 content_mode</li><li>视频、动画、可编辑代码沙箱</li><li>分支学习路径或自适应教学</li><li>每个 reader profile 输出一份 HTML</li><li>P0 实现跨文档 course 模式</li><li>P0 读取 profile.md</li></ul>
+</div>
+  </div>
+</div>
+<div id="lens-checklist-11" class="semantic-block checklist-lens" data-annotation="semantic-checklist">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">检查清单</p>
+      <h2>P0 验收清单</h2>
+    </div>
+    <a class="semantic-source-link" href="#s12">查看原文 § 11</a>
+  </div>
+  <ol class="checklist-items"><li id="lens-checklist-11-item-1" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>pnpm typecheck clean</h3>
+        <p>运行类型检查并确认无错误。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-2" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>pnpm test 全绿</h3>
+        <p>新增至少 6 个测试，覆盖 content-mode 分类、prereq fallback、reader 切换 a11y、annotation schema v1 兼容。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-3" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>vision spec 渲染跑通</h3>
+        <p>运行 pnpm dev render docs/specs/2026-05-17-dossier-vision-spec.md。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<details class="semantic-block-extra">
+  <summary>展开 13 项</summary>
+  <div class="semantic-block-extra-items"><li id="lens-checklist-11-item-4" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>reader 按钮默认正确</h3>
+        <p>输出 HTML 顶部有三档 reader 按钮，默认高亮零基础。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-5" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>expert 切换正确</h3>
+        <p>切换到速查后 prereq、analogy、checkpoint 全部消失，正文压缩。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-6" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>intermediate 切换正确</h3>
+        <p>切换到系统化后进入中间状态。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-7" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>HTML data 属性正确</h3>
+        <p>html 根标签包含 data-reader=&quot;beginner&quot; 与 data-content-mode=&quot;concept&quot;。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-8" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>URL 覆盖默认 reader</h3>
+        <p>地址栏 ?reader=expert 可以覆盖默认值。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-9" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>localStorage 持久化</h3>
+        <p>切换后刷新页面仍保留选择。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-10" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>离线 HTML 可用</h3>
+        <p>关网络并双击 HTML 后三档切换仍可用。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-11" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>CLI content-mode 覆盖</h3>
+        <p>--content-mode tutorial 后 html data-content-mode 反映该值。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-12" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>frontmatter content_mode 覆盖</h3>
+        <p>frontmatter content_mode: reference 能覆盖启发式结果。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-13" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>Quickstart fixture 判定 tutorial</h3>
+        <p>临时 Quickstart README 主要由操作步骤组成时判定 tutorial。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-14" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>API 表格 fixture 判定 reference</h3>
+        <p>临时 API 参考表文档判定 reference。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-15" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>v1 annotations 兼容</h3>
+        <p>schema_version: 1 文件仍可读，新字段缺省不报错。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li>
+<li id="lens-checklist-11-item-16" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>实现说明落档</h3>
+        <p>写 docs/changes/2026-05-XX-dossier-pedagogy-layer-impl-notes.md，并列出实际偏差。</p>
+        <a class="semantic-source-link" href="#s12">原文 § 11</a>
+      </div>
+    </li></div>
+</details></ol>
+</div>
+<div id="lens-checklist-12" class="semantic-block checklist-lens" data-annotation="semantic-checklist">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">检查清单</p>
+      <h2>禁止事项</h2>
+    </div>
+    <a class="semantic-source-link" href="#s13">查看原文 § 12</a>
+  </div>
+  <ol class="checklist-items"><li id="lens-checklist-12-item-1" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要每个 profile 渲染一份 HTML</h3>
+        <p>这违反单文件分享约束。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-2" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要在 markdown 里手写复杂 HTML</h3>
+        <p>教学块必须走 frontmatter 或 annotation 管线。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-3" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要引入新 npm 依赖</h3>
+        <p>沿用 ADR 的零额外依赖原则。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<details class="semantic-block-extra">
+  <summary>展开 7 项</summary>
+  <div class="semantic-block-extra-items"><li id="lens-checklist-12-item-4" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要让 reader-toggle 依赖外部 JS</h3>
+        <p>JS 必须 inline，保证单文件离线可用。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-5" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要实现 content_mode 的 AI 自动分类</h3>
+        <p>P0 用启发式与 frontmatter 显式声明即可。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-6" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要改 SemanticBlock 已有字段</h3>
+        <p>只新增字段，保持向后兼容。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-7" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要给 expert 模式做折叠动画</h3>
+        <p>data attribute 与 display 控制即可。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-8" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要每次术语出现都标记</h3>
+        <p>只标首次出现，避免页面过密。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-9" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要强制 course mode 多文件</h3>
+        <p>单文档长文也可以用 h2 与 lesson 分课时。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li>
+<li id="lens-checklist-12-item-10" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>不要在 P0 实现 profile.md 读取</h3>
+        <p>P0 硬编码默认，profile.md 留到 P1。</p>
+        <a class="semantic-source-link" href="#s13">原文 § 12</a>
+      </div>
+    </li></div>
+</details></ol>
+</div>
+<div id="lens-open-questions-13" class="semantic-block open-questions-lens" data-annotation="semantic-open-questions">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">开放问题</p>
+      <h2>开放问题</h2>
+    </div>
+    <a class="semantic-source-link" href="#s15">查看原文 § 14</a>
+  </div>
+  <ol class="open-question-items"><li id="lens-open-questions-13-item-1" class="open-question-item open-question-open">
+      <span class="open-question-status">开放</span>
+      <div>
+        <h3>reader 切换是否要带键盘快捷键？</h3>
+        <p>倾向 P1；当前优先确保 Tab 可达。</p>
+        <p class="open-question-impact"><span>影响</span> 影响快捷交互范围，但不阻塞 P0。</p>
+        <a class="semantic-source-link" href="#s15">原文 § 14</a>
+      </div>
+    </li>
+<li id="lens-open-questions-13-item-2" class="open-question-item open-question-answered">
+      <span class="open-question-status">已答</span>
+      <div>
+        <h3>URL reader 切换是否要在 history 留 entry？</h3>
+        <p>倾向否，避免污染浏览历史。</p>
+        <p class="open-question-impact"><span>影响</span> 影响浏览器后退行为。</p>
+        <a class="semantic-source-link" href="#s15">原文 § 14</a>
+      </div>
+    </li>
+<li id="lens-open-questions-13-item-3" class="open-question-item open-question-answered">
+      <span class="open-question-status">已答</span>
+      <div>
+        <h3>content_mode 是否影响 TOC 渲染？</h3>
+        <p>倾向是，reference 模式总是显示，且 §8 已说明。</p>
+        <p class="open-question-impact"><span>影响</span> 影响 render-spec 样式与模板逻辑。</p>
+        <a class="semantic-source-link" href="#s15">原文 § 14</a>
+      </div>
+    </li>
+<details class="semantic-block-extra">
+  <summary>展开 2 项</summary>
+  <div class="semantic-block-extra-items"><li id="lens-open-questions-13-item-4" class="open-question-item open-question-open">
+      <span class="open-question-status">开放</span>
+      <div>
+        <h3>教学注解如何做 i18n？</h3>
+        <p>P0 仅中文加英文混排，沿用现有 render-spec 字体策略。</p>
+        <p class="open-question-impact"><span>影响</span> 多语言体验留待后续。</p>
+        <a class="semantic-source-link" href="#s15">原文 § 14</a>
+      </div>
+    </li>
+<li id="lens-open-questions-13-item-5" class="open-question-item open-question-answered">
+      <span class="open-question-status">已答</span>
+      <div>
+        <h3>是否支持自定义 reader profile？</h3>
+        <p>倾向否，P0 锁死 beginner、intermediate、expert 三档。</p>
+        <p class="open-question-impact"><span>影响</span> 影响扩展 profile 的接口设计。</p>
+        <a class="semantic-source-link" href="#s15">原文 § 14</a>
+      </div>
+    </li></div>
+</details></ol>
+</div>
+</div>
+</div>
+    
+    <div id="source-sections" class="source-prose-boundary" aria-label="原文章节">
+  <p class="source-prose-title">原文章节</p>
+  <p class="source-prose-count">16 个一级章节</p>
+</div><nav id="source-section-map" class="source-section-map" aria-label="章节地图">
+  <div class="source-section-map-intro">
+    <p class="semantic-label">章节地图</p>
+    <p>用这张地图带着上下文跳入原文。</p>
+  </div>
+  <div class="source-section-map-lanes" aria-label="章节地图分组">
+<section class="source-section-lane source-section-lane-model">
+    <p class="source-section-lane-title">模型与概念</p>
+    <div class="source-section-lane-links">
+<a class="source-section-lane-link" href="#s1">
+        <span class="source-section-lane-number">§ 0</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">一句话</span>
+          <span class="source-section-lane-role">关系：vision spec §8 渲染层 to 本 spec</span>
+          <span class="source-section-lane-purpose">先用本节抓住核心判断。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s2">
+        <span class="source-section-lane-number">§ 1</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">为什么需要这一层</span>
+          <span class="source-section-lane-role">模型：产出物分类</span>
+          <span class="source-section-lane-purpose">用本节理解为什么要加层而不是重做体系。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s5">
+        <span class="source-section-lane-number">§ 4</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">content_mode 自动分类器</span>
+          <span class="source-section-lane-role">模型：教学形态</span>
+          <span class="source-section-lane-purpose">实现分类器时重点看本节。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s6">
+        <span class="source-section-lane-number">§ 5</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">reader_profile 运行时切换</span>
+          <span class="source-section-lane-role">模型：读者熟练度</span>
+          <span class="source-section-lane-purpose">用本节理解运行时切换和持久化。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s7">
+        <span class="source-section-lane-number">§ 6</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">4 个新展示元素</span>
+          <span class="source-section-lane-role">关系：concept_glossary annotation to glossary-popover</span>
+          <span class="source-section-lane-purpose">实现渲染函数时逐项对照。</span>
+        </span>
+      </a>
+    </div>
+  </section>
+<section class="source-section-lane source-section-lane-judgment">
+    <p class="source-section-lane-title">判断与验证</p>
+    <div class="source-section-lane-links">
+<a class="source-section-lane-link" href="#s2">
+        <span class="source-section-lane-number">§ 1</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">为什么需要这一层</span>
+          <span class="source-section-lane-role">决策：不新增 skill</span>
+          <span class="source-section-lane-purpose">用本节理解为什么要加层而不是重做体系。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s3">
+        <span class="source-section-lane-number">§ 2</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">范围</span>
+          <span class="source-section-lane-role">范围</span>
+          <span class="source-section-lane-purpose">实现前先核对边界。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s4">
+        <span class="source-section-lane-number">§ 3</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">设计原则</span>
+          <span class="source-section-lane-role">原则</span>
+          <span class="source-section-lane-purpose">用本节约束后续实现选择。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s5">
+        <span class="source-section-lane-number">§ 4</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">content_mode 自动分类器</span>
+          <span class="source-section-lane-role">决策：content_mode 默认策略</span>
+          <span class="source-section-lane-purpose">实现分类器时重点看本节。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s6">
+        <span class="source-section-lane-number">§ 5</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">reader_profile 运行时切换</span>
+          <span class="source-section-lane-role">决策</span>
+          <span class="source-section-lane-purpose">用本节理解运行时切换和持久化。</span>
+        </span>
+      </a>
+    </div>
+  </section>
+  </div>
+  <div class="source-section-map-grid">
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s1">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 0</span>
+    
+  </span>
+  <span class="source-section-title">一句话</span>
+  <span class="source-section-summary">本 spec 用一句话定义双轴扩展：content_mode 负责教学形态，reader_profile 负责读者熟练度。</span>
+  <span class="source-section-chips"><span>同一份 HTML 服务三类读者</span><span>两个轴正交，不替代现有 kind</span></span>
+  <span class="source-section-hint">先用本节抓住核心判断。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>3 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-1">关系：vision spec §8 渲染层 to 本 spec</a><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-2">关系：kind / render_skill 体系 to 教学化层</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-2">术语：render_skill</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s2">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 1</span>
+    <span>3 个小节</span>
+  </span>
+  <span class="source-section-title">为什么需要这一层</span>
+  <span class="source-section-summary">现有 kind 只回答文件类型，而新增双轴回答读者应该如何阅读。</span>
+  <span class="source-section-chips"><span>新增 skill 会导致组合数爆炸</span><span>教学化层应作为渲染 decorator</span></span>
+  <span class="source-section-hint">用本节理解为什么要加层而不是重做体系。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s2-1">1.1 现状</a><a href="#s2-2">1.2 两个被忽视的轴</a><a href="#s2-3">1.3 为什么不做成新 skill</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>6 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：问题背景</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-kind_dispatch">模型：产出物分类</a><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2">关系图</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3">术语表</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-1">术语：kind</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-1">决策：不新增 skill</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s3">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 2</span>
+    <span>2 个小节</span>
+  </span>
+  <span class="source-section-title">范围</span>
+  <span class="source-section-summary">P0 聚焦启发式分类、运行时切换、四个教学元素和 enrich 注解，明确不做 AI 分类、多版本 HTML 与跨文档 course。</span>
+  <span class="source-section-chips"><span>包含 0-AI 退化路径</span><span>不包含破坏单文件约束的能力</span></span>
+  <span class="source-section-hint">实现前先核对边界。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s3-1">2.1 包含</a><a href="#s3-2">2.2 不包含</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>2 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：范围边界</a><a class="source-section-role-chip section-semantic-chip section-semantic-scope" href="#lens-scope-boundary-10">范围</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s4">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 3</span>
+    
+  </span>
+  <span class="source-section-title">设计原则</span>
+  <span class="source-section-summary">设计原则要求新增能力保持正交、可退化、零 token 默认、单文件内联且不让 AI 写 raw HTML。</span>
+  <span class="source-section-chips"><span>默认 scaffold 不消耗 token</span><span>所有展示元素必须有 fallback</span></span>
+  <span class="source-section-hint">用本节约束后续实现选择。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>1 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-principle" href="#lens-principle-grid-6">原则</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s5">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 4</span>
+    <span>3 个小节</span>
+  </span>
+  <span class="source-section-title">content_mode 自动分类器</span>
+  <span class="source-section-summary">content_mode 通过 frontmatter 优先、间接字段和启发式打分确定，并在低置信时回退 concept。</span>
+  <span class="source-section-chips"><span>四种模式为 tutorial、concept、reference、course</span><span>输出写入 RenderAnnotations.content_mode</span></span>
+  <span class="source-section-hint">实现分类器时重点看本节。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s5-1">4.1 四种模式</a><a href="#s5-2">4.2 分类信号（按优先级）</a><a href="#s5-3">4.3 启发式打分（实现 src/enrich/content-mode.ts）</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>7 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：核心机制</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-content_mode">模型：教学形态</a><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-3">关系：content_mode 自动分类器 to RenderAnnotations.content_mode</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-3">术语：content_mode</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-2">决策：content_mode 默认策略</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-3">决策：低置信 fallback</a><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-1">要求：content_mode 分类器</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s6">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 5</span>
+    <span>3 个小节</span>
+  </span>
+  <span class="source-section-title">reader_profile 运行时切换</span>
+  <span class="source-section-summary">reader_profile 通过单文件 HTML 的 data-reader 与 inline CSS/JS 在 beginner、intermediate、expert 之间切换。</span>
+  <span class="source-section-chips"><span>默认 beginner</span><span>优先级为 URL、localStorage、frontmatter、默认值</span></span>
+  <span class="source-section-hint">用本节理解运行时切换和持久化。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s6-1">5.1 三档定义</a><a href="#s6-2">5.2 实现方式（关键决策）</a><a href="#s6-3">5.3 默认值来源</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>9 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：运行时切换</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-reader_profile">模型：读者熟练度</a><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-4">关系：reader_profile to html data-reader</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-4">术语：reader_profile</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5">决策</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-4">决策：reader_profile 实现</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-5">决策：默认 reader</a><a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-6">决策：P0 默认值来源</a><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-2">要求：reader_profile 切换</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s7">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 6</span>
+    <span>4 个小节</span>
+  </span>
+  <span class="source-section-title">4 个新展示元素</span>
+  <span class="source-section-summary">四个新展示元素分别解决前置知识、自测、术语解释和抽象类比的问题。</span>
+  <span class="source-section-chips"><span>glossary 只标首次出现</span><span>每个元素都有 fallback</span></span>
+  <span class="source-section-hint">实现渲染函数时逐项对照。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s7-1">6.1 prerequisite-card</a><a href="#s7-2">6.2 learning-checkpoint</a><a href="#s7-3">6.3 glossary-popover</a><span>还有 1 个小节</span></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>6 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-5">关系：concept_glossary annotation to glossary-popover</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-5">术语：prerequisite-card</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-6">术语：learning-checkpoint</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-7">术语：glossary-popover</a><a class="source-section-role-chip section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-8">术语：analogy-callout</a><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-3">要求：教学展示元素</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s8">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 7</span>
+    <span>2 个小节</span>
+  </span>
+  <span class="source-section-title">enrich 管线扩展</span>
+  <span class="source-section-summary">enrich 管线把 annotation schema 升到 v2，并新增 content_mode、prerequisites、checkpoints 和 analogies。</span>
+  <span class="source-section-chips"><span>schema_version 1 必须兼容</span><span>scaffold 默认输出空教学注解数组</span></span>
+  <span class="source-section-hint">类型与解析兼容性是本节重点。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s8-1">7.1 新增 annotation 字段</a><a href="#s8-2">7.2 三种 provider 行为</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>4 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-annotation_layer">模型：教学注解层</a><a class="source-section-role-chip section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-6">关系：scaffold provider to 0-AI 退化版</a><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7">要求</a><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-4">要求：annotation schema</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s9">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 8</span>
+    
+  </span>
+  <span class="source-section-title">render-spec skill 扩展</span>
+  <span class="source-section-summary">render-spec 需要新增 reader toggle、教学块占位符、inline 样式脚本以及 html 根属性。</span>
+  <span class="source-section-chips"><span>模板增加 5 个占位符</span><span>data-content-mode 只做小幅样式微调</span></span>
+  <span class="source-section-hint">这是 HTML 输出的落地点。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>2 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-single_file_render">模型：单文件渲染</a><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-5">要求：render-spec 模板</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s10">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 9</span>
+    
+  </span>
+  <span class="source-section-title">CLI 扩展</span>
+  <span class="source-section-summary">CLI 只扩展 dossier render 的 reader 与 content-mode 覆盖参数，dossier enrich 保持不变。</span>
+  <span class="source-section-chips"><span>--reader 覆盖默认读者档位</span><span>--content-mode 支持 auto 和四种显式模式</span></span>
+  <span class="source-section-hint">命令行为变化很小但要可测试。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>1 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-6">要求：CLI</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s11">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 10</span>
+    <span>2 个小节</span>
+  </span>
+  <span class="source-section-title">实施里程碑</span>
+  <span class="source-section-summary">P0 交付基础教学化层，P1 再做 provider 智能化、跨文档 course 和 profile 配置。</span>
+  <span class="source-section-chips"><span>P0 目标一周内完成</span><span>profile.md 读取明确留到 P1</span></span>
+  <span class="source-section-hint">用本节安排实现顺序。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s11-1">10.1 P0（codex 一次实施完，目标 1 周）</a><a href="#s11-2">10.2 P1（后续迭代）</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>1 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-roadmap" href="#lens-roadmap-4">路线图</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s12">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 11</span>
+    
+  </span>
+  <span class="source-section-title">验收清单</span>
+  <span class="source-section-summary">验收清单用类型检查、测试、渲染、交互、离线和兼容性检查判断 P0 是否完成。</span>
+  <span class="source-section-chips"><span>最后还要写实现说明</span><span>dogfood 与 fixture 都要覆盖</span></span>
+  <span class="source-section-hint">完成实现后逐条验证。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>28 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：验收标准</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-acceptance_gate">模型：验收门槛</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8">证据</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-1">证据：类型检查</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-2">证据：单元测试</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-3">证据：真实 spec 渲染</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-4">证据：HTML 根属性</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-5">证据：运行时切换</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-6">证据：离线可用</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-7">证据：覆盖分类</a><a class="source-section-role-chip section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-8">证据：兼容旧注解</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11">检查清单</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-1">检查清单：pnpm typecheck clean</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-2">检查清单：pnpm test 全绿</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-3">检查清单：vision spec 渲染跑通</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-4">检查清单：reader 按钮默认正确</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-5">检查清单：expert 切换正确</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-6">检查清单：intermediate 切换正确</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-7">检查清单：HTML data 属性正确</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-8">检查清单：URL 覆盖默认 reader</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-9">检查清单：localStorage 持久化</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-10">检查清单：离线 HTML 可用</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-11">检查清单：CLI content-mode 覆盖</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-12">检查清单：frontmatter content_mode 覆盖</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-13">检查清单：Quickstart fixture 判定 tutorial</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-14">检查清单：API 表格 fixture 判定 reference</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-15">检查清单：v1 annotations 兼容</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-16">检查清单：实现说明落档</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s13">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 12</span>
+    
+  </span>
+  <span class="source-section-title">决不要做的事</span>
+  <span class="source-section-summary">禁止事项防止实现破坏单文件、零依赖、向后兼容和 P0 边界。</span>
+  <span class="source-section-chips"><span>不要输出多份 HTML</span><span>不要改既有 SemanticBlock 字段</span></span>
+  <span class="source-section-hint">遇到实现诱惑时先看本节。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>11 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12">检查清单</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-1">检查清单：不要每个 profile 渲染一份 HTML</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-2">检查清单：不要在 markdown 里手写复杂 HTML</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-3">检查清单：不要引入新 npm 依赖</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-4">检查清单：不要让 reader-toggle 依赖外部 JS</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-5">检查清单：不要实现 content_mode 的 AI 自动分类</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-6">检查清单：不要改 SemanticBlock 已有字段</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-7">检查清单：不要给 expert 模式做折叠动画</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-8">检查清单：不要每次术语出现都标记</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-9">检查清单：不要强制 course mode 多文件</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-10">检查清单：不要在 P0 实现 profile.md 读取</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s14">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 13</span>
+    
+  </span>
+  <span class="source-section-title">风险</span>
+  <span class="source-section-summary">风险集中在启发式误判、浏览器兼容、popover 密度、文件体积、schema 兼容和越界修改。</span>
+  <span class="source-section-chips"><span>frontmatter override 是关键缓解手段</span><span>旧 annotations 兼容必须测试</span></span>
+  <span class="source-section-hint">实现前后都应复查风险。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>7 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9">风险</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-1">风险：启发式分类对边缘文档判错</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-2">风险：reader-toggle JS 在 IE / 老浏览器跑不起</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-3">风险：术语 popover 满屏</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-4">风险：单文件 HTML 因新元素变大</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-5">风险：schema_version 升级破坏旧 annotations.json</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-6">风险：codex 实施时偷偷改 ADR</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s15">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 14</span>
+    
+  </span>
+  <span class="source-section-title">开放问题</span>
+  <span class="source-section-summary">开放问题记录了快捷键、history、TOC、i18n 和自定义 profile 的当前倾向。</span>
+  <span class="source-section-chips"><span>部分问题已有明确倾向</span><span>大多不阻塞 P0</span></span>
+  <span class="source-section-hint">不要把 P1 问题提前塞进 P0。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>6 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-question" href="#lens-open-questions-13">问题</a><a class="source-section-role-chip section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-1">问题：reader 切换是否要带键盘快捷键？</a><a class="source-section-role-chip section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-2">问题：URL reader 切换是否要在 history 留 entry？</a><a class="source-section-role-chip section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-3">问题：content_mode 是否影响 TOC 渲染？</a><a class="source-section-role-chip section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-4">问题：教学注解如何做 i18n？</a><a class="source-section-role-chip section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-5">问题：是否支持自定义 reader profile？</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s16">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 15</span>
+    
+  </span>
+  <span class="source-section-title">下一步</span>
+  <span class="source-section-summary">下一步是签字 ready、写 handoff brief、实施 P0、用 4 份 spec dogfood 并最终更新状态。</span>
+  <span class="source-section-chips"><span>完成后写 changes 说明</span><span>实施完将本 spec 标记 implemented</span></span>
+  <span class="source-section-hint">用本节串起交付闭环。</span>
+  </a>
+  
+  
+</article>
+  </div>
+</nav><section id="s1">
+<h2 id="s1"><span class="sec-num">§ 0</span><span>一句话</span></h2>
+<p class="section-summary" data-annotation="section-summary">本 spec 用一句话定义双轴扩展：<span class="term" data-detail-level="glossary" data-term="content_mode" data-definition="描述文档教学形态的字段，决定默认强化哪些阅读元素。" aria-describedby="g-content_mode" tabindex="0">content_mode<span id="g-content_mode" role="tooltip">描述文档教学形态的字段，决定默认强化哪些阅读元素。</span></span> 负责教学形态，<span class="term" data-detail-level="glossary" data-term="reader_profile" data-definition="描述读者熟练度的运行时状态，决定页面显示多少解释。" aria-describedby="g-reader_profile" tabindex="0">reader_profile<span id="g-reader_profile" role="tooltip">描述读者熟练度的运行时状态，决定页面显示多少解释。</span></span> 负责读者熟练度。</p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-1">关系：vision spec §8 渲染层 to 本 spec</a><a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-2">关系：kind / render_skill 体系 to 教学化层</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-2">术语：render_skill</a>
+</nav>
+
+</section>
+<section id="s2">
+<h2 id="s2"><span class="sec-num">§ 1</span><span>为什么需要这一层</span></h2>
+<aside class="callout analogy" data-detail-level="analogy" data-section="s2">
+  <span class="callout-icon">类比</span>
+  <p><strong>教学化层：</strong>教学化层 就像书上的批注贴纸，因为它不改正文内容，只改变读者看到的提示和重点</p>
+</aside>
+
+<p class="section-summary" data-annotation="section-summary">现有 <span class="term" data-detail-level="glossary" data-term="kind" data-definition="标识文件产出物类型，用来选择已有渲染 skill。" aria-describedby="g-kind" tabindex="0">kind<span id="g-kind" role="tooltip">标识文件产出物类型，用来选择已有渲染 skill。</span></span> 只回答文件类型，而新增双轴回答读者应该如何阅读。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>新增 skill 会导致组合数爆炸</li><li>教学化层应作为渲染 decorator</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节理解为什么要加层而不是重做体系。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节理解为什么要加层而不是重做体系。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：问题背景</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-kind_dispatch">模型：产出物分类</a><a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2">关系图</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3">术语表</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-1">术语：kind</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-1">决策：不新增 skill</a>
+</nav>
+
+<h3 id="s2-1"><span class="sub-num">1.1</span>现状</h3>
+
+<p>dossier 现有 skill dispatch 按<strong>产出物视角</strong>分类：<code>spec</code> / <code>adr</code> / <code>change</code> / <code>review</code>。这回答的是&quot;这是什么类型的文件&quot;。</p>
+
+<p>但读者关心的是另一件事：<strong>&quot;我该怎么读它？&quot;</strong> 一份 vision spec 对零基础读者要慢慢讲（前置概念、类比、自测），对资深读者只要给决策摘要。今天 dossier 一份 HTML 服务所有人，零基础读者会被信息量压垮，资深读者会被冗余拖累。</p>
+
+<h3 id="s2-2"><span class="sub-num">1.2</span>两个被忽视的轴</h3>
+
+<table>
+<thead>
+<tr>
+<th>现有轴（产出物）</th>
+<th>缺失轴 A（教学形态）</th>
+<th>缺失轴 B（读者熟练度）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>spec / adr / change / review</td>
+<td>tutorial / concept / reference / course</td>
+<td>beginner / intermediate / expert</td>
+</tr>
+<tr>
+<td>决定<strong>用哪个 skill 渲染</strong></td>
+<td>决定<strong>默认强化哪些教学元素</strong></td>
+<td>决定<strong>默认显示多少信息</strong></td>
+</tr>
+<tr>
+<td>已有，frontmatter <code>kind:</code></td>
+<td>本 spec 新增</td>
+<td>本 spec 新增</td>
+</tr>
+</tbody></table>
+
+<p>这两个新轴<strong>互不相干</strong>：一份 vision spec 可以是 <code>concept × beginner</code>，也可以是 <code>concept × expert</code>。</p>
+
+<h3 id="s2-3"><span class="sub-num">1.3</span>为什么不做成新 skill</h3>
+
+<p>新 skill 会让组合数爆炸（4 kind × 4 mode × 3 profile = 48 个 skill）。而且 mode 和 profile 都是<strong>装饰性</strong>的——它们改变的是&quot;哪些块显示/折叠/强化&quot;，不改变核心版式。所以这一层应该是<strong>渲染管线里的修饰器（decorator）</strong>，挂在现有 skill 之后。</p>
+
+<aside class="learning-checkpoint" data-detail-level="checkpoint" data-section="s2">
+  <h5>走完这节你应当能</h5>
+  <ul><li>能说明为何不新建skill</li><li>能区分kind与读法</li></ul>
+</aside></section>
+<section id="s3">
+<h2 id="s3"><span class="sec-num">§ 2</span><span>范围</span></h2>
+<p class="section-summary" data-annotation="section-summary">P0 聚焦启发式分类、运行时切换、四个教学元素和 enrich 注解，明确不做 AI 分类、多版本 HTML 与跨文档 course。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>包含 0-AI 退化路径</li><li>不包含破坏单文件约束的能力</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 实现前先核对边界。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>实现前先核对边界。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：范围边界</a><a class="section-semantic-chip section-semantic-scope" href="#lens-scope-boundary-10">范围</a>
+</nav>
+
+<h3 id="s3-1"><span class="sub-num">2.1</span>包含</h3>
+
+<ul>
+<li><code>content_mode</code> 自动分类器（启发式，0 token），frontmatter override</li>
+<li><code>reader_profile</code> 运行时切换（HTML 内嵌按钮 + CSS data-attribute）</li>
+<li>4 个新展示元素：<code>prerequisite-card</code> / <code>learning-checkpoint</code> / <code>glossary-popover</code> / <code>analogy-callout</code></li>
+<li>enrich 阶段产出教学注解（codex / claude provider 升级；scaffold 提供 0-AI 退化版）</li>
+<li>默认 reader = <code>beginner</code>；URL <code>?reader=expert</code> 可覆盖</li>
+</ul>
+
+<h3 id="s3-2"><span class="sub-num">2.2</span>不包含</h3>
+
+<table>
+<thead>
+<tr>
+<th>❌ 不做</th>
+<th>因为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AI 自动分类 content_mode</td>
+<td>启发式 + frontmatter 显式声明已够用</td>
+</tr>
+<tr>
+<td>视频 / 动画 / 可编辑代码沙箱</td>
+<td>违背单文件 HTML 离线分享约束</td>
+</tr>
+<tr>
+<td>分支学习路径 / 自适应教学</td>
+<td>超出 dossier 定位</td>
+</tr>
+<tr>
+<td>多版本 HTML 输出（每个 profile 一份）</td>
+<td>单文件 + 运行时切换更省</td>
+</tr>
+<tr>
+<td>跨文档 <code>course</code> 模式 P0</td>
+<td>推迟到 P1（依赖 cover 模块）</td>
+</tr>
+</tbody></table>
+
+</section>
+<section id="s4">
+<h2 id="s4"><span class="sec-num">§ 3</span><span>设计原则</span></h2>
+<p class="section-summary" data-annotation="section-summary">设计原则要求新增能力保持正交、可退化、零 token 默认、单文件内联且不让 AI 写 raw HTML。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>默认 scaffold 不消耗 token</li><li>所有展示元素必须有 fallback</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节约束后续实现选择。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节约束后续实现选择。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-principle" href="#lens-principle-grid-6">原则</a>
+</nav>
+
+<ol>
+<li><strong>正交性</strong>：mode 和 profile 不互相决定；任意组合都应可工作。</li>
+<li><strong>退化优先</strong>：所有新元素必须有 markdown / blockquote / 列表的 fallback；老 HTML 一定渲染得出。</li>
+<li><strong>零 token 默认</strong>：默认 enrich provider = <code>scaffold</code>，纯启发式；AI 增强是 opt-in。</li>
+<li><strong>单文件不动摇</strong>：reader 切换、术语 popover、checkpoint 折叠——全部 inline CSS/JS，无外链。</li>
+<li><strong>不写 raw HTML 给 AI</strong>：教学注解走 enrich 管线的 JSON schema，不让 AI 在 markdown 里手写复杂 HTML。</li>
+</ol>
+
+</section>
+<section id="s5">
+<h2 id="s5"><span class="sec-num">§ 4</span><span>content_mode 自动分类器</span></h2>
+<aside class="callout analogy" data-detail-level="analogy" data-section="s5">
+  <span class="callout-icon">类比</span>
+  <p><strong>content_mode：</strong>content_mode 就像阅读档位，因为它决定同一份文档先突出步骤、概念、速查还是课程结构</p>
+</aside>
+
+<p class="section-summary" data-annotation="section-summary">content_mode 通过 frontmatter 优先、间接字段和启发式打分确定，并在低置信时回退 concept。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>四种模式为 tutorial、concept、reference、course</li><li>输出写入 RenderAnnotations.content_mode</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 实现分类器时重点看本节。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>实现分类器时重点看本节。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：核心机制</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-content_mode">模型：教学形态</a><a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-3">关系：content_mode 自动分类器 to RenderAnnotations.content_mode</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-3">术语：content_mode</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-2">决策：content_mode 默认策略</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-3">决策：低置信 fallback</a><a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-1">要求：content_mode 分类器</a>
+</nav>
+
+<h3 id="s5-1"><span class="sub-num">4.1</span>四种模式</h3>
+
+<table>
+<thead>
+<tr>
+<th>mode</th>
+<th>含义</th>
+<th>第一屏强化什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tutorial</code></td>
+<td>线性操作、跟着做就能跑通</td>
+<td>步骤序号、命令可复制、&quot;应看到 X&quot; 验证、进度感</td>
+</tr>
+<tr>
+<td><code>concept</code></td>
+<td>解释一个抽象概念、建立心智模型</td>
+<td>前置知识卡、类比 callout、概念图先于细节</td>
+</tr>
+<tr>
+<td><code>reference</code></td>
+<td>速查、密集信息表</td>
+<td>TOC 始终可见、不折叠、紧凑卡片、Ctrl+F 友好</td>
+</tr>
+<tr>
+<td><code>course</code></td>
+<td>分课时 / 分章节系统学习</td>
+<td>跨节进度条、前置/后续、章末自测</td>
+</tr>
+</tbody></table>
+
+<h3 id="s5-2"><span class="sub-num">4.2</span>分类信号（按优先级）</h3>
+
+<ol>
+<li><strong>frontmatter 显式</strong>：<code>content_mode: tutorial</code>（最高优先级）</li>
+<li><strong>frontmatter 间接</strong>：<code>lesson:</code> / <code>module:</code> / <code>week:</code> 字段 → 强信号 <code>course</code></li>
+<li><strong>启发式打分</strong>（见 §4.3）</li>
+</ol>
+
+<h3 id="s5-3"><span class="sub-num">4.3</span>启发式打分（实现 <code>src/enrich/content-mode.ts</code>）</h3>
+
+<p>输入：marked 解析后的 token 流 + frontmatter。</p>
+
+<p>对每个 mode 计算分数（0-100），输出最高分。<strong>全部低于 30</strong> → fallback 到 <code>concept</code>（最通用）。</p>
+
+<pre><code class="lang-typescript">// 伪代码，详细常数在实现中调
+function scoreTutorial(tokens, fm): number {
+  const shellRatio = codeBlockRatioByLang(tokens, [&quot;bash&quot;, &quot;sh&quot;, &quot;shell&quot;, &quot;zsh&quot;]);
+  const verbHeadingRatio = headingsStartWithVerb(tokens);  // &quot;安装&quot; &quot;配置&quot; &quot;运行&quot; &quot;Install&quot; &quot;Configure&quot;
+  const sequentialNumbers = hasSequentialH2Numbers(tokens); // h2 标题以 &quot;1.&quot; &quot;2.&quot; 开头连续
+  return clip(shellRatio * 50 + verbHeadingRatio * 30 + sequentialNumbers * 20);
+}
+
+function scoreReference(tokens, fm): number {
+  const tableRatio = tableBlockRatio(tokens);
+  const flatStructure = h2CountWithMinimalH3(tokens);  // 多 h2 但每个 h2 下内容短
+  const alphabeticOrdering = isH2Alphabetical(tokens);
+  return clip(tableRatio * 50 + flatStructure * 30 + alphabeticOrdering * 20);
+}
+
+function scoreCourse(tokens, fm): number {
+  if (fm.lesson || fm.module || fm.week) return 90;
+  // course 在单文件场景下信号弱；P0 主要靠 frontmatter
+  return 0;
+}
+
+function scoreConcept(tokens, fm): number {
+  // concept 是 fallback bucket；只要不像 tutorial/reference/course 就算
+  const defBlockquoteRatio = defBlockquoteCount(tokens);  // 以 &quot;&gt; X 是…&quot; 开头的 blockquote
+  const longProseRatio = paragraphWordCount(tokens);
+  return clip(defBlockquoteRatio * 50 + longProseRatio * 50);
+}</code></pre>
+
+<p><strong>输出位置</strong>：<code>RenderAnnotations.content_mode: &quot;tutorial&quot; | &quot;concept&quot; | &quot;reference&quot; | &quot;course&quot;</code>。</p>
+
+<p><strong>测试输入与预期</strong>：</p>
+
+<ul>
+<li><code>2026-05-17-dossier-vision-spec.md</code> → <code>concept</code>（无 shell、抽象名词、长 prose）</li>
+<li><code>2026-05-18-dossier-mvp-0-spec.md</code> → <code>concept</code>（同上；不是 tutorial 因为不是 step-by-step 命令）</li>
+<li>一份 README &quot;Quickstart&quot; 段为主的 → <code>tutorial</code></li>
+<li>一份 API 参考表为主的 → <code>reference</code></li>
+</ul>
+
+<aside class="learning-checkpoint" data-detail-level="checkpoint" data-section="s5">
+  <h5>走完这节你应当能</h5>
+  <ul><li>能判断何时切模式</li><li>能说明concept兜底</li></ul>
+</aside></section>
+<section id="s6">
+<h2 id="s6"><span class="sec-num">§ 5</span><span>reader_profile 运行时切换</span></h2>
+<aside class="callout analogy" data-detail-level="analogy" data-section="s6">
+  <span class="callout-icon">类比</span>
+  <p><strong>reader_profile：</strong>reader_profile 就像地图缩放，因为同一张地图可以给新手看细节，也可以给熟手看主干</p>
+</aside>
+
+<p class="section-summary" data-annotation="section-summary">reader_profile 通过单文件 HTML 的 data-reader 与 inline CSS/JS 在 beginner、intermediate、expert 之间切换。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>默认 beginner</li><li>优先级为 URL、localStorage、frontmatter、默认值</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节理解运行时切换和持久化。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节理解运行时切换和持久化。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：运行时切换</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-reader_profile">模型：读者熟练度</a><a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-4">关系：reader_profile to html data-reader</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-4">术语：reader_profile</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5">决策</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-4">决策：reader_profile 实现</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-5">决策：默认 reader</a><a class="section-semantic-chip section-semantic-decision" href="#lens-decision-grid-5-item-6">决策：P0 默认值来源</a><a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-2">要求：reader_profile 切换</a>
+</nav>
+
+<h3 id="s6-1"><span class="sub-num">5.1</span>三档定义</h3>
+
+<table>
+<thead>
+<tr>
+<th>profile</th>
+<th>默认行为</th>
+<th>折叠/隐藏</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>beginner</code>（默认）</td>
+<td>所有 <code>&lt;details&gt;</code> open；<span class="term" data-detail-level="glossary" data-term="prerequisite-card" data-definition="放在文档开头的前置知识卡片，帮助新读者判断能否读懂。" aria-describedby="g-prerequisite-card" tabindex="0">prerequisite-card<span id="g-prerequisite-card" role="tooltip">放在文档开头的前置知识卡片，帮助新读者判断能否读懂。</span></span> 顶部置顶；glossary 标记为 underline；analogy callout 高亮；section_summary 总是展开</td>
+<td>无</td>
+</tr>
+<tr>
+<td><code>intermediate</code></td>
+<td>主线展开；例子 <code>&lt;details&gt;</code> 折叠；glossary 仅 hover；analogy 弱化为常规 callout</td>
+<td>折叠&quot;详细例子&quot;&quot;底层原理&quot;块</td>
+</tr>
+<tr>
+<td><code>expert</code></td>
+<td>仅显示决策 / 接口 / 关键差异；TOC 改为浮动锚点；行宽收窄、行高变密</td>
+<td>隐藏 prerequisite-card / analogy / <span class="term" data-detail-level="glossary" data-term="learning-checkpoint" data-definition="章节末尾的自测块，用来检查读者是否消化本节。" aria-describedby="g-learning-checkpoint" tabindex="0">learning-checkpoint<span id="g-learning-checkpoint" role="tooltip">章节末尾的自测块，用来检查读者是否消化本节。</span></span> / section_summary</td>
+</tr>
+</tbody></table>
+
+<h3 id="s6-2"><span class="sub-num">5.2</span>实现方式（关键决策）</h3>
+
+<p><strong>方案</strong>：HTML 一次性渲染全部内容，用 <code>data-detail-level</code> 属性 + CSS 控制可见性，顶部按钮切换 <code>&lt;html data-reader&gt;</code>。</p>
+
+<pre><code class="lang-html">&lt;html data-reader=&quot;beginner&quot; data-content-mode=&quot;concept&quot;&gt;
+&lt;head&gt;
+  &lt;!-- inline style --&gt;
+  &lt;style&gt;
+    /* 默认（beginner）：全部显示 */
+    [data-detail-level=&quot;prereq&quot;]      { display: block; }
+    [data-detail-level=&quot;analogy&quot;]     { display: block; }
+    [data-detail-level=&quot;checkpoint&quot;]  { display: block; }
+    [data-detail-level=&quot;deep&quot;]        { display: none; }  /* &quot;想深入？&quot; 默认折叠 */
+
+    html[data-reader=&quot;intermediate&quot;] [data-detail-level=&quot;prereq&quot;]    { display: none; }
+    html[data-reader=&quot;intermediate&quot;] [data-detail-level=&quot;analogy&quot;]   { opacity: 0.7; }
+
+    html[data-reader=&quot;expert&quot;] [data-detail-level=&quot;prereq&quot;],
+    html[data-reader=&quot;expert&quot;] [data-detail-level=&quot;analogy&quot;],
+    html[data-reader=&quot;expert&quot;] [data-detail-level=&quot;checkpoint&quot;],
+    html[data-reader=&quot;expert&quot;] [data-detail-level=&quot;section-summary&quot;] { display: none; }
+    html[data-reader=&quot;expert&quot;] .content { max-width: 640px; line-height: 1.5; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;nav class=&quot;reader-toggle&quot; role=&quot;radiogroup&quot; aria-label=&quot;Reading mode&quot;&gt;
+    &lt;button data-reader-set=&quot;beginner&quot; aria-pressed=&quot;true&quot;&gt;零基础&lt;/button&gt;
+    &lt;button data-reader-set=&quot;intermediate&quot; aria-pressed=&quot;false&quot;&gt;系统化&lt;/button&gt;
+    &lt;button data-reader-set=&quot;expert&quot; aria-pressed=&quot;false&quot;&gt;速查&lt;/button&gt;
+  &lt;/nav&gt;
+  &lt;!-- content --&gt;
+  &lt;script&gt;
+    /* inline: 监听点击，更新 html[data-reader] + 写 localStorage + 更新 aria-pressed */
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+<p><strong>为什么不是渲染三份 HTML</strong>：</p>
+
+<ul>
+<li>单文件分享是 dossier 的硬约束；多文件破坏可分享性</li>
+<li>切换瞬时（不重新加载）才是 progressive disclosure 的本意</li>
+<li>HTML gzip 后冗余很小（重复内容压缩率高）</li>
+</ul>
+
+<p><strong>URL / localStorage 持久化</strong>：</p>
+
+<ul>
+<li><code>?reader=expert</code> 在 URL 中覆盖默认</li>
+<li>localStorage <code>dossier.reader</code> 记忆用户偏好（同一域名跨档案保留）</li>
+<li>优先级：URL &gt; localStorage &gt; frontmatter <code>reader_default</code> &gt; <code>beginner</code></li>
+</ul>
+
+<h3 id="s6-3"><span class="sub-num">5.3</span>默认值来源</h3>
+
+<pre><code class="lang-yaml"># profile.md（未实现，本 spec 不阻塞 P0；codex 不必实现 profile.md 读取）
+reader_default: beginner</code></pre>
+
+<p>P0 实现：硬编码默认 <code>beginner</code>，URL/localStorage 可覆盖。profile.md 读取留 P1。</p>
+
+<aside class="learning-checkpoint" data-detail-level="checkpoint" data-section="s6">
+  <h5>走完这节你应当能</h5>
+  <ul><li>能解释运行时切换</li><li>能排出默认优先级</li></ul>
+</aside></section>
+<section id="s7">
+<h2 id="s7"><span class="sec-num">§ 6</span><span>4 个新展示元素</span></h2>
+<p class="section-summary" data-annotation="section-summary">四个新展示元素分别解决前置知识、自测、术语解释和抽象类比的问题。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>glossary 只标首次出现</li><li>每个元素都有 fallback</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 实现渲染函数时逐项对照。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>实现渲染函数时逐项对照。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-5">关系：concept_glossary annotation to glossary-popover</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-5">术语：prerequisite-card</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-6">术语：learning-checkpoint</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-7">术语：glossary-popover</a><a class="section-semantic-chip section-semantic-glossary" href="#lens-concept-glossary-3-item-8">术语：analogy-callout</a><a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-3">要求：教学展示元素</a>
+</nav>
+
+<h3 id="s7-1"><span class="sub-num">6.1</span><code>prerequisite-card</code></h3>
+
+<p><strong>用途</strong>：文档开头列前置知识，零基础读者一眼判断&quot;我能读懂吗&quot;。</p>
+
+<p><strong>触发</strong>：frontmatter <code>prerequisites: [&quot;term-1&quot;, &quot;term-2&quot;]</code> 或 enrich 注解 <code>prerequisites[]</code>。</p>
+
+<p><strong>HTML 形态</strong>：</p>
+
+<pre><code class="lang-html">&lt;aside class=&quot;prerequisite-card&quot; data-detail-level=&quot;prereq&quot;&gt;
+  &lt;h4&gt;📚 阅读前你最好知道&lt;/h4&gt;
+  &lt;ul&gt;
+    &lt;li&gt;&lt;strong&gt;marked&lt;/strong&gt;：JS 的 markdown 解析库&lt;/li&gt;
+    &lt;li&gt;&lt;strong&gt;frontmatter&lt;/strong&gt;：markdown 文件顶部的 YAML 元数据&lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;details&gt;&lt;summary&gt;都不知道？这份文档可能不适合你&lt;/summary&gt;
+    &lt;p&gt;建议先读 &lt;a href=&quot;...&quot;&gt;入门文档&lt;/a&gt;&lt;/p&gt;
+  &lt;/details&gt;
+&lt;/aside&gt;</code></pre>
+
+<p><strong>fallback</strong>：<code>&lt;blockquote&gt;</code> 列表。</p>
+
+<h3 id="s7-2"><span class="sub-num">6.2</span><code>learning-checkpoint</code></h3>
+
+<p><strong>用途</strong>：每节末尾&quot;你现在应当能…&quot;自测，帮读者确认是否消化。</p>
+
+<p><strong>触发</strong>：enrich 注解 <code>checkpoints[]</code>（每节 0-3 条）。</p>
+
+<p><strong>HTML 形态</strong>：</p>
+
+<pre><code class="lang-html">&lt;aside class=&quot;learning-checkpoint&quot; data-detail-level=&quot;checkpoint&quot; data-section=&quot;s4&quot;&gt;
+  &lt;h5&gt;✅ 走完这节你应当能&lt;/h5&gt;
+  &lt;ul&gt;
+    &lt;li&gt;说出 content_mode 的 4 种值&lt;/li&gt;
+    &lt;li&gt;解释 reader_profile 为什么用运行时切换而不是渲染多份&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/aside&gt;</code></pre>
+
+<p>复用 <code>takeaway_grid</code> 的视觉风格（已有 CSS），无需新设计语言。</p>
+
+<p><strong>fallback</strong>：普通有序列表。</p>
+
+<h3 id="s7-3"><span class="sub-num">6.3</span><code>glossary-popover</code></h3>
+
+<p><strong>用途</strong>：术语 hover 显示定义，零基础不用跳走查词。</p>
+
+<p><strong>触发</strong>：复用现有 <code>concept_glossary</code> annotation；renderer 把术语在正文中的出现包成 <code>&lt;span class=&quot;term&quot;&gt;</code>，附 hover popover。</p>
+
+<p><strong>HTML 形态</strong>：</p>
+
+<pre><code class="lang-html">&lt;span class=&quot;term&quot; data-detail-level=&quot;glossary&quot;
+      data-term=&quot;frontmatter&quot;
+      data-definition=&quot;markdown 文件顶部的 YAML 元数据&quot;
+      aria-describedby=&quot;g-frontmatter&quot;&gt;
+  frontmatter
+  &lt;span id=&quot;g-frontmatter&quot; role=&quot;tooltip&quot;&gt;markdown 文件顶部的 YAML 元数据&lt;/span&gt;
+&lt;/span&gt;</code></pre>
+
+<p><strong>实现关键</strong>：</p>
+
+<ul>
+<li>只对<strong>每个术语首次出现</strong>加 popover（避免满屏波浪线）</li>
+<li>CSS <code>:hover</code> + <code>:focus</code> 触发；移动端 tap 也能触发</li>
+<li>expert 模式下 <code>display: contents</code>（去除 hover 装饰）</li>
+</ul>
+
+<p><strong>fallback</strong>：普通 <code>&lt;a href=&quot;#glossary&quot;&gt;</code> 链接到文末术语表。</p>
+
+<h3 id="s7-4"><span class="sub-num">6.4</span><code>analogy-callout</code></h3>
+
+<p><strong>用途</strong>：&quot;想象 X 就像 Y&quot; 类比，把抽象概念绑定到熟悉对象。</p>
+
+<p><strong>触发</strong>：markdown blockquote 前缀 <code>🎯</code> 或 enrich 注解 <code>analogies[]</code>。</p>
+
+<p><strong>HTML 形态</strong>：</p>
+
+<pre><code class="lang-html">&lt;aside class=&quot;callout analogy&quot; data-detail-level=&quot;analogy&quot;&gt;
+  &lt;span class=&quot;callout-icon&quot;&gt;🎯&lt;/span&gt;
+  &lt;p&gt;&lt;strong&gt;类比：&lt;/strong&gt;content_mode 就像菜单分类（饮料/主食/甜点），reader_profile 就像分量选择（小份/中份/大份）。两者独立选。&lt;/p&gt;
+&lt;/aside&gt;</code></pre>
+
+<p><strong>fallback</strong>：普通 callout。</p>
+
+</section>
+<section id="s8">
+<h2 id="s8"><span class="sec-num">§ 7</span><span>enrich 管线扩展</span></h2>
+<p class="section-summary" data-annotation="section-summary">enrich 管线把 annotation schema 升到 v2，并新增 content_mode、prerequisites、checkpoints 和 analogies。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>schema_version 1 必须兼容</li><li>scaffold 默认输出空教学注解数组</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 类型与解析兼容性是本节重点。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>类型与解析兼容性是本节重点。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-annotation_layer">模型：教学注解层</a><a class="section-semantic-chip section-semantic-relationship" href="#lens-relationship-map-2-item-6">关系：scaffold provider to 0-AI 退化版</a><a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7">要求</a><a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-4">要求：annotation schema</a>
+</nav>
+
+<h3 id="s8-1"><span class="sub-num">7.1</span>新增 annotation 字段</h3>
+
+<p>扩展 <code>RenderAnnotations</code>（<code>src/types.ts</code>）：</p>
+
+<pre><code class="lang-typescript">export type RenderAnnotations = {
+  schema_version: 2;  // 从 1 升到 2
+  source?: string;
+  document_overview?: DocumentOverviewAnnotation;
+  reading_path?: ReadingPathAnnotation[];
+  semantic_blocks?: SemanticBlockAnnotation[];
+  section_summaries: SectionSummaryAnnotation[];
+
+  // 新增
+  content_mode?: &quot;tutorial&quot; | &quot;concept&quot; | &quot;reference&quot; | &quot;course&quot;;
+  prerequisites?: PrerequisiteItemAnnotation[];
+  checkpoints?: CheckpointAnnotation[];  // section_id-indexed
+  analogies?: AnalogyAnnotation[];
+};
+
+export type PrerequisiteItemAnnotation = {
+  term: string;
+  plain_language: string;
+  why_needed?: string;
+  fallback_link?: string;
+};
+
+export type CheckpointAnnotation = {
+  section_id: string;
+  items: string[];  // &quot;你应当能...&quot; 短句，每个 1 行
+};
+
+export type AnalogyAnnotation = {
+  section_id: string;
+  concept: string;
+  analogy: string;  // &quot;X 就像 Y，因为 Z&quot;
+};</code></pre>
+
+<p><strong>向后兼容</strong>：<code>schema_version: 1</code> 的 annotations.json 仍可读，新字段缺省。</p>
+
+<h3 id="s8-2"><span class="sub-num">7.2</span>三种 provider 行为</h3>
+
+<table>
+<thead>
+<tr>
+<th>provider</th>
+<th>content_mode</th>
+<th>prerequisites</th>
+<th>checkpoints</th>
+<th>analogies</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scaffold</code>（默认，0 token）</td>
+<td>启发式分类（§4.3）</td>
+<td>frontmatter only</td>
+<td>空数组</td>
+<td>空数组</td>
+</tr>
+<tr>
+<td><code>codex</code></td>
+<td>启发式 + 让 codex 在边缘 case 复核</td>
+<td>让 codex 推断（≤5 项）</td>
+<td>让 codex 生成（每节 0-3 条）</td>
+<td>让 codex 生成（每节 ≤1 条）</td>
+</tr>
+<tr>
+<td><code>claude</code></td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+</tbody></table>
+
+<p><strong>关键</strong>：启发式分类是 <strong>scaffold 必须做</strong>的事；codex/claude 可以<strong>覆盖</strong> scaffold 的判断但要在 verbose 输出里说明理由。</p>
+
+<aside class="learning-checkpoint" data-detail-level="checkpoint" data-section="s8">
+  <h5>走完这节你应当能</h5>
+  <ul><li>能说明v1如何兼容</li><li>能区分三类provider</li></ul>
+</aside></section>
+<section id="s9">
+<h2 id="s9"><span class="sec-num">§ 8</span><span>render-spec skill 扩展</span></h2>
+<p class="section-summary" data-annotation="section-summary">render-spec 需要新增 reader toggle、教学块占位符、inline 样式脚本以及 html 根属性。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>模板增加 5 个占位符</li><li>data-content-mode 只做小幅样式微调</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 这是 HTML 输出的落地点。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>这是 HTML 输出的落地点。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-single_file_render">模型：单文件渲染</a><a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-5">要求：render-spec 模板</a>
+</nav>
+
+<p><code>src/skills/render-spec/template.html</code> 增加占位符：</p>
+
+<pre><code class="lang-html">{{READER_TOGGLE}}        &lt;!-- 顶部 3 档按钮 --&gt;
+{{PREREQUISITE_CARD}}    &lt;!-- 在 metadata-strip 之后 --&gt;
+{{ANALOGY_CALLOUTS}}     &lt;!-- 在对应 section 内 inline 注入 --&gt;
+{{LEARNING_CHECKPOINTS}} &lt;!-- 在每个 section 末尾注入 --&gt;
+{{READER_TOGGLE_SCRIPT}} &lt;!-- 顶部按钮逻辑 + localStorage --&gt;</code></pre>
+
+<p><code>style.css</code> 增加：</p>
+
+<ul>
+<li><code>.reader-toggle</code> 顶部按钮组样式</li>
+<li><code>.prerequisite-card</code> / <code>.callout.analogy</code> / <code>.learning-checkpoint</code> / <code>.term</code> 样式</li>
+<li><code>html[data-reader=&quot;...&quot;]</code> 选择器组（§5.2）</li>
+<li><code>html[data-content-mode=&quot;...&quot;]</code> 仅小幅微调（如 <code>reference</code> 模式下 TOC 始终可见）</li>
+</ul>
+
+<p><strong><code>&lt;html&gt;</code> 根标签</strong>：emit 阶段写入 <code>data-reader=&quot;beginner&quot;</code> 和 <code>data-content-mode=&quot;&lt;auto&gt;&quot;</code>。</p>
+
+</section>
+<section id="s10">
+<h2 id="s10"><span class="sec-num">§ 9</span><span>CLI 扩展</span></h2>
+<p class="section-summary" data-annotation="section-summary">CLI 只扩展 dossier render 的 reader 与 content-mode 覆盖参数，dossier enrich 保持不变。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>--reader 覆盖默认读者档位</li><li>--content-mode 支持 auto 和四种显式模式</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 命令行为变化很小但要可测试。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>命令行为变化很小但要可测试。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-requirement" href="#lens-requirement-grid-7-item-6">要求：CLI</a>
+</nav>
+
+<p><code>dossier render</code> 新增：</p>
+
+<ul>
+<li><code>--reader &lt;beginner|intermediate|expert&gt;</code>：覆盖默认值（写入 <code>&lt;html data-reader&gt;</code>）</li>
+<li><code>--content-mode &lt;auto|tutorial|concept|reference|course&gt;</code>：覆盖自动分类（default <code>auto</code>）</li>
+</ul>
+
+<p><code>dossier enrich</code> 不变 —— provider 内部消费 mode/profile 由 annotation 决定。</p>
+
+</section>
+<section id="s11">
+<h2 id="s11"><span class="sec-num">§ 10</span><span>实施里程碑</span></h2>
+<p class="section-summary" data-annotation="section-summary">P0 交付基础教学化层，P1 再做 provider 智能化、跨文档 course 和 profile 配置。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>P0 目标一周内完成</li><li>profile.md 读取明确留到 P1</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节安排实现顺序。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节安排实现顺序。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-roadmap" href="#lens-roadmap-4">路线图</a>
+</nav>
+
+<h3 id="s11-1"><span class="sub-num">10.1</span>P0（codex 一次实施完，目标 1 周）</h3>
+<nav class="subsection-semantic-trace" data-annotation="subsection-semantic-trace" aria-label="小节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-roadmap" href="#lens-roadmap-4-item-1">路线图：P0</a>
+</nav>
+
+<table>
+<thead>
+<tr>
+<th>任务</th>
+<th>文件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>启发式分类器</td>
+<td><code>src/enrich/content-mode.ts</code> + 单元测试</td>
+</tr>
+<tr>
+<td>扩展 annotations 类型</td>
+<td><code>src/types.ts</code>（schema_version 2 兼容）</td>
+</tr>
+<tr>
+<td>scaffold provider 输出 content_mode + 空 prereq/checkpoint/analogy</td>
+<td><code>src/enrich/section-summaries.ts</code></td>
+</tr>
+<tr>
+<td>4 个展示元素 HTML 渲染</td>
+<td><code>src/emit.ts</code> 新增渲染函数</td>
+</tr>
+<tr>
+<td>render-spec template/style 扩展</td>
+<td><code>src/skills/render-spec/template.html</code> + <code>style.css</code></td>
+</tr>
+<tr>
+<td>reader-toggle 内嵌 JS</td>
+<td>新增 <code>src/skills/render-spec/reader-toggle.js</code>（inline）</td>
+</tr>
+<tr>
+<td>CLI <code>--reader</code> / <code>--content-mode</code> flag</td>
+<td><code>src/cli.ts</code></td>
+</tr>
+<tr>
+<td>跑通现有 specs</td>
+<td>验收清单 §11</td>
+</tr>
+</tbody></table>
+
+<h3 id="s11-2"><span class="sub-num">10.2</span>P1（后续迭代）</h3>
+<nav class="subsection-semantic-trace" data-annotation="subsection-semantic-trace" aria-label="小节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-roadmap" href="#lens-roadmap-4-item-2">路线图：P1</a>
+</nav>
+
+<ul>
+<li>codex/claude provider 升级（实际生成 prereq/checkpoint/analogy）</li>
+<li><code>course</code> mode 跨文档支持（依赖 cover 模块改动）</li>
+<li>profile.md 读取作为默认值</li>
+<li><span class="term" data-detail-level="glossary" data-term="glossary-popover" data-definition="术语首次出现时的悬浮解释，减少读者跳转查词。" aria-describedby="g-glossary-popover" tabindex="0">glossary-popover<span id="g-glossary-popover" role="tooltip">术语首次出现时的悬浮解释，减少读者跳转查词。</span></span> 移动端长按支持</li>
+</ul>
+
+</section>
+<section id="s12">
+<h2 id="s12"><span class="sec-num">§ 11</span><span>验收清单</span></h2>
+<p class="section-summary" data-annotation="section-summary">验收清单用类型检查、测试、渲染、交互、离线和兼容性检查判断 P0 是否完成。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>最后还要写实现说明</li><li>dogfood 与 fixture 都要覆盖</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 完成实现后逐条验证。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>完成实现后逐条验证。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：验收标准</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-acceptance_gate">模型：验收门槛</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8">证据</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-1">证据：类型检查</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-2">证据：单元测试</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-3">证据：真实 spec 渲染</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-4">证据：HTML 根属性</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-5">证据：运行时切换</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-6">证据：离线可用</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-7">证据：覆盖分类</a><a class="section-semantic-chip section-semantic-evidence" href="#lens-evidence-grid-8-item-8">证据：兼容旧注解</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11">检查清单</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-1">检查清单：pnpm typecheck clean</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-2">检查清单：pnpm test 全绿</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-3">检查清单：vision spec 渲染跑通</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-4">检查清单：reader 按钮默认正确</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-5">检查清单：expert 切换正确</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-6">检查清单：intermediate 切换正确</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-7">检查清单：HTML data 属性正确</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-8">检查清单：URL 覆盖默认 reader</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-9">检查清单：localStorage 持久化</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-10">检查清单：离线 HTML 可用</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-11">检查清单：CLI content-mode 覆盖</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-12">检查清单：frontmatter content_mode 覆盖</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-13">检查清单：Quickstart fixture 判定 tutorial</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-14">检查清单：API 表格 fixture 判定 reference</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-15">检查清单：v1 annotations 兼容</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-11-item-16">检查清单：实现说明落档</a>
+</nav>
+
+<p>按顺序勾，最后一项打勾 = P0 完成：</p>
+
+<ul>
+<li><input disabled="" type="checkbox"> <code>pnpm typecheck</code> clean</li>
+<li><input disabled="" type="checkbox"> <code>pnpm test</code> 全绿，新增 ≥6 个测试（content-mode 分类、prereq fallback、reader 切换 a11y、annotation schema v1 兼容）</li>
+<li><input disabled="" type="checkbox"> <code>pnpm dev render docs/specs/2026-05-17-dossier-vision-spec.md</code> 跑通</li>
+<li><input disabled="" type="checkbox"> 输出 HTML 顶部有 3 档 reader 按钮，默认高亮&quot;零基础&quot;</li>
+<li><input disabled="" type="checkbox"> 切换到&quot;速查&quot; → prereq/analogy/checkpoint 全部消失，正文压缩</li>
+<li><input disabled="" type="checkbox"> 切换到&quot;系统化&quot; → 居中状态</li>
+<li><input disabled="" type="checkbox"> HTML <code>&lt;html&gt;</code> 根标签有 <code>data-reader=&quot;beginner&quot;</code> 和 <code>data-content-mode=&quot;concept&quot;</code></li>
+<li><input disabled="" type="checkbox"> <code>?reader=expert</code> 在浏览器地址栏覆盖默认</li>
+<li><input disabled="" type="checkbox"> localStorage 切换跨刷新保留</li>
+<li><input disabled="" type="checkbox"> <strong>关网络 + 双击 HTML</strong> 三档切换完全可用</li>
+<li><input disabled="" type="checkbox"> <code>--content-mode tutorial</code> 强制 → HTML data-content-mode 反映该值</li>
+<li><input disabled="" type="checkbox"> frontmatter <code>content_mode: reference</code> 覆盖启发式 → 反映</li>
+<li><input disabled="" type="checkbox"> 一份临时 fixture（伪 Quickstart README）跑 → 启发式判定 <code>tutorial</code></li>
+<li><input disabled="" type="checkbox"> 一份临时 fixture（API 参考表）→ 启发式判定 <code>reference</code></li>
+<li><input disabled="" type="checkbox"> annotations.json schema_version: 1 旧文件仍可读，新字段缺省不报错</li>
+<li><input disabled="" type="checkbox"> 写一份 <code>docs/changes/2026-05-XX-dossier-pedagogy-layer-impl-notes.md</code>，列<strong>实际偏差</strong></li>
+</ul>
+
+<aside class="learning-checkpoint" data-detail-level="checkpoint" data-section="s12">
+  <h5>走完这节你应当能</h5>
+  <ul><li>能验证P0是否完成</li></ul>
+</aside></section>
+<section id="s13">
+<h2 id="s13"><span class="sec-num">§ 12</span><span>决不要做的事</span></h2>
+<p class="section-summary" data-annotation="section-summary">禁止事项防止实现破坏单文件、零依赖、向后兼容和 P0 边界。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>不要输出多份 HTML</li><li>不要改既有 SemanticBlock 字段</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 遇到实现诱惑时先看本节。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>遇到实现诱惑时先看本节。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12">检查清单</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-1">检查清单：不要每个 profile 渲染一份 HTML</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-2">检查清单：不要在 markdown 里手写复杂 HTML</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-3">检查清单：不要引入新 npm 依赖</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-4">检查清单：不要让 reader-toggle 依赖外部 JS</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-5">检查清单：不要实现 content_mode 的 AI 自动分类</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-6">检查清单：不要改 SemanticBlock 已有字段</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-7">检查清单：不要给 expert 模式做折叠动画</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-8">检查清单：不要每次术语出现都标记</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-9">检查清单：不要强制 course mode 多文件</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-12-item-10">检查清单：不要在 P0 实现 profile.md 读取</a>
+</nav>
+
+<table>
+<thead>
+<tr>
+<th>❌ Do not</th>
+<th>因为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>渲染三份 HTML，每个 profile 一份</td>
+<td>违反单文件分享约束</td>
+</tr>
+<tr>
+<td>在 markdown 里手写复杂 HTML（如 <code>&lt;div class=&quot;prerequisite-card&quot;&gt;</code>）</td>
+<td>AI 写作可读性下降；走 frontmatter / annotation 管线</td>
+</tr>
+<tr>
+<td>引入新 npm 依赖</td>
+<td>沿用 ADR 的零额外依赖原则</td>
+</tr>
+<tr>
+<td>让 reader-toggle 依赖外部 JS 文件</td>
+<td>单文件 HTML 约束；JS 必须 inline</td>
+</tr>
+<tr>
+<td>实现 content_mode 的 AI 自动分类</td>
+<td>启发式 + frontmatter 已经够；省 token</td>
+</tr>
+<tr>
+<td>改 SemanticBlock 已有 14 种字段</td>
+<td>新增字段而非覆盖；保持向后兼容</td>
+</tr>
+<tr>
+<td>给 expert 模式做&quot;折叠&quot;动画</td>
+<td>视觉噪音；data-attribute + display 即可</td>
+</tr>
+<tr>
+<td>让 glossary popover 每次出现都标记</td>
+<td>满屏波浪线；只标首次出现</td>
+</tr>
+<tr>
+<td>让 <code>course</code> mode 强制要求多文件</td>
+<td>单文档长文也可以分课时（用 h2 + frontmatter <code>lesson</code>）</td>
+</tr>
+<tr>
+<td>在 P0 实现 profile.md 读取</td>
+<td>留 P1；P0 硬编码默认</td>
+</tr>
+</tbody></table>
+
+</section>
+<section id="s14">
+<h2 id="s14"><span class="sec-num">§ 13</span><span>风险</span></h2>
+<p class="section-summary" data-annotation="section-summary">风险集中在启发式误判、浏览器兼容、popover 密度、文件体积、schema 兼容和越界修改。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>frontmatter override 是关键缓解手段</li><li>旧 annotations 兼容必须测试</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 实现前后都应复查风险。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>实现前后都应复查风险。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9">风险</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-1">风险：启发式分类对边缘文档判错</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-2">风险：reader-toggle JS 在 IE / 老浏览器跑不起</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-3">风险：术语 popover 满屏</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-4">风险：单文件 HTML 因新元素变大</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-5">风险：schema_version 升级破坏旧 annotations.json</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-9-item-6">风险：codex 实施时偷偷改 ADR</a>
+</nav>
+
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>概率</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>启发式分类对边缘文档判错</td>
+<td>中</td>
+<td>frontmatter <code>content_mode:</code> 显式覆盖；verbose 输出分数让用户能 debug</td>
+</tr>
+<tr>
+<td>reader-toggle JS 在 IE / 老浏览器跑不起</td>
+<td>低</td>
+<td>用 ES2018 子集，避免可选链；feature detect + fallback 显示全部</td>
+</tr>
+<tr>
+<td>术语 popover 满屏</td>
+<td>中</td>
+<td>只标首次出现；expert 模式禁用</td>
+</tr>
+<tr>
+<td>单文件 HTML 因为新元素变大</td>
+<td>低</td>
+<td>测：vision spec 渲染后 &lt; 150KB</td>
+</tr>
+<tr>
+<td>schema_version 升级破坏旧 annotations.json</td>
+<td>低</td>
+<td>parseAnnotationsJson 兼容 v1，缺字段视为缺省</td>
+</tr>
+<tr>
+<td>codex 实施时偷偷改 ADR</td>
+<td>中</td>
+<td>handoff brief 显式列禁止项</td>
+</tr>
+</tbody></table>
+
+</section>
+<section id="s15">
+<h2 id="s15"><span class="sec-num">§ 14</span><span>开放问题</span></h2>
+<p class="section-summary" data-annotation="section-summary">开放问题记录了快捷键、history、TOC、i18n 和自定义 profile 的当前倾向。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>部分问题已有明确倾向</li><li>大多不阻塞 P0</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 不要把 P1 问题提前塞进 P0。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>不要把 P1 问题提前塞进 P0。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-question" href="#lens-open-questions-13">问题</a><a class="section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-1">问题：reader 切换是否要带键盘快捷键？</a><a class="section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-2">问题：URL reader 切换是否要在 history 留 entry？</a><a class="section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-3">问题：content_mode 是否影响 TOC 渲染？</a><a class="section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-4">问题：教学注解如何做 i18n？</a><a class="section-semantic-chip section-semantic-question" href="#lens-open-questions-13-item-5">问题：是否支持自定义 reader profile？</a>
+</nav>
+
+<table>
+<thead>
+<tr>
+<th>Q</th>
+<th>问题</th>
+<th>倾向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q1</td>
+<td>reader 切换是否要带键盘快捷键（如 <code>1</code> / <code>2</code> / <code>3</code>）？</td>
+<td>P1，A11y 优先确保 Tab 可达</td>
+</tr>
+<tr>
+<td>Q2</td>
+<td>URL <code>?reader=expert</code> 切换是否要在 history 留 entry？</td>
+<td>否（不污染浏览历史）</td>
+</tr>
+<tr>
+<td>Q3</td>
+<td>content_mode 是否影响 toc 渲染（reference 模式总是显示）？</td>
+<td>是，§8 已说明</td>
+</tr>
+<tr>
+<td>Q4</td>
+<td>教学注解的 i18n？</td>
+<td>P0 仅中文 + 英文混排（沿用现有 render-spec 的 PingFang SC + 系统 UI）</td>
+</tr>
+<tr>
+<td>Q5</td>
+<td>是否支持自定义 reader profile（如 <code>manager</code>）？</td>
+<td>否，P0 锁死 3 档</td>
+</tr>
+</tbody></table>
+
+</section>
+<section id="s16">
+<h2 id="s16"><span class="sec-num">§ 15</span><span>下一步</span></h2>
+<p class="section-summary" data-annotation="section-summary">下一步是签字 ready、写 handoff brief、实施 P0、用 4 份 spec dogfood 并最终更新状态。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>完成后写 changes 说明</li><li>实施完将本 spec 标记 implemented</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节串起交付闭环。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节串起交付闭环。</span></p>
+
+<ol>
+<li>本 spec 签字 → <code>status: ready</code></li>
+<li>Codex handoff brief：<code>docs/specs/2026-05-20-codex-pedagogy-layer-handoff-brief.md</code>（同步写）</li>
+<li>Codex 实施 P0；完成后写 <code>docs/changes/2026-05-XX-dossier-pedagogy-layer-impl-notes.md</code></li>
+<li>用现有 4 份 spec dogfood：vision-spec / mvp-0-spec / cover-IA-spec / semantic-lens-spec</li>
+<li>实施完后本 spec → <code>implemented</code>，记录到 vision-spec 的 <code>implements</code></li>
+</ol>
+
+</section>
+    <footer class="spec-footer">
+      <span>Dossier 教学化层 — content_mode × reader_profile 双轴扩展 · 已就绪 · 2026-05-20</span>
+      <span>由 dossier 渲染</span>
+    </footer>
+  </main>
+</div>
+<script>(function () {
+  const semanticNavEls = Array.from(document.querySelectorAll(".semantic-overview[id], .semantic-block[id], .source-prose-boundary[id], .source-section-map[id]"));
+  const sectionEls = Array.from(document.querySelectorAll("section[id]"));
+  const h3Els = Array.from(document.querySelectorAll("main h3[id]"));
+  const headings = [...semanticNavEls, ...sectionEls, ...h3Els];
+  const tocLinks = new Map();
+  document.querySelectorAll("aside.toc a").forEach((a) => {
+    const href = a.getAttribute("href");
+    if (!href) return;
+    tocLinks.set(href.slice(1), a);
+  });
+
+  const progressFill = document.querySelector(".reading-progress-fill");
+  let lastActiveId = "";
+  const parentH2Id = (id) => {
+    const idx = id.indexOf("-");
+    return idx > 0 ? id.slice(0, idx) : null;
+  };
+
+  const onScroll = () => {
+    let activeId = sectionEls[0]?.id ?? "";
+    const offset = 120;
+    for (const el of headings) {
+      if (el.getBoundingClientRect().top - offset <= 0) activeId = el.id;
+    }
+    const parentId = activeId ? parentH2Id(activeId) : null;
+    tocLinks.forEach((a, id) => {
+      const isActive = id === activeId || (parentId !== null && id === parentId);
+      a.classList.toggle("active", isActive);
+      const sectionItem = a.closest(".toc-section");
+      if (sectionItem && !parentH2Id(id)) {
+        const isCurrentSection = id === activeId || id === parentId;
+        sectionItem.classList.toggle("is-current", isCurrentSection);
+      }
+    });
+
+    if (activeId && activeId !== lastActiveId) {
+      const activeLink = tocLinks.get(activeId) ?? (parentId ? tocLinks.get(parentId) : undefined);
+      activeLink?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+      lastActiveId = activeId;
+    }
+
+    if (progressFill) {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      const pct = max > 0 ? Math.min(100, Math.max(0, (h.scrollTop / max) * 100)) : 0;
+      progressFill.style.width = pct.toFixed(2) + "%";
+    }
+  };
+  const syncAfterLayout = () => requestAnimationFrame(onScroll);
+  document.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  window.addEventListener("hashchange", syncAfterLayout, { passive: true });
+  window.addEventListener("load", syncAfterLayout, { passive: true });
+  onScroll();
+  syncAfterLayout();
+  const tocToggle = document.querySelector(".toc-toggle");
+  const tocAside = document.querySelector("aside.toc");
+  const tocBackdrop = document.querySelector(".toc-backdrop");
+  const closeToc = () => {
+    if (!tocAside) return;
+    tocAside.removeAttribute("data-open");
+    document.body.removeAttribute("data-toc-open");
+    tocToggle?.setAttribute("aria-expanded", "false");
+  };
+  const openToc = () => {
+    if (!tocAside) return;
+    tocAside.setAttribute("data-open", "");
+    document.body.setAttribute("data-toc-open", "");
+    tocToggle?.setAttribute("aria-expanded", "true");
+  };
+  tocToggle?.addEventListener("click", () => {
+    if (tocAside?.hasAttribute("data-open")) closeToc();
+    else openToc();
+  });
+  tocBackdrop?.addEventListener("click", closeToc);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeToc();
+  });
+  tocAside?.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeToc));
+  const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.querySelectorAll("main pre").forEach((pre) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "code-copy";
+    btn.setAttribute("aria-label", "复制代码");
+    btn.innerHTML = COPY_SVG;
+    btn.addEventListener("click", () => {
+      const code = pre.querySelector("code");
+      const text = (code ? code.textContent : pre.textContent) ?? "";
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add("copied");
+        btn.innerHTML = CHECK_SVG;
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.innerHTML = COPY_SVG;
+        }, 1400);
+      });
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+<script>(function(){var html=document.documentElement;function setReader(value){if(value!=="beginner"&&value!=="intermediate"&&value!=="expert")return;html.setAttribute("data-reader",value);try{localStorage.setItem("dossier.reader", value);}catch(e){}var btns=document.querySelectorAll("[data-reader-set]");for(var i=0;i<btns.length;i++){btns[i].setAttribute("aria-pressed",btns[i].getAttribute("data-reader-set")===value?"true":"false");}}var fromUrl=null;try{var url=new URL(location.href);fromUrl=url.searchParams.get("reader");}catch(e){}var fromStorage=null;try{fromStorage=localStorage.getItem("dossier.reader");}catch(e){}setReader(fromUrl||fromStorage||html.getAttribute("data-reader")||"beginner");document.addEventListener("click",function(e){var target=e.target;while(target&&target!==document.body){if(target.getAttribute&&target.getAttribute("data-reader-set")){setReader(target.getAttribute("data-reader-set"));return;}target=target.parentNode;}});})();
+</script>
+</body>
+</html>

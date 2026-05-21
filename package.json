@@ -1,0 +1,63 @@
+{
+  "name": "xdossier",
+  "version": "0.1.0",
+  "description": "Turn your AI-generated specs, ADRs, and design docs into pedagogical HTML archives. Reader picks beginner / intermediate / expert mode — same single-file HTML adapts. Term popovers, learning checkpoints, multi-doc relationship graph.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "xdossier": "./bin/xdossier.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "node --import tsx src/cli.ts",
+    "build": "tsc -p . && for d in src/skills/*/; do cp -R \"${d%/}\" dist/skills/; done",
+    "test": "TMPDIR=/private/tmp vitest run",
+    "test:watch": "vitest",
+    "render:self": "node --import tsx src/cli.ts render docs/specs/2026-05-17-dossier-vision-spec.md",
+    "typecheck": "tsc -p . --noEmit",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "markdown",
+    "html",
+    "renderer",
+    "documentation",
+    "spec",
+    "adr",
+    "claude-code",
+    "codex",
+    "cursor",
+    "pedagogical",
+    "reader-mode",
+    "dossier"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xianfeng92/xdossier.git"
+  },
+  "homepage": "https://github.com/xianfeng92/xdossier#readme",
+  "bugs": {
+    "url": "https://github.com/xianfeng92/xdossier/issues"
+  },
+  "author": "xianfeng92",
+  "dependencies": {
+    "marked": "^18.0.3",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "^5.7.0",
+    "tsx": "^4.20.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

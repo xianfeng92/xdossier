@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: typecheck + test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+      - name: Render self-test
+        run: pnpm build && node bin/dossier.js render docs/specs/2026-05-17-dossier-vision-spec.md
+
+      - name: Verify rendered HTML has no external resources
+        run: |
+          OUT=docs/specs/2026-05-17-dossier-vision-spec.html
+          if grep -qE '<script[^>]*src=|<link[^>]*rel="stylesheet"[^>]*href=|<img[^>]*src="http' "$OUT"; then
+            echo "::error::Rendered HTML contains external resource references"
+            exit 1
+          fi
+          echo "OK: no external resources loaded by rendered HTML"

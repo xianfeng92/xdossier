@@ -1,0 +1,86 @@
+name: Bug report
+description: Something's not working as expected
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. The more concrete the repro, the faster we can fix it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what did you actually get?
+      placeholder: |
+        Ran `dossier render docs/specs/foo.md`. Expected single-file HTML. Got an error about missing skill.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: |
+        Smallest input that triggers the bug. Paste markdown content or a minimal command. If you can't share the file, describe its shape (frontmatter, number of H2 sections, semantic blocks used).
+      render: markdown
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `<NAME> --version`
+      placeholder: e.g. 0.1.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install?
+      options:
+        - npx (no install)
+        - npm i -g
+        - pnpm link / git clone
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error output
+      description: Paste the full stderr output. Use a code block.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: Output of `node --version`
+      placeholder: e.g. v22.4.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: e.g. macOS 14.4, Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues
+          required: true
+        - label: I'm on the latest version
+          required: true

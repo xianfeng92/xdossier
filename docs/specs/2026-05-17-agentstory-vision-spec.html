@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentStory · Vision Spec · 2026-05-17</title>
+<style>
+:root {
+  --bg: #faf9f6;
+  --ink: #1a1a1a;
+  --ink-muted: #5e5e58;
+  --ink-faint: #9a9a93;
+  --paper: #ffffff;
+  --border: #e8e6df;
+  --border-strong: #d4d1c7;
+  --accent: #1e3a8a;
+  --accent-soft: #eef2ff;
+  --warn: #991b1b;
+  --warn-soft: #fef2f2;
+  --ok: #14532d;
+  --ok-soft: #f0fdf4;
+  --question: #92400e;
+  --question-soft: #fffbeb;
+  --code-bg: #f4f2eb;
+  --code-bg-strong: #ecebe2;
+  --hairline: 1px solid var(--border);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+}
+code, pre, .mono { font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  max-width: 1240px;
+  margin: 0 auto;
+  gap: 56px;
+  padding: 48px 32px 96px;
+}
+aside.toc {
+  position: sticky;
+  top: 32px;
+  align-self: start;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  font-size: 13px;
+  padding-right: 8px;
+}
+main { min-width: 0; max-width: 760px; }
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 1fr; gap: 16px; padding: 24px; }
+  aside.toc { position: static; max-height: none; }
+}
+
+/* TOC */
+.toc-header {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 1px 0; }
+.toc a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  display: flex;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 120ms, color 120ms;
+  line-height: 1.4;
+}
+.toc a:hover { background: var(--accent-soft); color: var(--accent); }
+.toc a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc-num {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  min-width: 22px;
+}
+
+/* Frontmatter */
+.frontmatter {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+.status-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.badge.draft { background: #fef3c7; color: #92400e; }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.status-row .date {
+  font-size: 12px;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--ink-faint);
+  margin-left: auto;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.subtitle {
+  font-size: 16px;
+  color: var(--ink-muted);
+  margin: 0 0 20px;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px 28px;
+  padding-top: 18px;
+  border-top: var(--hairline);
+  font-size: 13px;
+}
+.meta-item .meta-label {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+.meta-item .meta-value { color: var(--ink); font-family: "JetBrains Mono", monospace; font-size: 12.5px; }
+
+/* Top-level callouts */
+.top-callouts { margin-bottom: 32px; display: flex; flex-direction: column; gap: 8px; }
+.callout {
+  padding: 12px 16px;
+  border-left: 3px solid var(--ink-faint);
+  background: var(--paper);
+  font-size: 14px;
+  border-radius: 0 4px 4px 0;
+}
+.callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+.callout.warn .icon { color: var(--warn); font-weight: bold; margin-right: 8px; }
+
+/* Hero tagline */
+.tagline {
+  background: var(--accent);
+  color: white;
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+}
+.tagline-label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Sections */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-size: 24px;
+  margin: 0 0 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border-strong);
+}
+section h2 .sec-num {
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 15px;
+  font-weight: 600;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+section h3 {
+  font-size: 16px;
+  margin: 28px 0 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+section h3 .sub-num {
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  margin-right: 8px;
+}
+section h4 {
+  font-size: 14px;
+  margin: 18px 0 8px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 22px; margin: 0 0 14px; }
+li { margin: 4px 0; }
+a { color: var(--accent); text-decoration-color: rgba(30, 58, 138, 0.3); text-underline-offset: 2px; }
+a:hover { text-decoration-color: var(--accent); }
+strong { font-weight: 600; }
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 22px;
+  font-size: 14px;
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: var(--hairline);
+  vertical-align: top;
+  line-height: 1.55;
+}
+th {
+  background: var(--code-bg);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+tr:last-child td { border-bottom: none; }
+td code { font-size: 12px; }
+
+/* Inline code */
+:not(pre) > code {
+  background: var(--code-bg);
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  color: #be185d;
+}
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 16px 0;
+  color: #2d2d2d;
+}
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #7c3aed; }
+.tok-type { color: #0369a1; }
+.tok-str { color: #15803d; }
+.tok-com { color: #94a3b8; font-style: italic; }
+.tok-prop { color: #be185d; }
+
+/* ASCII diagram */
+.ascii-diagram {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 22px 24px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 18px 0;
+  color: var(--ink);
+}
+
+/* User story cards */
+.us-grid { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+.us-card {
+  background: var(--paper);
+  border: var(--hairline);
+  border-left: 4px solid var(--accent);
+  padding: 16px 18px;
+  border-radius: 0 6px 6px 0;
+}
+.us-card .us-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+.us-card .us-title { font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+.us-card .us-body { font-size: 14px; color: var(--ink-muted); line-height: 1.65; }
+.us-card.anti { border-left-color: var(--warn); background: var(--warn-soft); }
+.us-card.anti .us-label { color: var(--warn); }
+.us-card.anti .us-body { color: var(--ink-muted); }
+.us-card.anti .us-title::before { content: "✗ "; color: var(--warn); margin-right: 4px; }
+
+/* Don't-do (no-go) table */
+.no-go { font-size: 13.5px; }
+.no-go td:first-child { color: var(--warn); font-weight: 500; }
+.no-go .x { color: var(--warn); font-weight: 700; margin-right: 6px; }
+
+/* MVP scope grid */
+.scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+@media (max-width: 640px) { .scope-grid { grid-template-columns: 1fr; } }
+.scope-col {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 16px 18px;
+}
+.scope-col.in { border-top: 3px solid var(--ok); }
+.scope-col.out { border-top: 3px solid var(--warn); }
+.scope-col h4 {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+.scope-col.in h4 { color: var(--ok); }
+.scope-col.out h4 { color: var(--warn); }
+.scope-col ul { margin: 0; padding-left: 0; list-style: none; }
+.scope-col li { font-size: 13.5px; margin: 8px 0; padding-left: 22px; position: relative; line-height: 1.55; }
+.scope-col.in li::before { content: "✓"; position: absolute; left: 4px; color: var(--ok); font-weight: 700; }
+.scope-col.out li::before { content: "✗"; position: absolute; left: 4px; color: var(--warn); font-weight: 700; }
+
+/* Open questions */
+.q-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.q-item {
+  background: var(--question-soft);
+  border-left: 3px solid var(--question);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.q-item .q-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--question);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-right: 6px;
+}
+.q-item .q-body { display: inline; }
+.q-item .q-tendency {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(146, 64, 14, 0.25);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.q-item .q-tendency::before {
+  content: "倾向";
+  display: inline-block;
+  font-size: 9.5px;
+  background: var(--question);
+  color: white;
+  padding: 2px 7px;
+  border-radius: 2px;
+  margin-right: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: 2px;
+}
+
+/* Naming candidates */
+.name-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.name-card {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.name-card .name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.name-card .name-angle {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.name-card .name-eval { font-size: 13px; line-height: 1.5; color: var(--ink-muted); }
+
+/* Success criteria ladder */
+.ladder { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.ladder-step {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+.ladder-step .strength {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: var(--code-bg);
+  color: var(--ink-muted);
+}
+.ladder-step.s1 .strength { background: #fef3c7; color: #92400e; }
+.ladder-step.s2 .strength { background: #dbeafe; color: #1e40af; }
+.ladder-step.s3 .strength { background: #c7d2fe; color: #3730a3; }
+.ladder-step.s4 .strength { background: #d1fae5; color: #065f46; }
+.ladder-step.s5 .strength { background: var(--accent); color: white; }
+
+/* Footer */
+.spec-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: var(--hairline);
+  font-size: 13px;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.spec-footer a { color: var(--ink-muted); }
+
+/* Inline emoji to icon-mark style for ✓/✗ */
+.ok-mark { color: var(--ok); font-weight: 700; }
+.no-mark { color: var(--warn); font-weight: 700; }
+
+/* Small "tendency" inline label for §11 alternative */
+hr { border: none; border-top: var(--hairline); margin: 24px 0; }
+
+/* Pull-quote / blockquote */
+blockquote {
+  margin: 14px 0;
+  padding: 14px 20px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+blockquote p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<aside class="toc">
+  <p class="toc-header">Vision Spec · 16 节</p>
+  <ol>
+    <li><a href="#s0"><span class="toc-num">§0</span><span>一句话</span></a></li>
+    <li><a href="#s1"><span class="toc-num">§1</span><span>为什么存在</span></a></li>
+    <li><a href="#s2"><span class="toc-num">§2</span><span>不做什么</span></a></li>
+    <li><a href="#s3"><span class="toc-num">§3</span><span>目标用户</span></a></li>
+    <li><a href="#s4"><span class="toc-num">§4</span><span>核心架构</span></a></li>
+    <li><a href="#s5"><span class="toc-num">§5</span><span>数据源与捕获</span></a></li>
+    <li><a href="#s6"><span class="toc-num">§6</span><span>Trace IR 数据模型</span></a></li>
+    <li><a href="#s7"><span class="toc-num">§7</span><span>个人化三层</span></a></li>
+    <li><a href="#s8"><span class="toc-num">§8</span><span>嵌入工作流的四档</span></a></li>
+    <li><a href="#s9"><span class="toc-num">§9</span><span>MVP 范围</span></a></li>
+    <li><a href="#s10"><span class="toc-num">§10</span><span>与 html-anything 的关系</span></a></li>
+    <li><a href="#s11"><span class="toc-num">§11</span><span>开放问题</span></a></li>
+    <li><a href="#s12"><span class="toc-num">§12</span><span>灵感与 Prior art</span></a></li>
+    <li><a href="#s13"><span class="toc-num">§13</span><span>成功标准</span></a></li>
+    <li><a href="#s14"><span class="toc-num">§14</span><span>风险</span></a></li>
+    <li><a href="#s15"><span class="toc-num">§15</span><span>命名候选</span></a></li>
+    <li><a href="#s16"><span class="toc-num">§16</span><span>下一步</span></a></li>
+  </ol>
+</aside>
+
+<main>
+
+<div class="frontmatter">
+  <div class="status-row">
+    <span class="badge draft">Draft</span>
+    <span class="badge">Vision Spec</span>
+    <span class="date">2026-05-17</span>
+  </div>
+  <h1>AgentStory</h1>
+  <p class="subtitle">AI 工作 session 的人类友好可视化报告</p>
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <span class="meta-label">Status</span>
+      <span class="meta-value">draft</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Owner</span>
+      <span class="meta-value">claude</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Created</span>
+      <span class="meta-value">2026-05-17</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Updated</span>
+      <span class="meta-value">2026-05-17</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Implements</span>
+      <span class="meta-value">[]</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Reviews</span>
+      <span class="meta-value">[]</span>
+    </div>
+  </div>
+</div>
+
+<div class="top-callouts">
+  <div class="callout warn">
+    <span class="icon">⚠</span>项目名 <code>agentstory</code> 是占位。最终名见 §15。
+  </div>
+  <div class="callout warn">
+    <span class="icon">⚠</span>本文档是 <strong>vision spec</strong>（项目宪法级），不是实施 spec。MVP 实施 spec 通过后另起，命名 <code>2026-MM-DD-agentstory-mvp-spec.md</code>。
+  </div>
+</div>
+
+<section id="s0">
+  <div class="tagline">
+    <span class="tagline-label">§ 0 · 一句话</span>
+    把每一次和 AI 协作的过程，自动产出一份你的同事 / 老板 / 未来的你都看得懂的 HTML 报告 —— git for AI thoughts。
+  </div>
+</section>
+
+<section id="s1">
+  <h2><span class="sec-num">§ 1</span>为什么这个项目存在</h2>
+
+  <h3><span class="sub-num">1.1</span>现状的三种"理解 AI 工作"方式都不够好</h3>
+  <table>
+    <thead><tr><th style="width:32%">方式</th><th style="width:28%">谁在用</th><th>痛点</th></tr></thead>
+    <tbody>
+      <tr><td>翻 chat log</td><td>大部分 Claude / Cursor 用户</td><td>线性、冗长、关键决策被淹在水印里、不可扫读、不可分享</td></tr>
+      <tr><td>看终端 stdout</td><td>CLI 用户</td><td>实时性强，但事后无法回看；信息密度极高，非作者无法理解</td></tr>
+      <tr><td>让 AI 给一段 summary</td><td>所有用户</td><td>损耗大，看不到失败 / 回退 / 分叉，AI 自己描述自己天然有偏</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="sub-num">1.2</span>三个真实场景</h3>
+  <p>这三个场景也是 §3.2 用户故事的原型。</p>
+  <ol>
+    <li><strong>A 用 Claude Code 改了一个生产 bug，老板要他写复盘</strong> → 现在的做法是手动回忆 + 翻 git log + 拼凑文字。</li>
+    <li><strong>B 用 Cursor 做了一周研究笔记和实验，想分享给团队</strong> → 没有合适的"过程档案"格式，只能贴 chat 截图或重写一遍。</li>
+    <li><strong>C 反复迭代了 5 版简历（DecisionF 场景），想看哪一次改动是关键转折</strong> → 现在完全没有工具。</li>
+  </ol>
+
+  <h3><span class="sub-num">1.3</span>设计原点</h3>
+  <p><a href="https://thariqs.github.io/html-effectiveness/">Thariq Shihipar 的 <em>Unreasonable Effectiveness of HTML</em></a> 提出：HTML 比 Markdown 适合 AI 输出，因为 HTML 能承载<strong>空间结构</strong>而非把信息拍扁成线性文本。但他主要谈"AI 最终产物"。本项目把这个思路 <strong>扩展到 AI 的工作过程本身</strong> —— 过程也是空间结构（timeline、swimlane、DAG、diff），不该塞进 chat log。</p>
+  <p><a href="https://github.com/nexu-io/html-anything">nexu-io/html-anything</a> 验证了"Markdown → 设计级 HTML"的产品形态可行，并贡献了：(a) 多 agent CLI 检测与统一调用层，(b) <code>SKILL.md</code> 协议作为可复用的输出模板单元。本项目<strong>借用其底层架构 + SKILL 协议</strong>，但目标是不同的人群和不同的产出形态。</p>
+</section>
+
+<section id="s2">
+  <h2><span class="sec-num">§ 2</span>这个项目<em>不</em>做什么</h2>
+  <p>跟"做什么"一样重要 —— 用 non-goals 反向定义边界。</p>
+  <table class="no-go">
+    <thead><tr><th style="width:42%">❌ 不做</th><th>因为</th></tr></thead>
+    <tbody>
+      <tr><td><span class="x">✗</span>开发者 observability dashboard（Langfuse / LangSmith / Phoenix Arize 形态）</td><td>那是为 agent 开发者调试用的；本项目为<strong>使用 agent 把工作做完的人</strong>服务</td></tr>
+      <tr><td><span class="x">✗</span>又一个 chat history viewer</td><td>现存的太多，只是把 JSONL 漂亮地铺平没有意义</td></tr>
+      <tr><td><span class="x">✗</span>新的 agent runtime / 新的 CLI agent</td><td>不和 Claude Code / Cursor / Codex 竞争，只消费它们的 trace</td></tr>
+      <tr><td><span class="x">✗</span>"如何让 AI 干得更好"</td><td>那是 prompt engineering / agent tuning 领域；本项目只解决"事后如何让人理解 AI 干了什么"</td></tr>
+      <tr><td><span class="x">✗</span>实时监控 / 告警</td><td>实时性不是核心价值，<strong>事后可读、可分享、可回溯</strong>才是</td></tr>
+      <tr><td><span class="x">✗</span>多人协作 / 评论 / 工作流</td><td>第一版纯个人本地；多人协作放在 v2+</td></tr>
+      <tr><td><span class="x">✗</span>SaaS / cloud-only</td><td>本地优先，所有数据默认不出本机（同 html-anything 的哲学）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s3">
+  <h2><span class="sec-num">§ 3</span>目标用户的精确定义</h2>
+
+  <h3><span class="sub-num">3.1</span>谁是"使用者"</h3>
+  <blockquote>
+    <p>用 agentic CLI（Claude Code、Cursor Agent、Codex、Gemini CLI 等）把工作做完，事后<strong>自己想复盘、或需要给非 AI-原生的人解释 AI 工作过程</strong>的人。</p>
+  </blockquote>
+  <p><strong>精确刻画：</strong></p>
+  <ul>
+    <li><span class="ok-mark">✓</span> <strong>会</strong>：读 git diff、看 tool name、理解"AI 调用了 Read / Edit / Bash"</li>
+    <li><span class="ok-mark">✓</span> <strong>会</strong>：用 Markdown 写文档</li>
+    <li><span class="no-mark">✗</span> <strong>不会 / 不想</strong>：读千行 JSONL trace、配置 OTel collector、写 Python 解析器</li>
+  </ul>
+  <p>注意：这<strong>不包括</strong> chat.claude.ai 网页用户（他们不接触 trace 这个概念），但<strong>预留</strong>它的扩展。</p>
+
+  <h3><span class="sub-num">3.2</span>用户故事（MVP 必须显式覆盖）</h3>
+  <div class="us-grid">
+    <div class="us-card">
+      <div class="us-label">US-1 · 复盘故事</div>
+      <div class="us-title">A 修了一个生产 bug 用了 2 小时 Claude Code session</div>
+      <div class="us-body">事后 A 跑一个命令 → 浏览器自动打开一份 HTML 报告 → 顶部时间轴清晰显示"先调查 → 试错两次 → 找到根因 → 修复 → 验证"，每个阶段可展开看具体 tool call 和 diff → A 把这个文件直接发给老板。</div>
+    </div>
+    <div class="us-card">
+      <div class="us-label">US-2 · 学习故事</div>
+      <div class="us-title">C 想知道自己 5 次简历迭代里哪一次改动最关键</div>
+      <div class="us-body">跑一个命令把 5 个 session 合并成一份"演化报告" → 看到第 3 次迭代时 AI 把"项目经验"重构成了 STAR 格式，这是评分跃升的转折。</div>
+    </div>
+    <div class="us-card">
+      <div class="us-label">US-3 · 分享故事</div>
+      <div class="us-title">B 想把一周的 NLU 研究分享到博客 / Twitter</div>
+      <div class="us-body">一键 export 成可托管的单文件 HTML（或 PNG），不用重新组织一遍内容。</div>
+    </div>
+  </div>
+
+  <h3><span class="sub-num">3.3</span>反用户故事（明确<strong>不</strong>服务）</h3>
+  <div class="us-grid">
+    <div class="us-card anti">
+      <div class="us-label">ANTI · 1</div>
+      <div class="us-title">我是 agent 开发者，想知道我的 prompt 在哪一步偏离了。</div>
+      <div class="us-body">→ 用 Langfuse。</div>
+    </div>
+    <div class="us-card anti">
+      <div class="us-label">ANTI · 2</div>
+      <div class="us-title">我想要一个 SaaS 协作平台让团队评论 AI 输出。</div>
+      <div class="us-body">→ v2+ 再说。</div>
+    </div>
+    <div class="us-card anti">
+      <div class="us-label">ANTI · 3</div>
+      <div class="us-title">我从来不用 CLI agent，只用 ChatGPT 网页版。</div>
+      <div class="us-body">→ 不是本期目标用户。</div>
+    </div>
+  </div>
+</section>
+
+<section id="s4">
+  <h2><span class="sec-num">§ 4</span>核心架构（三层）</h2>
+  <pre class="ascii-diagram">┌─────────────────────────────────────────────────────┐
+│  L1 Capture（适配器）                               │
+│  Claude Code | Cursor | Codex | Gemini | Aider ...  │
+│           ↓ 每个适配器输出统一格式                  │
+├─────────────────────────────────────────────────────┤
+│  L2 Trace IR（开放数据模型，本项目的"协议"）        │
+│  events[] · decisions[] · artifacts[] · narrative   │
+│           ↓                                         │
+├─────────────────────────────────────────────────────┤
+│  L3 Render（profile + skill + 模板/LLM 混合）       │
+│  → 单文件 HTML（可分享、可托管）                    │
+└─────────────────────────────────────────────────────┘</pre>
+  <blockquote>
+    <strong>关键设计判断：</strong>L2 Trace IR 是项目的"宪法"。Capture 适配器和 Render skill 都围绕它演化。把 IR 设计好，是这个项目长期可维护的根。
+  </blockquote>
+</section>
+
+<section id="s5">
+  <h2><span class="sec-num">§ 5</span>数据源与捕获策略</h2>
+  <p>策略：<strong>被动优先，主动可选</strong>。</p>
+  <table>
+    <thead><tr><th>档</th><th>数据来源</th><th>信息密度</th><th>用户操作</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>L1 被动捕获</strong></td>
+        <td>Claude Code <code>~/.claude/projects/&lt;encoded&gt;/*.jsonl</code>、Cursor 本地 chat 存档、Codex session log</td>
+        <td>高</td>
+        <td><strong>0</strong> — 自动扫描</td>
+      </tr>
+      <tr>
+        <td><strong>L2 工作目录 diff</strong></td>
+        <td><code>git log --since=&lt;session-start&gt;</code> + 文件 mtime + 未追踪文件</td>
+        <td>中（产物 ground truth）</td>
+        <td><strong>0</strong> — 自动关联</td>
+      </tr>
+      <tr>
+        <td><strong>L3 主动埋点</strong></td>
+        <td>settings.json hooks（PostToolUse / Stop）/ MCP server / wrapper CLI</td>
+        <td>极高（显式决策点）</td>
+        <td>一次配置</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>关键策略：</strong>MVP 只做 L1 + L2，且<strong>只支持 Claude Code 一个适配器</strong>。验证完价值再扩展。</p>
+  <p><strong>L1 + L2 的关联机制：</strong>用 session 起止时间 + 当前工作目录的 git HEAD 做时间窗口对齐，把 chat trace 的每个 tool call 链接回 git diff 的具体 hunk，建立 <strong>artifact ↔ reasoning step</strong> 的双向 provenance。这是本项目相对所有现存工具的核心差异化能力。</p>
+</section>
+
+<section id="s6">
+  <h2><span class="sec-num">§ 6</span>Trace IR 数据模型（草稿）</h2>
+<pre><code><span class="tok-kw">type</span> <span class="tok-type">TraceIR</span> = {
+  <span class="tok-prop">session</span>: {
+    <span class="tok-prop">id</span>: <span class="tok-type">string</span>;
+    <span class="tok-prop">agent</span>: <span class="tok-str">"claude-code"</span> | <span class="tok-str">"cursor"</span> | <span class="tok-str">"codex"</span> | ...;
+    <span class="tok-prop">started_at</span>: <span class="tok-type">ISO8601</span>;
+    <span class="tok-prop">ended_at</span>: <span class="tok-type">ISO8601</span>;
+    <span class="tok-prop">cwd</span>: <span class="tok-type">string</span>;
+    <span class="tok-prop">git_head_before</span>: <span class="tok-type">string</span>;   <span class="tok-com">// commit hash</span>
+    <span class="tok-prop">git_head_after</span>: <span class="tok-type">string</span>;
+    <span class="tok-prop">user_initial_request</span>: <span class="tok-type">string</span>;
+  };
+
+  <span class="tok-prop">events</span>: <span class="tok-type">Event</span>[];               <span class="tok-com">// 时间序列，原始流</span>
+  <span class="tok-prop">decisions</span>: <span class="tok-type">Decision</span>[];         <span class="tok-com">// 抽取后的决策点（LLM 二次处理）</span>
+  <span class="tok-prop">artifacts</span>: <span class="tok-type">Artifact</span>[];         <span class="tok-com">// 产出物（文件 / 代码 / HTML 等）</span>
+  <span class="tok-prop">narrative</span>: <span class="tok-type">Narrative</span>;          <span class="tok-com">// LLM 生成的故事化摘要</span>
+  <span class="tok-prop">cost</span>: { tokens, dollars? };
+};
+
+<span class="tok-kw">type</span> <span class="tok-type">Event</span> =
+  | { <span class="tok-prop">type</span>: <span class="tok-str">"user_message"</span>; text: <span class="tok-type">string</span>; ts: <span class="tok-type">ISO8601</span> }
+  | { <span class="tok-prop">type</span>: <span class="tok-str">"assistant_message"</span>; text: <span class="tok-type">string</span>; ts: <span class="tok-type">ISO8601</span> }
+  | { <span class="tok-prop">type</span>: <span class="tok-str">"tool_call"</span>; tool: <span class="tok-type">string</span>; input: <span class="tok-type">unknown</span>; ts: <span class="tok-type">ISO8601</span>; call_id: <span class="tok-type">string</span> }
+  | { <span class="tok-prop">type</span>: <span class="tok-str">"tool_result"</span>; call_id: <span class="tok-type">string</span>; output: <span class="tok-type">unknown</span>; ts: <span class="tok-type">ISO8601</span> }
+  | { <span class="tok-prop">type</span>: <span class="tok-str">"error"</span>; message: <span class="tok-type">string</span>; ts: <span class="tok-type">ISO8601</span> };
+
+<span class="tok-kw">type</span> <span class="tok-type">Decision</span> = {
+  <span class="tok-prop">id</span>: <span class="tok-type">string</span>;
+  <span class="tok-prop">ts</span>: <span class="tok-type">ISO8601</span>;
+  <span class="tok-prop">summary</span>: <span class="tok-type">string</span>;               <span class="tok-com">// "选择用 zustand 而非 redux"</span>
+  <span class="tok-prop">rationale</span>: <span class="tok-type">string</span>;             <span class="tok-com">// 抽取自 assistant prose</span>
+  <span class="tok-prop">alternatives_considered</span>: <span class="tok-type">string</span>[];
+  <span class="tok-prop">source_event_ids</span>: <span class="tok-type">string</span>[];    <span class="tok-com">// 反向定位</span>
+  <span class="tok-prop">artifacts_affected</span>: <span class="tok-type">string</span>[];  <span class="tok-com">// 影响了哪些产出</span>
+};
+
+<span class="tok-kw">type</span> <span class="tok-type">Artifact</span> = {
+  <span class="tok-prop">id</span>: <span class="tok-type">string</span>;
+  <span class="tok-prop">path</span>: <span class="tok-type">string</span>;                       <span class="tok-com">// 相对工作目录</span>
+  <span class="tok-prop">kind</span>: <span class="tok-str">"file"</span> | <span class="tok-str">"html"</span> | <span class="tok-str">"code"</span> | <span class="tok-str">"doc"</span>;
+  <span class="tok-prop">change_type</span>: <span class="tok-str">"created"</span> | <span class="tok-str">"modified"</span> | <span class="tok-str">"deleted"</span>;
+  <span class="tok-prop">versions</span>: { ts: <span class="tok-type">ISO8601</span>; content_hash: <span class="tok-type">string</span>; source_event_id: <span class="tok-type">string</span> }[];
+  <span class="tok-prop">provenance</span>: <span class="tok-type">string</span>[];               <span class="tok-com">// 哪些 decision/event 产生了它</span>
+};
+
+<span class="tok-kw">type</span> <span class="tok-type">Narrative</span> = {
+  <span class="tok-prop">summary</span>: <span class="tok-type">string</span>;                <span class="tok-com">// 100 字总览</span>
+  <span class="tok-prop">acts</span>: { title: <span class="tok-type">string</span>; ts_range: [<span class="tok-type">ISO8601</span>, <span class="tok-type">ISO8601</span>]; description: <span class="tok-type">string</span> }[];
+  <span class="tok-prop">turning_points</span>: { ts: <span class="tok-type">ISO8601</span>; why_important: <span class="tok-type">string</span> }[];
+};</code></pre>
+  <p><strong>关于决策抽取：</strong>是 LLM 后处理 pass（cheap model 一次调用）。MVP 阶段允许"准确率不高"，因为有原始 events[] 兜底。</p>
+</section>
+
+<section id="s7">
+  <h2><span class="sec-num">§ 7</span>渲染层：Profile + Skill + Memory 三层个人化</h2>
+
+  <h3><span class="sub-num">7.1</span>Layer 1 — Profile（开箱即用，5-6 个内置）</h3>
+  <table>
+    <thead><tr><th>Profile</th><th>适用场景</th><th>默认 section</th><th>决策抽取重点</th></tr></thead>
+    <tbody>
+      <tr><td><code>coder</code></td><td>写代码 / 改 bug</td><td>timeline · diff · decisions · cost</td><td>选型、回退、bug 根因</td></tr>
+      <tr><td><code>writer</code></td><td>写文档 / 文章</td><td>timeline · artifact diff · narrative</td><td>语气、结构调整</td></tr>
+      <tr><td><code>researcher</code></td><td>论文阅读 / 调研</td><td>citations · concept map · narrative</td><td>论点演化</td></tr>
+      <tr><td><code>designer</code></td><td>设计 / UI 迭代</td><td>artifact gallery · visual diff</td><td>风格选择</td></tr>
+      <tr><td><code>reviewer</code></td><td>代码 review</td><td>diff + severity · jump links</td><td>review 决策</td></tr>
+      <tr><td><code>learner</code></td><td>学习 / 教程</td><td>step-by-step · 知识点折叠</td><td>困惑与厘清的瞬间</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="sub-num">7.2</span>Layer 2 — Skill（SKILL.md 模式，社区可扩展）</h3>
+  <p>借鉴 html-anything 的 SKILL.md：每个"trace 视图"是一个目录。</p>
+<pre><code>agentstory/skills/
+├── trace-coding-session/        <span class="tok-com"># 编码 session 默认皮肤</span>
+│   ├── SKILL.md                  <span class="tok-com"># 渲染指令（prompt + 模板路径）</span>
+│   ├── template.html             <span class="tok-com"># 静态骨架</span>
+│   └── example.html              <span class="tok-com"># 样例输出（同 html-anything 惯例）</span>
+├── trace-resume-iteration/       <span class="tok-com"># 简历迭代专属（DecisionF）</span>
+├── trace-paper-reading/          <span class="tok-com"># 读论文专属</span>
+├── trace-bug-postmortem/         <span class="tok-com"># 复盘专属</span>
+└── ...</code></pre>
+
+  <h3><span class="sub-num">7.3</span>Layer 3 — Personal Memory（真正个人化的一层）</h3>
+  <p><code>~/.agentstory/profile.md</code> —— 人类可读的偏好文件：</p>
+<pre><code><span class="tok-com"># My report preferences</span>
+
+- 总是显示：tool timeline、git diff
+- 默认折叠：raw reasoning（除非我点开）
+- 我特别关心：当 AI 推翻自己之前判断的时刻、当 AI 询问澄清的时刻
+- 我不关心：token 成本、模型选择细节
+- 渲染语言：中文，但代码 / 文件路径 / 命令保持英文</code></pre>
+  <p><strong>关键设计选择：</strong>profile 是 markdown，不是 JSON。</p>
+  <ul>
+    <li>用户可以让 AI 帮自己改 profile："帮我把研究 session 的报告改得更像论文 review"</li>
+    <li>反馈闭环：每份报告底部一个反馈条 → 一句话写回 profile → 下一份自动更准</li>
+    <li>profile 本身<strong>也进入 AI 工作流</strong></li>
+  </ul>
+
+  <h3><span class="sub-num">7.4</span>渲染实现：模板 + LLM 混合</h3>
+  <ul>
+    <li><strong>结构化骨架</strong>（timeline / diff / artifact gallery / decision table）→ 静态模板（jinja-like），快、便宜、确定</li>
+    <li><strong>叙事性段落</strong>（narrative.summary / acts / turning_points）→ LLM 一次调用，复用 Profile + Memory 作为 system prompt</li>
+  </ul>
+</section>
+
+<section id="s8">
+  <h2><span class="sec-num">§ 8</span>嵌入 AI 工作流的四档</h2>
+  <p>按摩擦力递增。</p>
+  <table>
+    <thead><tr><th>档</th><th>用户操作</th><th>适合谁</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1 · 零配置 post-hoc</strong></td><td><code>agentstory open</code> → 自动找最近 Claude session → 浏览器打开</td><td>默认入口，80% 用户</td></tr>
+      <tr><td><strong>2 · 三行 hook 集成</strong></td><td><code>~/.claude/settings.json</code> 加一个 <code>Stop</code> hook → session 结束自动出报告</td><td>想要自动化的人</td></tr>
+      <tr><td><strong>3 · CLI wrapper</strong></td><td><code>agentstory claude -p "..."</code> → 实时画 timeline</td><td>喜欢看 AI 干活</td></tr>
+      <tr><td><strong>4 · MCP server</strong></td><td>agent 主动调 <code>record_decision</code> / <code>mark_turning_point</code></td><td>严肃工作（合规、研究、面试）</td></tr>
+    </tbody>
+  </table>
+  <blockquote>
+    <strong>关键原则：</strong>默认是档 1。每多一档解锁能力，但<strong>绝不强制升档</strong>。哲学等同 OpenTelemetry 的 "auto-instrument first, manual when needed"。
+  </blockquote>
+</section>
+
+<section id="s9">
+  <h2><span class="sec-num">§ 9</span>MVP 范围（P0）</h2>
+  <blockquote>
+    <strong>目标：</strong>6-8 周做一个能让 §3.2 US-1（复盘故事）跑通的最小版本。
+  </blockquote>
+  <div class="scope-grid">
+    <div class="scope-col in">
+      <h4>包含（P0）</h4>
+      <ul>
+        <li>仅支持 Claude Code 一个 Capture 适配器</li>
+        <li>Trace IR 完整定义 + 第一版实现</li>
+        <li>git diff 与 trace 时间窗口的关联机制</li>
+        <li>决策抽取的第一版（LLM 后处理）</li>
+        <li>1 个内置 profile（<code>coder</code>）+ 1 个 skill（<code>trace-coding-session</code>）</li>
+        <li>嵌入档 1（post-hoc）+ 嵌入档 2（hook）</li>
+        <li>单文件 HTML，可在浏览器打开 / 拷贝分享</li>
+        <li>Personal memory 极简版（一份 profile.md，无反馈条 UI）</li>
+      </ul>
+    </div>
+    <div class="scope-col out">
+      <h4>推迟到 P1+</h4>
+      <ul>
+        <li>Cursor / Codex / Gemini 适配器</li>
+        <li>MCP server（嵌入档 4）</li>
+        <li>CLI wrapper（嵌入档 3）</li>
+        <li>多 session 合并 / 演化报告（US-2 暂不覆盖）</li>
+        <li>Export 到 PNG / WeChat / X（US-3 暂不覆盖；可复用 html-anything 的 export 管线，但 P1 才做）</li>
+        <li>反馈条 UI 闭环</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="s10">
+  <h2><span class="sec-num">§ 10</span>与 html-anything 的关系</h2>
+  <p><strong>独立项目，但共享底层。</strong></p>
+  <ul>
+    <li><strong>可复用：</strong>html-anything 的 multi-agent 检测层（<code>src/lib/agents/detect.ts</code>）、SKILL.md 协议、SSE 流式渲染、sandboxed iframe 预览模式、export 管线（juice / modern-screenshot / remotion）。</li>
+    <li><strong>不复用：</strong>UI 形态完全不同。html-anything 是"编辑器 + 实时预览"，本项目是"事后报告浏览器"。</li>
+    <li><strong>战略关系：</strong>html-anything 产出"对外发布的设计级 artifact"；agentstory 产出"内部协作的 session report"。两者互补不竞争。</li>
+  </ul>
+  <p><strong>实施建议：</strong>MVP 阶段可以单独立项（不进 html-anything 仓库），但显式声明"build on top of html-anything（同 html-anything build on top of open-design）"，并贡献回任何通用层改进。</p>
+</section>
+
+<section id="s11">
+  <h2><span class="sec-num">§ 11</span>开放问题</h2>
+  <p>必须在 MVP spec 前回答。</p>
+  <div class="q-list">
+
+    <div class="q-item">
+      <span class="q-num">Q1</span><span class="q-body"><strong>技术栈</strong>：Next.js（同 html-anything）/ pure TS CLI + 静态 HTML 输出 / Rust + WASM ？</span>
+      <div class="q-tendency"><strong>pure TS CLI</strong>，产出物是单文件 HTML（不要 server）。但 Render 阶段可能想要个本地预览 server。</div>
+    </div>
+
+    <div class="q-item">
+      <span class="q-num">Q2</span><span class="q-body"><strong>决策抽取的 LLM 是哪个？</strong>默认走用户当前 agent，还是固定一个 cheap 模型？</span>
+      <div class="q-tendency">默认复用用户 logged-in 的 agent（同 html-anything 哲学，0 API key）。允许覆盖。</div>
+    </div>
+
+    <div class="q-item">
+      <span class="q-num">Q3</span><span class="q-body"><strong>跨 session 的"演化报告"</strong>在 P0 留接口还是直接 punt？</span>
+      <div class="q-tendency">留接口（IR 设计支持 multi-session 合并），实现 punt 到 P1。</div>
+    </div>
+
+    <div class="q-item">
+      <span class="q-num">Q4</span><span class="q-body"><strong>HTML 报告是单文件 inlined CSS</strong>（同 html-anything）还是带 assets 的目录？</span>
+      <div class="q-tendency"><strong>单文件</strong>。可分享是核心价值。</div>
+    </div>
+
+    <div class="q-item">
+      <span class="q-num">Q5</span><span class="q-body"><strong>Cursor session log 的格式是否稳定？</strong>需要 reverse engineer 还是它有官方协议？</span>
+      <div class="q-tendency">待调研。MVP 不涉及。</div>
+    </div>
+
+    <div class="q-item">
+      <span class="q-num">Q6</span><span class="q-body"><strong>隐私默认值</strong>：trace 中包含的 Bash 命令 / 文件内容里有 secrets，默认 redact 还是默认显示？</span>
+      <div class="q-tendency"><strong>默认显示</strong>（用户本地工具），提供 <code>redact-patterns</code> 配置文件支持显式打码（典型 patterns: <code>.env*</code> 文件内容、<code>API_KEY</code> 等环境变量、OAuth 类 token）。</div>
+    </div>
+
+    <div class="q-item">
+      <span class="q-num">Q7</span><span class="q-body"><strong>报告底部的"反馈条 UI 写回 profile.md"</strong>是 P0 还是 P1？</span>
+      <div class="q-tendency">P1。P0 让 profile.md 纯手写。</div>
+    </div>
+
+  </div>
+</section>
+
+<section id="s12">
+  <h2><span class="sec-num">§ 12</span>灵感与 Prior art</h2>
+  <table>
+    <thead><tr><th>项目</th><th>借鉴的部分</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://thariqs.github.io/html-effectiveness/">thariqs/html-effectiveness</a></td><td>HTML 作为空间信息容器；交互式可调 artifact</td></tr>
+      <tr><td><a href="https://github.com/nexu-io/html-anything">nexu-io/html-anything</a></td><td>SKILL.md 协议；multi-agent 检测；export 管线</td></tr>
+      <tr><td>OpenTelemetry</td><td>"auto-instrument first, manual when needed" 哲学；trace IR 设计</td></tr>
+      <tr><td>Jupyter notebook</td><td>code + output + prose 交织的呈现模式</td></tr>
+      <tr><td>Langfuse / LangSmith / Phoenix</td><td><strong>反例</strong>：开发者向的 trace dashboard，我们要做的是使用者向的</td></tr>
+      <tr><td>Git</td><td>"可分享的协作历史"作为单文件归档</td></tr>
+      <tr><td>NotebookLM</td><td>把内容转成 podcast 的多模态扩展（未来方向）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s13">
+  <h2><span class="sec-num">§ 13</span>成功标准（项目级，不是 MVP 级）</h2>
+  <p>按可验证程度排序。</p>
+  <div class="ladder">
+    <div class="ladder-step s1"><span class="strength">最弱</span><span>能跑通 §3.2 三个用户故事至少一个。</span></div>
+    <div class="ladder-step s2"><span class="strength">中等</span><span>自己每天的 Claude Code session 出报告，且<strong>真的去点开看</strong>（而不是装好就忘）。</span></div>
+    <div class="ladder-step s3"><span class="strength">较强</span><span>把一份报告发给一个非 AI-原生的朋友 / 同事 / 老板，对方能在 3 分钟内说清楚"AI 干了啥"。</span></div>
+    <div class="ladder-step s4"><span class="strength">强</span><span>有第二个用户写了一个自己的 trace skill 并 PR 回来。</span></div>
+    <div class="ladder-step s5"><span class="strength">最强</span><span>被一个其他 agent CLI（Cursor / Codex / Gemini）官方推荐为"事后报告工具"。</span></div>
+  </div>
+</section>
+
+<section id="s14">
+  <h2><span class="sec-num">§ 14</span>风险与开放性问题（vision 层）</h2>
+  <table>
+    <thead><tr><th style="width:40%">风险</th><th>缓解</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Claude Code 的 JSONL 格式变</strong></td><td>适配器层隔离；尽快推进 trace IR 作为开放协议</td></tr>
+      <tr><td><strong>决策抽取不够准</strong></td><td>events[] 永远作为兜底；用户可在报告上 reroll 一段</td></tr>
+      <tr><td><strong>被当成"Langfuse 的廉价版"</strong></td><td>文档反复强调 §3.3 反用户故事；UI 风格刻意走"故事 / 杂志"而非"dashboard"</td></tr>
+      <tr><td><strong>个性化做得太复杂用户配不动</strong></td><td>默认 profile 必须能直接用；profile.md 是 markdown，能让 AI 帮改</td></tr>
+      <tr><td><strong>隐私顾虑</strong></td><td>本地优先；redact 默认开启；显式列出 <code>~/.agentstory/redact-patterns.json</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s15">
+  <h2><span class="sec-num">§ 15</span>命名候选</h2>
+  <div class="name-grid">
+    <div class="name-card">
+      <div class="name">agentstory</div>
+      <div class="name-angle">"story" 强调过程叙事</div>
+      <div class="name-eval">通用、易懂，但泛</div>
+    </div>
+    <div class="name-card">
+      <div class="name">aitrace</div>
+      <div class="name-angle">从 OTel 类比</div>
+      <div class="name-eval">偏开发者向，和 §3.3 反例冲突</div>
+    </div>
+    <div class="name-card">
+      <div class="name">agentlens</div>
+      <div class="name-angle">"lens" 透镜，观察</div>
+      <div class="name-eval">优雅，已有同名项目（待查重）</div>
+    </div>
+    <div class="name-card">
+      <div class="name">replay</div>
+      <div class="name-angle">事后可回放</div>
+      <div class="name-eval">简洁有力，可能重名</div>
+    </div>
+    <div class="name-card">
+      <div class="name">trail</div>
+      <div class="name-angle">痕迹、踪迹</div>
+      <div class="name-eval">短、有意境，可能重名</div>
+    </div>
+    <div class="name-card">
+      <div class="name">bookmark</div>
+      <div class="name-angle">把 session 变成书</div>
+      <div class="name-eval">偏向"产物档案"语义</div>
+    </div>
+    <div class="name-card">
+      <div class="name">chapters</div>
+      <div class="name-angle">session 是"章节"</div>
+      <div class="name-eval">有文学感，但太抽象</div>
+    </div>
+    <div class="name-card">
+      <div class="name">mindmark</div>
+      <div class="name-angle">思考的标记</div>
+      <div class="name-eval">有想象空间</div>
+    </div>
+  </div>
+  <p><strong>待你选 / 提新候选。</strong></p>
+</section>
+
+<section id="s16">
+  <h2><span class="sec-num">§ 16</span>下一步</h2>
+  <p>如果 vision spec 通过：</p>
+  <ol>
+    <li>切到 <code>status: ready</code> 并签字。</li>
+    <li>起 MVP 实施 spec：<code>docs/specs/2026-MM-DD-agentstory-mvp-spec.md</code>，把 §9 的 P0 列表展开成具体技术决策。</li>
+    <li>起一份 ADR 目录：<code>docs/adr/</code>，记录技术选型（TS vs Rust / 单文件 vs 带 assets / 模板 vs LLM 渲染）。</li>
+    <li>跑一个 1-week spike：手工抓一份 Claude Code JSONL → 手工写一份理想 HTML 报告 → 验证"这玩意儿到底好不好看"，再决定要不要真做。<strong>这一步比写代码先要做。</strong></li>
+  </ol>
+</section>
+
+<div class="spec-footer">
+  <span>AgentStory · Vision Spec · 2026-05-17 · status: draft</span>
+  <span>renders <a href="2026-05-17-agentstory-vision-spec.md">/docs/specs/...spec.md</a></span>
+</div>
+
+</main>
+</div>
+
+<script>
+(function() {
+  const sections = Array.from(document.querySelectorAll('section[id]'));
+  const tocLinks = new Map();
+  document.querySelectorAll('aside.toc a').forEach(a => {
+    const id = a.getAttribute('href').slice(1);
+    tocLinks.set(id, a);
+  });
+  const onScroll = () => {
+    let active = sections[0]?.id;
+    const offset = 120;
+    for (const s of sections) {
+      if (s.getBoundingClientRect().top - offset <= 0) active = s.id;
+    }
+    tocLinks.forEach((a, id) => {
+      if (id === active) a.classList.add('active');
+      else a.classList.remove('active');
+    });
+  };
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

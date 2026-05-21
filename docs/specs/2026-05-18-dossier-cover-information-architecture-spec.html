@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier Cover Information Architecture Spec</title>
+<style>:root {
+  --bg: #faf9f6;
+  --ink: #1a1a1a;
+  --ink-muted: #5e5e58;
+  --ink-faint: #9a9a93;
+  --paper: #ffffff;
+  --border: #e8e6df;
+  --border-strong: #d4d1c7;
+  --accent: #1e3a8a;
+  --accent-soft: #eef2ff;
+  --warn: #991b1b;
+  --warn-soft: #fef2f2;
+  --ok: #14532d;
+  --ok-soft: #f0fdf4;
+  --code-bg: #f4f2eb;
+  --hairline: 1px solid var(--border);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+}
+code, pre, .mono {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, ui-monospace, monospace;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  max-width: 1240px;
+  margin: 0 auto;
+  gap: 56px;
+  padding: 48px 32px 96px;
+}
+aside.toc {
+  position: sticky;
+  top: 32px;
+  align-self: start;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  font-size: 13px;
+  padding-right: 8px;
+}
+main { min-width: 0; max-width: 760px; }
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 1fr; gap: 16px; padding: 24px; }
+  aside.toc { position: static; max-height: none; }
+}
+
+.toc-header {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 1px 0; }
+.toc a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  display: flex;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 120ms, color 120ms;
+  line-height: 1.4;
+}
+.toc a:hover, .toc a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.toc a.active { font-weight: 600; }
+.toc-num {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  min-width: 30px;
+}
+.toc li ol { margin-left: 18px; }
+
+.frontmatter {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+.status-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.badge.draft { background: #fef3c7; color: #92400e; }
+.badge.ready { background: var(--ok-soft); color: var(--ok); }
+.badge.ok { background: var(--accent); color: #ffffff; }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.status-row .date {
+  font-size: 12px;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--ink-faint);
+  margin-left: auto;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.subtitle {
+  font-size: 16px;
+  color: var(--ink-muted);
+  margin: 0 0 20px;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px 28px;
+  padding-top: 18px;
+  border-top: var(--hairline);
+  font-size: 13px;
+}
+.meta-item .meta-label {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+.meta-item .meta-value {
+  color: var(--ink);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+}
+
+.top-callouts {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.callout {
+  padding: 12px 16px;
+  border-left: 3px solid var(--ink-faint);
+  background: var(--paper);
+  font-size: 14px;
+  border-radius: 0 4px 4px 0;
+  margin: 14px 0;
+}
+.callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+.callout.note { border-color: var(--accent); background: var(--accent-soft); }
+.callout.goal { border-color: var(--ok); background: var(--ok-soft); }
+.callout p:last-child { margin-bottom: 0; }
+
+.tagline {
+  background: var(--accent);
+  color: white;
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+.tagline-label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-size: 24px;
+  margin: 0 0 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border-strong);
+}
+section h2 .sec-num {
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 15px;
+  font-weight: 600;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+section h3 {
+  font-size: 16px;
+  margin: 28px 0 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+section h3 .sub-num {
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  margin-right: 8px;
+}
+section h4 {
+  font-size: 14px;
+  margin: 18px 0 8px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 22px; margin: 0 0 14px; }
+li { margin: 4px 0; }
+a {
+  color: var(--accent);
+  text-decoration-color: rgba(30, 58, 138, 0.3);
+  text-underline-offset: 2px;
+}
+a:hover { text-decoration-color: var(--accent); }
+strong { font-weight: 600; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 22px;
+  font-size: 14px;
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: var(--hairline);
+  vertical-align: top;
+  line-height: 1.55;
+}
+th {
+  background: var(--code-bg);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+tr:last-child td { border-bottom: none; }
+td code { font-size: 12px; }
+
+:not(pre) > code {
+  background: var(--code-bg);
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  color: #be185d;
+}
+
+pre {
+  background: var(--code-bg);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 16px 0;
+  color: #2d2d2d;
+}
+pre code { background: none; padding: 0; color: inherit; }
+.ascii-diagram {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 22px 24px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 18px 0;
+  color: var(--ink);
+}
+
+blockquote {
+  margin: 14px 0;
+  padding: 14px 20px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+blockquote p:last-child { margin-bottom: 0; }
+hr { border: none; border-top: var(--hairline); margin: 24px 0; }
+
+.spec-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: var(--hairline);
+  font-size: 13px;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.spec-footer a { color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc">
+  <p class="toc-header">Spec · 14 节</p>
+  <ol>
+    <li><a href="#s1"><span class="toc-num">§0</span><span>One Sentence</span></a></li>
+    <li><a href="#s2"><span class="toc-num">§1</span><span>Problem</span></a></li>
+    <li><a href="#s3"><span class="toc-num">§2</span><span>Reader Tasks</span></a></li>
+    <li><a href="#s4"><span class="toc-num">§3</span><span>North Star Acceptance</span></a></li>
+    <li><a href="#s5"><span class="toc-num">§4</span><span>Layout Contract</span></a></li>
+    <li><a href="#s6"><span class="toc-num">§5</span><span>View Model</span></a></li>
+    <li><a href="#s7"><span class="toc-num">§6</span><span>Deterministic Extraction Rules</span></a><ol><li><a href="#s7-1"><span class="toc-num">6.1</span><span>Artifact Collection</span></a></li><li><a href="#s7-2"><span class="toc-num">6.2</span><span>Edge Collection</span></a></li><li><a href="#s7-3"><span class="toc-num">6.3</span><span>Decisions</span></a></li><li><a href="#s7-4"><span class="toc-num">6.4</span><span>Open Questions</span></a></li></ol></li>
+    <li><a href="#s8"><span class="toc-num">§7</span><span>Reading Paths</span></a></li>
+    <li><a href="#s9"><span class="toc-num">§8</span><span>Responsive and Offline Behavior</span></a></li>
+    <li><a href="#s10"><span class="toc-num">§9</span><span>CLI Surface</span></a></li>
+    <li><a href="#s11"><span class="toc-num">§10</span><span>Milestones</span></a></li>
+    <li><a href="#s12"><span class="toc-num">§11</span><span>Acceptance Checklist</span></a></li>
+    <li><a href="#s13"><span class="toc-num">§12</span><span>Open Decisions</span></a></li>
+    <li><a href="#s14"><span class="toc-num">§13</span><span>Relationship to Existing Specs</span></a></li>
+  </ol>
+</aside>
+  <main>
+    <header class="frontmatter">
+  <div class="status-row">
+    <span class="badge ready">ready</span>
+    <span class="date">2026-05-18</span>
+  </div>
+  <h1>Dossier Cover Information Architecture Spec</h1>
+  
+  <div class="meta-grid"><div class="meta-item"><span class="meta-label">owner</span><span class="meta-value">codex</span></div>
+<div class="meta-item"><span class="meta-label">created</span><span class="meta-value">2026-05-18</span></div>
+<div class="meta-item"><span class="meta-label">updated</span><span class="meta-value">2026-05-18</span></div>
+<div class="meta-item"><span class="meta-label">implements</span><span class="meta-value">docs/specs/2026-05-17-dossier-vision-spec.md</span></div>
+<div class="meta-item"><span class="meta-label">reviews</span><span class="meta-value">docs/reviews/2026-05-18-dossier-vision-multi-role-review.md</span></div></div>
+</header>
+    
+    <blockquote><p>This spec defines the MVP-1 <code>render-dossier-cover</code> information architecture. It does not implement the renderer.
+It converts the accepted review recommendation into a concrete contract for the next build step.</p>
+</blockquote>
+
+<section id="s1">
+<h2 id="s1"><span class="sec-num">§ 0</span><span>One Sentence</span></h2>
+
+<div class="tagline"><span class="tagline-label">TL;DR</span><p>A Dossier cover is not a prettier table of contents. It is the first screen that lets a busy reader decide what the AI produced, how the artifacts relate, what is decided, what remains open, and what to read next.</p>
+</div>
+
+</section>
+<section id="s2">
+<h2 id="s2"><span class="sec-num">§ 1</span><span>Problem</span></h2>
+
+<p>MVP-0 made a single Markdown document easier to read as HTML. That helps with the &quot;long flat spec&quot; pain, but it does not solve the heavier daily problem:</p>
+
+
+<ul>
+<li>AI sessions create multiple related artifacts.</li>
+<li>The relationship between artifacts is the expensive part to reconstruct.</li>
+<li>A reader often wants a judgment before they want a full document.</li>
+<li>A generated summary is not enough because it hides evidence and prevents drill-down.</li>
+</ul>
+
+
+<p>The Dossier cover must therefore become a judgment surface, not a decorative index page.</p>
+
+
+</section>
+<section id="s3">
+<h2 id="s3"><span class="sec-num">§ 2</span><span>Reader Tasks</span></h2>
+
+<p>The cover must optimize for five concrete tasks:</p>
+
+
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Reader question</th>
+<th>Cover obligation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Continue or stop</td>
+<td>Can this AI-produced work be acted on?</td>
+<td>Show status, confidence, blockers, and next action in the first screen.</td>
+</tr>
+<tr>
+<td>Rebuild context</td>
+<td>What did the AI produce?</td>
+<td>Show artifacts by kind, status, and relationship.</td>
+</tr>
+<tr>
+<td>Inspect decisions</td>
+<td>What was decided and why?</td>
+<td>Extract 3-5 high-impact decisions with evidence links.</td>
+</tr>
+<tr>
+<td>Preserve uncertainty</td>
+<td>What is still unresolved?</td>
+<td>Show open questions separately from decisions.</td>
+</tr>
+<tr>
+<td>Hand off</td>
+<td>What should each reader read first?</td>
+<td>Provide role-based reading paths.</td>
+</tr>
+</tbody></table>
+
+
+<p>Non-goal: this cover is not a chat-history viewer, observability dashboard, or team commenting surface.</p>
+
+
+</section>
+<section id="s4">
+<h2 id="s4"><span class="sec-num">§ 3</span><span>North Star Acceptance</span></h2>
+
+<p>A person who did not participate in the AI session opens only the Dossier cover. Within 3 minutes, they can answer:</p>
+
+
+<ol>
+<li>What artifacts did the AI produce?</li>
+<li>What is the main storyline or intent behind those artifacts?</li>
+<li>What is already decided?</li>
+<li>What is still open or risky?</li>
+<li>What should they read or do next?</li>
+</ol>
+
+
+<p>If they cannot answer these from the cover, the failure is information architecture, not visual polish.</p>
+
+
+</section>
+<section id="s5">
+<h2 id="s5"><span class="sec-num">§ 4</span><span>Layout Contract</span></h2>
+
+<p>The default <code>render-dossier-cover</code> template has seven zones, in this order.</p>
+
+
+<table>
+<thead>
+<tr>
+<th>Zone</th>
+<th>Purpose</th>
+<th>Required contents</th>
+<th>Fallback</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>verdict-strip</code></td>
+<td>30-second orientation</td>
+<td>title, status, confidence, next action, artifact count, latest update</td>
+<td>title + artifact count</td>
+</tr>
+<tr>
+<td><code>activity-inbox</code></td>
+<td>Show what changed since last run</td>
+<td>new artifacts, changed artifacts, blocked/open items</td>
+<td>omit when no baseline exists</td>
+</tr>
+<tr>
+<td><code>artifact-map</code></td>
+<td>Build spatial model</td>
+<td>clickable graph plus grouped artifact list</td>
+<td>grouped list only</td>
+</tr>
+<tr>
+<td><code>key-decisions</code></td>
+<td>Surface actionable judgments</td>
+<td>3-5 decisions with source artifact and evidence anchor</td>
+<td>&quot;No high-confidence decisions found&quot;</td>
+</tr>
+<tr>
+<td><code>open-questions</code></td>
+<td>Preserve uncertainty</td>
+<td>unresolved questions, owner if known, blocking impact</td>
+<td>&quot;No open questions found&quot;</td>
+</tr>
+<tr>
+<td><code>reading-paths</code></td>
+<td>Reduce choice cost</td>
+<td>recommended paths for PM, engineer, reviewer/handoff receiver</td>
+<td>one default path by artifact order</td>
+</tr>
+<tr>
+<td><code>evidence-drawer</code></td>
+<td>Explain trust</td>
+<td>relation sources, confidence, extraction rule, provenance links when available</td>
+<td>static evidence table</td>
+</tr>
+</tbody></table>
+
+
+<p>Reference material such as full data models, prior art, naming history, and low-priority risks belongs below these zones or behind <code>&lt;details&gt;</code>.</p>
+
+
+</section>
+<section id="s6">
+<h2 id="s6"><span class="sec-num">§ 5</span><span>View Model</span></h2>
+
+<p>MVP-1 should introduce a cover view model separate from the raw index model. The renderer consumes this shape; scanners and heuristics can evolve behind it.</p>
+
+
+<pre><code class="lang-typescript">type DossierCoverView = {
+  dossier: {
+    id: string;
+    title: string;
+    status: &quot;draft&quot; | &quot;ready&quot; | &quot;implemented&quot; | &quot;archived&quot; | &quot;mixed&quot;;
+    description: string;
+    updated_at: string;
+    confidence: &quot;high&quot; | &quot;medium&quot; | &quot;low&quot;;
+    next_action?: string;
+  };
+  activity: {
+    new_artifacts: ArtifactRef[];
+    changed_artifacts: ArtifactRef[];
+    open_items: OpenQuestionRef[];
+  };
+  artifacts: CoverArtifact[];
+  edges: CoverEdge[];
+  decisions: CoverDecision[];
+  open_questions: CoverOpenQuestion[];
+  reading_paths: ReadingPath[];
+  evidence: CoverEvidence[];
+};
+
+type CoverArtifact = {
+  id: string;
+  path: string;
+  title: string;
+  kind: &quot;vision-spec&quot; | &quot;mvp-spec&quot; | &quot;adr&quot; | &quot;change&quot; | &quot;review&quot; | &quot;note&quot; | &quot;design&quot; | &quot;other&quot;;
+  status?: &quot;draft&quot; | &quot;ready&quot; | &quot;implemented&quot; | &quot;archived&quot;;
+  summary?: string;
+  rendered_html_path?: string;
+};
+
+type CoverEdge = {
+  from: string;
+  to: string;
+  relation: &quot;implements&quot; | &quot;reviews&quot; | &quot;follows&quot; | &quot;supersedes&quot; | &quot;references&quot; | &quot;answers&quot;;
+  source: &quot;frontmatter&quot; | &quot;filename&quot; | &quot;inline&quot; | &quot;session&quot; | &quot;inferred&quot;;
+  confidence: &quot;high&quot; | &quot;medium&quot; | &quot;low&quot;;
+  label: string;
+  evidence?: string;
+};</code></pre>
+
+<p>MVP-1 must add <code>confidence</code> and <code>label</code> to reader-facing edges. <code>source</code> is machine-facing; <code>label</code> is what the reader sees.</p>
+
+
+</section>
+<section id="s7">
+<h2 id="s7"><span class="sec-num">§ 6</span><span>Deterministic Extraction Rules</span></h2>
+
+<p>MVP-1 remains no-LLM by default.</p>
+
+
+<h3 id="s7-1"><span class="sub-num">6.1</span>Artifact Collection</h3>
+
+<ol>
+<li>Scan <code>docs/specs/</code>, <code>docs/changes/</code>, and <code>docs/reviews/</code>.</li>
+<li>Include files referenced by <code>implements</code> and <code>reviews</code> even when they live outside those directories.</li>
+<li>Extract <code>title</code>, <code>status</code>, <code>kind</code>, <code>created</code>, <code>updated</code>, <code>implements</code>, and <code>reviews</code> from frontmatter.</li>
+<li>Fallback title order: frontmatter <code>title</code>, first <code>h1</code>, filename slug.</li>
+</ol>
+
+
+<h3 id="s7-2"><span class="sub-num">6.2</span>Edge Collection</h3>
+
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Relation</th>
+<th>Confidence</th>
+<th>Label example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>frontmatter <code>implements</code></td>
+<td><code>implements</code></td>
+<td>high</td>
+<td><code>MVP-0 spec implements the vision spec</code></td>
+</tr>
+<tr>
+<td>frontmatter <code>reviews</code></td>
+<td><code>reviews</code></td>
+<td>high</td>
+<td><code>Multi-role review reviews the vision spec</code></td>
+</tr>
+<tr>
+<td>markdown link to another artifact</td>
+<td><code>references</code></td>
+<td>medium</td>
+<td><code>Vision spec references the MVP-0 spec</code></td>
+</tr>
+<tr>
+<td>filename sequence like <code>v2</code>, <code>v3</code>, <code>r1</code></td>
+<td><code>follows</code></td>
+<td>medium</td>
+<td><code>r1 review follows the first review</code></td>
+</tr>
+<tr>
+<td>same session, same topic prefix</td>
+<td><code>references</code></td>
+<td>low</td>
+<td><code>Likely produced in the same dossier</code></td>
+</tr>
+</tbody></table>
+
+
+<p>Only high and medium confidence edges are shown in the primary map. Low confidence edges move to the evidence drawer by default.</p>
+
+
+<h3 id="s7-3"><span class="sub-num">6.3</span>Decisions</h3>
+
+<p>Extract only high-confidence decisions in MVP-1:</p>
+
+
+<ul>
+<li>ADR documents count as decision sources.</li>
+<li>Headings containing <code>Decision</code>, <code>决策</code>, <code>锁定</code>, <code>选择</code>, or <code>不做</code> create candidate decisions.</li>
+<li>Tables with columns similar to <code>决策</code>, <code>原因</code>, <code>拒绝的选项</code>, <code>倾向</code>, or <code>verdict</code> create candidate decisions.</li>
+<li>Keep at most five; rank by artifact kind in this order: <code>adr</code>, <code>mvp-spec</code>, <code>vision-spec</code>, <code>review</code>, <code>change</code>.</li>
+</ul>
+
+
+<p>If confidence is weak, do not invent a decision. Show an empty state.</p>
+
+
+<h3 id="s7-4"><span class="sub-num">6.4</span>Open Questions</h3>
+
+<p>Extract open questions from:</p>
+
+
+<ul>
+<li>headings containing <code>Open Questions</code>, <code>开放问题</code>, <code>风险</code>, or <code>Next</code>;</li>
+<li>unchecked tasks <code>- [ ]</code>;</li>
+<li>table rows under an open-question section;</li>
+<li>review verdicts that contain <code>needs</code>, <code>blocked</code>, <code>fix</code>, or <code>risk</code>.</li>
+</ul>
+
+
+<p>Each open question should include <code>source_artifact</code>, optional <code>owner</code>, optional <code>blocks</code>, and an anchor link when available.</p>
+
+
+</section>
+<section id="s8">
+<h2 id="s8"><span class="sec-num">§ 7</span><span>Reading Paths</span></h2>
+
+<p>The cover must generate at least three role-based paths:</p>
+
+
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Default path</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PM / decision maker</td>
+<td>Verdict -&gt; Key Decisions -&gt; Open Questions -&gt; Risks -&gt; Vision spec</td>
+</tr>
+<tr>
+<td>Engineer / implementer</td>
+<td>Artifact Map -&gt; MVP spec -&gt; ADRs -&gt; Change notes -&gt; Tests/reviews</td>
+</tr>
+<tr>
+<td>Reviewer / handoff receiver</td>
+<td>Verdict -&gt; Review artifacts -&gt; Evidence drawer -&gt; Open Questions -&gt; Changed artifacts</td>
+</tr>
+</tbody></table>
+
+
+<p>Reading paths should be rendered as compact ordered links, not prose paragraphs.</p>
+
+
+</section>
+<section id="s9">
+<h2 id="s9"><span class="sec-num">§ 8</span><span>Responsive and Offline Behavior</span></h2>
+
+<p>Desktop:</p>
+
+
+<ul>
+<li>two-column cover after the verdict strip;</li>
+<li>artifact map and decisions visible without scrolling too far;</li>
+<li>evidence drawer collapsed by default.</li>
+</ul>
+
+
+<p>Mobile:</p>
+
+
+<ul>
+<li>graph falls back to grouped edge list;</li>
+<li>reading paths appear before evidence;</li>
+<li>no hover-only interactions.</li>
+</ul>
+
+
+<p>Offline/share:</p>
+
+
+<ul>
+<li>no remote assets;</li>
+<li>inline CSS and minimal inline JS only;</li>
+<li>source paths remain visible;</li>
+<li>share/export mode must show a privacy warning if <code>.dossierignore</code> or redaction rules were not applied.</li>
+</ul>
+
+
+</section>
+<section id="s10">
+<h2 id="s10"><span class="sec-num">§ 9</span><span>CLI Surface</span></h2>
+
+<p>MVP-1 should add a build command:</p>
+
+
+<pre><code class="lang-bash">dossier build [workspace] [options]
+
+Options:
+  -o, --out &lt;dir&gt;          Output directory, default .dossier/out
+  --single-file            Pack the cover and rendered documents into one HTML file
+  --since &lt;ref&gt;            Populate activity-inbox from git ref or previous build manifest
+  --no-graph               Render artifact map as grouped lists only
+  --verbose                Print extraction and confidence reasons</code></pre>
+
+<p><code>dossier render &lt;file.md&gt;</code> remains the MVP-0 single-document command.</p>
+
+
+</section>
+<section id="s11">
+<h2 id="s11"><span class="sec-num">§ 10</span><span>Milestones</span></h2>
+
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Scope</th>
+<th>Acceptance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cover-0</td>
+<td>collect artifacts, build high-confidence edges, render verdict + artifact list</td>
+<td>current Dossier repo produces an index with vision, MVP-0, review, and change notes grouped correctly</td>
+</tr>
+<tr>
+<td>Cover-1</td>
+<td>add artifact map, decisions, open questions, reading paths, evidence drawer</td>
+<td>3-minute understanding test passes on the Dossier repo</td>
+</tr>
+<tr>
+<td>Cover-2</td>
+<td>add <code>--since</code>, activity inbox, and single-file export privacy warning</td>
+<td>user can see what changed since the last build</td>
+</tr>
+</tbody></table>
+
+
+<p>MVP-1 is complete at Cover-1. Cover-2 may ship in the same cycle only if Cover-1 stays small.</p>
+
+
+</section>
+<section id="s12">
+<h2 id="s12"><span class="sec-num">§ 11</span><span>Acceptance Checklist</span></h2>
+
+<ul>
+<li><input disabled="" type="checkbox"> <code>dossier build /Users/xforg/AI_SPACE/dossier</code> emits a cover page.</li>
+<li><input disabled="" type="checkbox"> Cover shows at least the vision spec, MVP-0 spec, multi-role review, and implementation notes.</li>
+<li><input disabled="" type="checkbox"> <code>implements</code> and <code>reviews</code> edges appear with reader-facing labels and confidence.</li>
+<li><input disabled="" type="checkbox"> Low-confidence inferred edges do not clutter the primary map.</li>
+<li><input disabled="" type="checkbox"> Key decisions and open questions are separate zones.</li>
+<li><input disabled="" type="checkbox"> Reading paths contain links, not summary prose.</li>
+<li><input disabled="" type="checkbox"> Mobile fallback is readable without hover.</li>
+<li><input disabled="" type="checkbox"> Output works offline with no remote assets.</li>
+<li><input disabled="" type="checkbox"> A new reader can answer the five north-star questions in 3 minutes.</li>
+</ul>
+
+
+</section>
+<section id="s13">
+<h2 id="s13"><span class="sec-num">§ 12</span><span>Open Decisions</span></h2>
+
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Default for implementation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Graph layout library</td>
+<td>No runtime graph library in MVP-1; hand-layout small DAGs, list fallback for large sets.</td>
+</tr>
+<tr>
+<td>LLM summaries</td>
+<td>Not in MVP-1; optional in MVP-2 after deterministic IA works.</td>
+</tr>
+<tr>
+<td>Where to store build baseline</td>
+<td><code>.dossier/build-manifest.json</code> when <code>--since</code> is enabled.</td>
+</tr>
+<tr>
+<td>Privacy defaults</td>
+<td>Local build shows local content; share/export mode warns unless ignore/redaction config is present.</td>
+</tr>
+</tbody></table>
+
+
+</section>
+<section id="s14">
+<h2 id="s14"><span class="sec-num">§ 13</span><span>Relationship to Existing Specs</span></h2>
+
+<ul>
+<li>Extends <code>2026-05-17-dossier-vision-spec.md</code> §7 and §10.2.</li>
+<li>Preserves <code>2026-05-18-dossier-mvp-0-spec.md</code>: single-document render remains the entry command.</li>
+<li>Converts <code>2026-05-18-dossier-vision-multi-role-review.md</code> into an implementable MVP-1 IA contract.</li>
+</ul>
+
+</section>
+    <footer class="spec-footer">
+      <span>Dossier Cover Information Architecture Spec · ready · 2026-05-18</span>
+      <span>rendered by dossier</span>
+    </footer>
+  </main>
+</div>
+<script>// TOC scroll-spy. Verbatim from spec §6.4.
+(function () {
+  const sections = Array.from(document.querySelectorAll("section[id]"));
+  const tocLinks = new Map();
+  document.querySelectorAll("aside.toc a").forEach((a) => {
+    const href = a.getAttribute("href");
+    if (!href) return;
+    tocLinks.set(href.slice(1), a);
+  });
+  const onScroll = () => {
+    let active = sections[0]?.id;
+    const offset = 120;
+    for (const s of sections) {
+      if (s.getBoundingClientRect().top - offset <= 0) active = s.id;
+    }
+    tocLinks.forEach((a, id) => a.classList.toggle("active", id === active));
+  };
+  document.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+</body>
+</html>

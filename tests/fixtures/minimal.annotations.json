@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "source": "manual-test",
+  "section_summaries": [
+    {
+      "section_id": "s1",
+      "summary": "Section A introduces the minimal render fixture."
+    },
+    {
+      "section_id": "s2",
+      "summary": "Section B confirms multiple summaries render deterministically."
+    }
+  ]
+}
