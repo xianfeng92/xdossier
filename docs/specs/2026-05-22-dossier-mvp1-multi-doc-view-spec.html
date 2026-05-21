@@ -1,0 +1,3180 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-reader="beginner" data-content-mode="concept">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xdossier MVP-1 — Multi-document Dossier View</title>
+<style>:root {
+  --bg: #faf9f6;
+  --ink: #1a1a1a;
+  --ink-muted: #5e5e58;
+  --ink-faint: #9a9a93;
+  --paper: #ffffff;
+  --border: #e8e6df;
+  --border-strong: #d4d1c7;
+  --accent: #1e3a8a;
+  --accent-soft: #f5e9e3;
+  --warn: #991b1b;
+  --warn-soft: #fef2f2;
+  --ok: #14532d;
+  --ok-soft: #f0fdf4;
+  --code-bg: #f4f2eb;
+  --hairline: 1px solid var(--border);
+  --font-display: Charter, "Source Serif Pro", "Iowan Old Style", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+code, pre, .mono { font-family: var(--font-mono); }
+em { font-style: italic; font-family: var(--font-display); }
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  max-width: 1240px;
+  margin: 0 auto;
+  gap: 56px;
+  padding: 48px 32px 96px;
+}
+aside.toc {
+  position: sticky;
+  top: 32px;
+  align-self: start;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  font-size: 13px;
+  padding-right: 8px;
+}
+main { min-width: 0; max-width: 760px; }
+main,
+.frontmatter,
+.semantic-lens,
+section {
+  overflow-wrap: anywhere;
+}
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(184, 92, 61, 0.08);
+  z-index: 50;
+}
+.reading-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 80ms linear;
+}
+.toc-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border: var(--hairline);
+  background: var(--paper);
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 65;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.toc-toggle svg { width: 18px; height: 18px; }
+.toc-toggle:hover { color: var(--accent); border-color: var(--border-strong); }
+.toc-backdrop {
+  position: fixed;
+  inset: 0;
+  max-width: 100%;
+  background: rgba(26, 26, 26, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  z-index: 55;
+}
+body[data-toc-open] .toc-backdrop { opacity: 1; pointer-events: auto; }
+
+.reader-toggle{position:sticky;top:0;z-index:70;display:flex;justify-content:center;gap:6px;padding:8px 12px;background:rgba(250,249,246,.96);border-bottom:var(--hairline)}
+.reader-toggle button{border:var(--hairline);border-radius:999px;background:var(--paper);color:var(--ink-muted);font-family:var(--font-mono);font-size:11px;line-height:1;padding:8px 12px;cursor:pointer}
+.reader-toggle button:hover,.reader-toggle button[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.reader-toggle button[aria-pressed="true"]{background:var(--accent-soft)}
+.prerequisite-card{border:var(--hairline);border-left:3px solid var(--accent);border-radius:8px;background:var(--paper);padding:16px 18px;margin:-22px 0 34px}
+.prerequisite-card h4,.learning-checkpoint h5{margin:0 0 10px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.prerequisite-card ul,.learning-checkpoint ul{margin:0;padding-left:20px}.prerequisite-card li,.learning-checkpoint li{margin:6px 0}
+.prerequisite-card p{margin:2px 0 0;color:var(--ink-muted);font-size:13.5px}
+.callout.analogy{border-left-color:#1e3a8a;background:#eef2ff;color:var(--ink)}
+.callout.analogy .callout-icon{font-family:var(--font-mono);font-weight:700;color:#1e3a8a;margin-right:6px}
+.learning-checkpoint{border:var(--hairline);border-radius:8px;background:var(--paper);padding:14px 16px;margin:18px 0 24px 72px;max-width:620px}
+.term{position:relative;cursor:help;text-decoration:underline dotted #1e3a8a;text-underline-offset:3px}
+.term [role="tooltip"]{position:absolute;left:0;bottom:calc(100% + 8px);min-width:220px;max-width:320px;padding:9px 11px;border:var(--hairline);border-radius:6px;background:var(--paper);color:var(--ink);box-shadow:0 8px 24px rgba(26,26,26,.12);font-family:var(--font-sans);font-size:12.5px;line-height:1.45;opacity:0;pointer-events:none;z-index:30}
+.term:hover [role="tooltip"],.term:focus [role="tooltip"],.term:focus-within [role="tooltip"]{opacity:1}
+[data-detail-level="prereq"],[data-detail-level="analogy"],[data-detail-level="checkpoint"],[data-detail-level="glossary"],[data-detail-level="section-summary"]{display:revert}
+[data-detail-level="deep"],html[data-reader="intermediate"] [data-detail-level="prereq"],html[data-reader="expert"] [data-detail-level="prereq"],html[data-reader="expert"] [data-detail-level="analogy"],html[data-reader="expert"] [data-detail-level="checkpoint"],html[data-reader="expert"] [data-detail-level="section-summary"],html[data-reader="expert"] .section-summary,html[data-reader="expert"] .section-key-points,html[data-reader="expert"] .section-key-points-extra,html[data-reader="expert"] .section-reader-hint{display:none}
+html[data-reader="intermediate"] [data-detail-level="analogy"]{opacity:.7}
+html[data-reader="intermediate"] .section-key-points-extra{display:none}
+html[data-reader="expert"] .term{display:contents;text-decoration:none;cursor:inherit}
+html[data-reader="expert"] .term [role="tooltip"]{display:none}
+html[data-reader="expert"] main{max-width:640px;line-height:1.5}
+html[data-reader="expert"] section h2{margin-top:34px}
+html[data-reader="expert"] .section-cover{padding:8px 0 10px;border-top:0;margin-bottom:14px}
+html[data-reader="expert"] .section-cover-kicker{display:none}
+html[data-reader="expert"] .section-cover-num{font-size:34px}
+html[data-reader="expert"] .section-cover-title{margin:0;font-size:24px;padding:0;border:0}
+html[data-content-mode="reference"] aside.toc{position:sticky;top:0;max-height:100vh;overflow:auto}
+
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 1fr; gap: 16px; padding: 24px 16px 64px; }
+  .toc-toggle { display: inline-flex; }
+  aside.toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 320px;
+    max-width: 86vw;
+    height: 100vh;
+    max-height: none;
+    background: var(--paper);
+    border-right: var(--hairline);
+    padding: 56px 18px 24px;
+    margin: 0;
+    transform: translateX(-100%);
+    transition: transform 220ms cubic-bezier(.4, 0, .2, 1);
+    z-index: 60;
+    overflow-y: auto;
+    box-shadow: 0 0 24px rgba(0,0,0,0.06);
+  }
+  aside.toc[data-open] { transform: translateX(0); }
+  body[data-toc-open] { overflow: hidden; }
+}
+
+.toc-header {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 1px 0; }
+.toc a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 120ms, color 120ms;
+  line-height: 1.4;
+  align-items: baseline;
+}
+.toc a:hover, .toc a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.toc a.active { font-weight: 600; }
+.toc-num {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.toc-children {
+  margin-left: 18px;
+  display: none;
+}
+.toc-section.is-current > .toc-children { display: block; }
+.toc-lens-group {
+  border-bottom: var(--hairline);
+  margin: 0 0 12px;
+  padding: 0 0 12px;
+}
+.toc-lens-title {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.toc-lens-group ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.toc-lens-group a {
+  grid-template-columns: 20px 1fr;
+  padding-left: 8px;
+}
+
+.frontmatter {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 28px 32px 20px;
+  margin-bottom: 40px;
+}
+.artifact-header {
+  padding: 16px 18px 14px;
+  margin-bottom: 20px;
+}
+.artifact-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.artifact-title-stack { min-width: 0; }
+.artifact-header .eyebrow {
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+.artifact-header h1 {
+  font-size: 27px;
+  line-height: 1.18;
+  margin-bottom: 0;
+}
+.artifact-header .subtitle {
+  font-size: 15px;
+  margin: 5px 0 0;
+}
+.artifact-meta-rail {
+  min-width: 0;
+  max-width: none;
+}
+.artifact-header .stat-row {
+  border-top: var(--hairline);
+  padding-top: 10px;
+  justify-content: flex-start;
+  gap: 8px 14px;
+  line-height: 1.35;
+}
+.artifact-header .stat-label {
+  font-size: 9.5px;
+}
+.artifact-header .stat-value {
+  font-size: 11.5px;
+}
+.artifact-header .badge {
+  font-size: 9.5px;
+  padding: 2px 7px;
+}
+.artifact-header .executive-brief {
+  margin-top: 12px;
+  padding: 10px 0 12px;
+}
+.artifact-header .executive-brief-body {
+  font-size: 15px;
+}
+.artifact-header .document-notes {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.artifact-header .frontmatter-details {
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.artifact-header .compact-relations summary {
+  font-size: 9.5px;
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 18px;
+  font-weight: 600;
+}
+h1 {
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.18;
+  margin: 0 0 10px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.subtitle {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 19px;
+  color: var(--ink-muted);
+  margin: 0 0 18px;
+  line-height: 1.45;
+}
+.executive-brief {
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: 16px 0 18px;
+  margin: 18px 0 0;
+}
+.executive-brief-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+.executive-brief-body {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.executive-brief-body p { margin: 0; }
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 22px;
+  padding-top: 18px;
+  border-top: var(--hairline);
+  font-size: 13px;
+  color: var(--ink);
+}
+.executive-brief + .stat-row {
+  border-top: none;
+}
+.stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.stat-value { font-family: var(--font-mono); font-size: 12.5px; }
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.badge.draft { background: #fef3c7; color: #92400e; }
+.badge.ready { background: var(--ok-soft); color: var(--ok); }
+.badge.ok { background: var(--accent-soft); color: var(--accent); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.frontmatter-details {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: var(--hairline);
+}
+.frontmatter-details summary,
+.document-notes summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 4px 0;
+  list-style: none;
+  user-select: none;
+}
+.frontmatter-details summary::-webkit-details-marker,
+.document-notes summary::-webkit-details-marker { display: none; }
+.frontmatter-details summary::before,
+.document-notes summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--ink-faint);
+  transition: transform 120ms ease;
+}
+.frontmatter-details[open] summary::before,
+.document-notes[open] summary::before { transform: rotate(90deg); }
+.frontmatter-details summary:hover,
+.document-notes summary:hover { color: var(--accent); }
+.document-notes {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: var(--hairline);
+}
+.document-notes-body {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.document-notes-body .callout {
+  margin: 0;
+  font-size: 13.5px;
+}
+.relation-block {
+  margin-top: 16px;
+}
+.relation-block + .relation-block { margin-top: 18px; }
+.relation-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.relation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.relation-list li { margin: 0; }
+.relation-list code {
+  background: var(--code-bg);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  color: var(--ink);
+  word-break: break-all;
+  display: inline-block;
+}
+
+.semantic-lens {
+  margin: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.semantic-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.semantic-overview {
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: 18px 0 20px;
+  display: grid;
+  gap: 16px;
+}
+.semantic-overview-summary {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.semantic-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.semantic-fact {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 12px;
+  min-width: 0;
+}
+.semantic-fact dt {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+.semantic-fact dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.reading-path-lens { margin-top: 2px; }
+.reading-path-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+.reading-path-card {
+  display: block;
+  text-decoration: none;
+  color: var(--ink-muted);
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 10px 11px;
+  min-height: 72px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.reading-path-card:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.reading-path-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.reading-path-number,
+.reading-path-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 700;
+}
+.reading-path-label {
+  text-transform: uppercase;
+}
+.reading-path-number {
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+.semantic-model-flow {
+  display: block;
+}
+.semantic-primary-flow {
+  display: block;
+}
+.semantic-judgment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.semantic-judgment-grid .semantic-block {
+  margin: 0;
+  min-width: 0;
+}
+.semantic-judgment-grid .semantic-block-header {
+  min-height: 52px;
+  margin-bottom: 10px;
+}
+.semantic-judgment-grid .semantic-block-header h2 {
+  font-size: 20px;
+  line-height: 1.22;
+}
+.semantic-judgment-grid .semantic-source-link {
+  font-size: 10.5px;
+  padding: 2px 8px;
+}
+.semantic-judgment-grid .scope-boundary-grid {
+  grid-template-columns: 1fr;
+}
+.semantic-judgment-grid .comparison-cards {
+  margin: 0;
+}
+.semantic-judgment-grid .comparison-cards[data-block="scope_boundary"] {
+  grid-column: 1 / -1;
+}
+.semantic-judgment-grid .comparison-cards-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.semantic-judgment-grid .open-questions-lens {
+  grid-column: span 2;
+}
+.source-prose-boundary {
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  margin: -18px 0 28px;
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+.source-prose-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-prose-count {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.source-section-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: -6px 0 44px;
+}
+.source-section-map-intro {
+  grid-column: 1 / -1;
+  max-width: 640px;
+}
+.source-section-map-intro p:last-child {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.source-section-map-lanes {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.source-section-lane {
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+  min-width: 0;
+}
+.source-section-lane-title {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-section-lane-links {
+  display: grid;
+  gap: 6px;
+}
+.source-section-lane-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-radius: 5px;
+  padding: 5px 6px;
+  margin: 0 -6px;
+}
+.source-section-lane-link:hover {
+  color: var(--ink);
+  background: #fffdf9;
+}
+.source-section-lane-number {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-section-lane-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.source-section-lane-section {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+.source-section-lane-role {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--ink-faint);
+}
+.source-section-lane-purpose {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+.semantic-block-extra {
+  grid-column: 1 / -1;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 8px 10px;
+}
+.semantic-block-extra summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  list-style: none;
+}
+.semantic-block-extra summary::-webkit-details-marker { display: none; }
+.semantic-block-extra-items {
+  margin-top: 10px;
+  display: contents;
+}
+.source-section-map-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.source-section-map-card {
+  display: grid;
+  gap: 7px;
+  min-height: 158px;
+  padding: 13px 14px;
+  color: var(--ink-muted);
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+}
+.source-section-map-card:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.source-section-map-main {
+  display: grid;
+  gap: 7px;
+  color: inherit;
+  text-decoration: none;
+}
+.source-section-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.source-section-num {
+  color: var(--accent);
+  font-weight: 700;
+}
+.source-section-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.source-section-summary {
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.source-section-semantic-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.source-section-role-summary {
+  margin-top: -2px;
+}
+.source-section-role-summary summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+  list-style: none;
+}
+.source-section-role-summary summary::-webkit-details-marker { display: none; }
+.source-section-role-summary summary:hover { color: var(--accent); }
+.source-section-role-summary-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.source-section-role-chip {
+  display: inline-flex;
+  width: fit-content;
+  text-decoration: none;
+}
+.source-section-role-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--accent);
+}
+.source-section-role-extra {
+  width: 100%;
+}
+.source-section-role-extra summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+  list-style: none;
+}
+.source-section-role-extra summary::-webkit-details-marker { display: none; }
+.source-section-role-extra summary:hover {
+  color: var(--accent);
+}
+.source-section-role-extra-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.source-section-subsections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.source-section-subsections a,
+.source-section-subsections span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.source-section-subsections a {
+  text-decoration: none;
+}
+.source-section-subsections a:hover {
+  color: var(--accent);
+}
+.source-section-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.source-section-chips span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.source-section-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--accent);
+}
+.semantic-block {
+  min-width: 0;
+}
+.semantic-block-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.semantic-block-header h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+.semantic-block-header p:last-child {
+  margin-bottom: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.semantic-source-link {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-decoration: none;
+  color: var(--accent);
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: var(--paper);
+}
+.semantic-source-link:hover { border-color: var(--border-strong); }
+.structure-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.structure-node {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 13px 14px 12px;
+  min-width: 0;
+  border-top: 3px solid var(--border-strong);
+}
+.structure-node-path,
+.structure-node-action,
+.structure-node-output { border-top-color: var(--accent); }
+.structure-node-risk,
+.structure-node-question { border-top-color: var(--warn); }
+.structure-node-evidence { border-top-color: var(--ok); }
+.structure-node-kind {
+  margin: 0 0 7px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+.structure-node h3 {
+  margin: 0 0 7px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+}
+.structure-node p {
+  margin: 0 0 9px;
+  font-size: 13.5px;
+  line-height: 1.48;
+  color: var(--ink-muted);
+}
+.structure-connections {
+  margin-top: 12px;
+  border-top: var(--hairline);
+  padding-top: 12px;
+}
+.structure-edges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.structure-edge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.structure-edge-from,
+.structure-edge-to {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.structure-edge-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: var(--paper);
+}
+.relationship-edges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.relationship-edge {
+  margin: 0;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.relationship-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+.relationship-node {
+  min-width: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+.relationship-to { text-align: right; }
+.relationship-relation {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: var(--accent-soft);
+  white-space: nowrap;
+}
+.relationship-evidence {
+  margin: 9px 0 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.relationship-evidence span {
+  display: inline-block;
+  margin-right: 7px;
+  font-family: var(--font-mono);
+  color: var(--ok);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 10px;
+}
+.roadmap-stage-strip {
+  list-style: none;
+  margin: -2px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.roadmap-stage-strip li {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+.roadmap-stage-strip a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: baseline;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: var(--hairline);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: var(--ink-muted);
+  text-decoration: none;
+  line-height: 1.25;
+}
+.roadmap-stage-strip a:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+.roadmap-stage-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.roadmap-stage-title {
+  min-width: 0;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.roadmap-card,
+.requirement-card,
+.reference-card,
+.takeaway-card,
+.principle-card,
+.decision-card,
+.evidence-card,
+.risk-card,
+.concept-card {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 8px;
+  padding: 14px 14px 13px;
+  min-width: 0;
+}
+.roadmap-card h3,
+.requirement-card h3,
+.reference-card h3,
+.takeaway-card h3,
+.principle-card h3 {
+  margin: 0 0 7px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+}
+.concept-card h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.22;
+}
+.roadmap-card p,
+.requirement-card p,
+.reference-card p,
+.takeaway-card p,
+.principle-card p,
+.decision-card p,
+.evidence-card p,
+.risk-card p,
+.concept-card p {
+  margin-bottom: 9px;
+  font-size: 13.5px;
+  line-height: 1.48;
+  color: var(--ink-muted);
+}
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.concept-example,
+.concept-field {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-word;
+}
+.concept-example span,
+.concept-field span {
+  display: inline-block;
+  margin-right: 7px;
+  color: var(--accent);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.concept-field code {
+  background: var(--code-bg);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 11px;
+}
+.roadmap-label,
+.requirement-label,
+.decision-label,
+.evidence-label,
+.risk-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.roadmap-card .roadmap-label,
+.requirement-card .requirement-label,
+.decision-card .decision-label,
+.evidence-card .evidence-label,
+.risk-card .risk-label { margin-bottom: 7px; }
+.roadmap-outputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0 9px;
+}
+.roadmap-outputs span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.requirement-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.requirement-items {
+  margin: 10px 0 8px;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+.requirement-items li {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.42;
+}
+.reference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.reference-card {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+}
+.reference-card:hover {
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.reference-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.reference-href {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink-faint);
+  word-break: break-word;
+}
+.takeaway-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.takeaway-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.takeaway-card {
+  background: #fffdf9;
+}
+.principle-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.principle-card {
+  background: #fffef8;
+}
+.decision-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.evidence-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.risk-register-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.decision-value {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  font-size: 12.5px;
+  word-break: break-word;
+}
+.evidence-source,
+.risk-trigger,
+.risk-impact,
+.risk-mitigation {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-word;
+}
+.evidence-source span,
+.risk-trigger span,
+.risk-impact span,
+.risk-mitigation span {
+  display: inline-block;
+  margin-right: 7px;
+  color: var(--ok);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.risk-label,
+.risk-trigger span,
+.risk-impact span {
+  color: var(--warn);
+}
+.risk-mitigation span {
+  color: var(--ok);
+}
+.scope-boundary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.scope-column {
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 14px 14px 12px;
+}
+.scope-column h3,
+.checklist-item h3,
+.open-question-item h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.scope-column ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+.scope-column li {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+  padding-left: 15px;
+  position: relative;
+}
+.scope-column li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.75em;
+  width: 7px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.scope-out h3 { color: var(--warn); }
+.scope-out li::before { background: var(--warn); }
+.comparison-cards {
+  margin: 0 0 24px;
+}
+.comparison-cards-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+.comparison-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.comparison-card {
+  border: 1px solid #1e3a8a;
+  border-radius: 6px;
+  background: #faf9f6;
+  padding: 24px;
+}
+.comparison-card-out {
+  border-color: #991b1b;
+}
+.comparison-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+}
+.comparison-card-out .comparison-card-head {
+  color: #991b1b;
+}
+.comparison-card-list {
+  margin: 0;
+  padding-left: 18px;
+}
+.comparison-card-list li {
+  margin: 7px 0;
+  color: #1a1a1a;
+}
+.comparison-card-list li::before {
+  display: none;
+}
+.checklist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.checklist-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  margin: 0;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.checklist-status {
+  align-self: start;
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 5px 7px;
+}
+.checklist-done .checklist-status {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.checklist-open .checklist-status {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.checklist-item p {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.open-question-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.open-question-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  margin: 0;
+  border: var(--hairline);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.open-question-status {
+  align-self: start;
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: 999px;
+  padding: 5px 7px;
+}
+.open-question-answered .open-question-status {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.open-question-blocked .open-question-status {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.open-question-item p {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.open-question-impact span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.top-callouts {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.callout {
+  padding: 12px 16px;
+  border-left: 3px solid var(--ink-faint);
+  background: var(--paper);
+  font-size: 14px;
+  border-radius: 0 4px 4px 0;
+  margin: 14px 0;
+}
+.callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+.callout.note { border-color: var(--accent); background: var(--accent-soft); }
+.callout.goal { border-color: var(--ok); background: var(--ok-soft); }
+.callout p:last-child { margin-bottom: 0; }
+
+.tagline {
+  background: var(--accent);
+  color: white;
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+.tagline-label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+section {
+  margin-bottom: 88px;
+  scroll-margin-top: 24px;
+}
+.section-cover {
+  border-top: 1px solid #1e3a8a;
+  padding: 18px 0 18px;
+  margin: 0 0 22px;
+}
+.section-cover-num {
+  font-family: var(--font-display);
+  font-size: 54px;
+  line-height: 1;
+  color: #1e3a8a;
+  margin: 0 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+.section-cover-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 0 0 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+  display: block;
+  padding: 0;
+  border: 0;
+  color: #1a1a1a;
+}
+.section-cover-kicker {
+  margin: 0 0 4px;
+  max-width: 60ch;
+  color: var(--ink-muted);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.55;
+}
+section h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  margin: 0 0 22px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: var(--hairline);
+  line-height: 1.2;
+}
+section h2 .sec-num {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: var(--accent-soft);
+  padding: 5px 0;
+  border-radius: 3px;
+  text-align: center;
+  justify-self: stretch;
+}
+.section-summary {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  margin: -8px 0 10px 72px;
+  max-width: 620px;
+}
+.section-key-points {
+  margin: 0 0 12px 72px;
+  padding-left: 18px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 620px;
+}
+main section .section-key-points > li {
+  margin: 3px 0;
+}
+.section-key-points-extra {
+  margin: -2px 0 14px 72px;
+  max-width: 620px;
+  color: var(--ink-muted);
+}
+.section-key-points-extra summary,
+.section-brief-collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  user-select: none;
+}
+.section-key-points-extra summary::-webkit-details-marker,
+.section-brief-collapsible > summary::-webkit-details-marker { display: none; }
+.section-key-points-extra summary::before,
+.section-brief-collapsible > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 7px;
+  transition: transform 120ms ease;
+}
+.section-key-points-extra[open] summary::before,
+.section-brief-collapsible[open] > summary::before { transform: rotate(90deg); }
+.section-key-points-extra ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.section-brief-collapsible {
+  margin: -8px 0 22px 72px;
+  max-width: 620px;
+  border: var(--hairline);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: 8px 12px;
+}
+.section-brief-collapsible > .section-summary,
+.section-brief-collapsible > .section-key-points,
+.section-brief-collapsible > .section-key-points-extra,
+.section-brief-collapsible > .section-reader-hint {
+  margin-left: 0;
+}
+.section-brief-collapsible > .section-summary {
+  margin-top: 10px;
+}
+.section-reader-hint {
+  margin: 0 0 22px 72px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+  max-width: 620px;
+}
+.section-reader-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: var(--hairline);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--paper);
+}
+.section-reader-hint-label {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.section-semantic-trace {
+  margin: 0 0 20px 72px;
+  max-width: 620px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.section-semantic-trace-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+  margin-right: 2px;
+}
+.section-semantic-chip {
+  border: var(--hairline);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  padding: 3px 8px;
+  text-decoration: none;
+}
+.section-semantic-chip:hover {
+  color: var(--accent);
+  border-color: var(--border-strong);
+  background: #fffdf9;
+}
+.section-semantic-path {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.section-brief-collapsible > .section-semantic-trace {
+  margin-left: 0;
+}
+.subsection-semantic-trace {
+  margin: -4px 0 14px;
+  max-width: 620px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .artifact-title-row { grid-template-columns: 1fr; }
+  .artifact-meta-rail { max-width: none; }
+  .artifact-header .stat-row { justify-content: flex-start; }
+  .artifact-header h1 { font-size: 24px; }
+  .semantic-facts { grid-template-columns: 1fr; }
+  .semantic-overview-summary { font-size: 18px; }
+  .semantic-block-header { flex-direction: column; }
+  .scope-boundary-grid { grid-template-columns: 1fr; }
+  .comparison-cards-grid { grid-template-columns: 1fr; }
+  .comparison-card { padding: 18px; }
+  .section-cover-num { font-size: 46px; }
+  .pull-quote { padding: 20px 20px 20px 24px; }
+  .pull-quote-body { font-size: 26px; }
+  .relationship-main { grid-template-columns: 1fr; }
+  .relationship-to { text-align: left; }
+  .relationship-relation { width: fit-content; }
+  .semantic-judgment-grid .open-questions-lens { grid-column: span 1; }
+  .section-summary,
+  .section-key-points,
+  .section-key-points-extra,
+  .section-brief-collapsible,
+  .section-reader-hint,
+  .section-semantic-trace {
+    margin-left: 0;
+  }
+  .section-key-points { display: none; }
+}
+section h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  margin: 36px 0 12px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+section h3 .sub-num {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-right: 10px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+section h4 {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  margin: 22px 0 8px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 0; margin: 0 0 14px; }
+li { margin: 4px 0; }
+main section ul, main section ol,
+section > p + ul, section > p + ol {
+  list-style: none;
+  padding-left: 22px;
+}
+main section ul > li, main section ol > li {
+  position: relative;
+  padding-left: 4px;
+}
+main section ul > li::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 0.78em;
+  width: 8px;
+  height: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+main section ol {
+  counter-reset: dossier-ol;
+  padding-left: 30px;
+}
+main section ol > li {
+  padding-left: 4px;
+  counter-increment: dossier-ol;
+}
+main section ol > li::before {
+  content: counter(dossier-ol) ".";
+  position: absolute;
+  left: -28px;
+  width: 22px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  top: 0.1em;
+}
+main section ol ol {
+  counter-reset: dossier-ol-2;
+  padding-left: 24px;
+}
+main section ol ol > li { counter-increment: dossier-ol-2; }
+main section ol ol > li::before { content: counter(dossier-ol-2) "."; }
+a {
+  color: var(--accent);
+  text-decoration-color: rgba(30, 58, 138, 0.3);
+  text-underline-offset: 2px;
+}
+a:hover { text-decoration-color: var(--accent); }
+strong { font-weight: 600; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 22px;
+  font-size: 14px;
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: var(--hairline);
+  vertical-align: top;
+  line-height: 1.55;
+}
+th {
+  background: var(--code-bg);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+tr:last-child td { border-bottom: none; }
+td code { font-size: 12px; }
+
+:not(pre) > code {
+  background: var(--code-bg);
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+pre {
+  background: var(--code-bg);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 18px 20px;
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 16px 0;
+  color: #2d2d2d;
+  position: relative;
+}
+pre code { background: none; padding: 0; color: inherit; }
+.code-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border: var(--hairline);
+  background: var(--paper);
+  border-radius: 4px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 140ms, color 120ms, border-color 120ms;
+}
+pre:hover .code-copy, .code-copy:focus-visible { opacity: 1; }
+.code-copy:hover { color: var(--accent); border-color: var(--border-strong); }
+.code-copy svg { width: 14px; height: 14px; }
+.code-copy.copied { color: var(--ok); border-color: var(--ok-soft); opacity: 1; }
+.ascii-diagram {
+  background: var(--paper);
+  border: var(--hairline);
+  border-radius: 6px;
+  padding: 22px 24px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 18px 0;
+  color: var(--ink);
+}
+
+.inline-diagram {
+  max-width: 720px;
+  margin: 22px 0 28px;
+}
+.inline-diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.inline-diagram-node rect {
+  fill: #f4f2eb;
+  stroke: #1e3a8a;
+  stroke-width: 1;
+}
+.inline-diagram-node text,
+.inline-diagram text {
+  font-family: var(--font-display);
+  font-size: 17px;
+  fill: #1a1a1a;
+}
+.inline-diagram-edge {
+  stroke: #1e3a8a;
+  stroke-width: 2;
+}
+.inline-diagram marker path {
+  fill: #1e3a8a;
+}
+
+blockquote {
+  margin: 14px 0;
+  padding: 14px 20px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+blockquote p:last-child { margin-bottom: 0; }
+.pull-quote {
+  position: relative;
+  margin: 34px 0 38px;
+  padding: 24px 28px 24px 34px;
+  border-left: 4px solid #1e3a8a;
+  background: #faf9f6;
+  overflow: hidden;
+}
+.pull-quote::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #1e3a8a;
+  opacity: 0.01;
+  pointer-events: none;
+}
+.pull-quote-body {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1.38;
+  color: #1a1a1a;
+}
+.pull-quote-body p {
+  margin: 0;
+}
+.pull-quote-mark,
+.pull-quote-mark-end {
+  position: absolute;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 200px;
+  line-height: 1;
+  color: #1e3a8a;
+  opacity: 0.15;
+  pointer-events: none;
+}
+.pull-quote-mark {
+  top: -34px;
+  left: 8px;
+}
+.pull-quote-mark-end {
+  right: 10px;
+  bottom: -112px;
+}
+hr { border: none; border-top: var(--hairline); margin: 24px 0; }
+
+.spec-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: var(--hairline);
+  font-size: 13px;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.spec-footer a { color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<nav class="reader-toggle" role="radiogroup" aria-label="读者熟练度">
+  <button type="button" data-reader-set="beginner" aria-pressed="true">零基础</button>
+  <button type="button" data-reader-set="intermediate" aria-pressed="false">系统化</button>
+  <button type="button" data-reader-set="expert" aria-pressed="false">速查</button>
+</nav>
+<div class="reading-progress" aria-hidden="true"><div class="reading-progress-fill"></div></div>
+<button class="toc-toggle" type="button" aria-label="打开或关闭目录" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+</button>
+<div class="toc-backdrop" aria-hidden="true"></div>
+<div class="layout">
+  <aside class="toc" data-progressive-toc>
+  <p class="toc-header">文档 · 9 节</p>
+<div class="toc-lens-group" aria-label="Dossier 透镜导航">
+  <p class="toc-lens-title">Dossier 透镜</p>
+  <ol>
+    <li><a href="#lens-overview"><span class="toc-num">•</span><span>总览</span></a></li>
+    <li><a href="#lens-structure-map-1"><span class="toc-num">•</span><span>结构图</span></a></li>
+    <li><a href="#lens-risk-register-2"><span class="toc-num">•</span><span>风险</span></a></li>
+    <li><a href="#lens-checklist-3"><span class="toc-num">•</span><span>检查清单</span></a></li>
+    <li><a href="#source-sections"><span class="toc-num">•</span><span>原文章节</span></a></li>
+    <li><a href="#source-section-map"><span class="toc-num">•</span><span>章节地图</span></a></li>
+  </ol>
+</div>
+  <ol>
+    <li class="toc-section"><a href="#s1"><span class="toc-num">§0</span><span>一句话</span></a></li>
+    <li class="toc-section"><a href="#s2"><span class="toc-num">§1</span><span>为什么需要这一层</span></a><ol class="toc-children"><li><a href="#s2-1"><span class="toc-num">1.1</span><span>真实材料勘察（2026-05-22 完成）</span></a></li><li><a href="#s2-2"><span class="toc-num">1.2</span><span>真实痛点（实测得来）</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s3"><span class="toc-num">§2</span><span>范围</span></a><ol class="toc-children"><li><a href="#s3-1"><span class="toc-num">2.1</span><span>包含</span></a></li><li><a href="#s3-2"><span class="toc-num">2.2</span><span>不包含</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s4"><span class="toc-num">§3</span><span>现状评估：已有什么，gap 在哪</span></a><ol class="toc-children"><li><a href="#s4-1"><span class="toc-num">3.1</span><span>✅ 已有（不动）</span></a></li><li><a href="#s4-2"><span class="toc-num">3.2</span><span>❌ 5 个真实 gap</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s5"><span class="toc-num">§4</span><span>设计</span></a><ol class="toc-children"><li><a href="#s5-1"><span class="toc-num">4.1</span><span>聚类算法（detection + clustering）</span></a></li><li><a href="#s5-2"><span class="toc-num">4.2</span><span>数据模型扩展</span></a></li><li><a href="#s5-3"><span class="toc-num">4.3</span><span>Cover HTML 改造</span></a></li><li><a href="#s5-4"><span class="toc-num">4.4</span><span>SVG 关系图布局算法</span></a></li><li><a href="#s5-5"><span class="toc-num">4.5</span><span>Cover ↔ Member 双向链接</span></a></li><li><a href="#s5-6"><span class="toc-num">4.6</span><span>Hook 增量刷新</span></a></li><li><a href="#s5-7"><span class="toc-num">4.7</span><span>CLI 表面</span></a></li><li><a href="#s5-8"><span class="toc-num">4.8</span><span>与 vision spec 对齐</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s6"><span class="toc-num">§5</span><span>实施切片（供 codex 顺序执行）</span></a><ol class="toc-children"><li><a href="#s6-1"><span class="toc-num">5.1</span><span>Phase A — Clustering（最关键）</span></a></li><li><a href="#s6-2"><span class="toc-num">5.2</span><span>Phase B — 多 cover 输出 + 项目级 index</span></a></li><li><a href="#s6-3"><span class="toc-num">5.3</span><span>Phase C — Cover ↔ Member 双向链接</span></a></li><li><a href="#s6-4"><span class="toc-num">5.4</span><span>Phase D — SVG 关系图</span></a></li><li><a href="#s6-5"><span class="toc-num">5.5</span><span>Phase E — Hook + 增量</span></a></li><li><a href="#s6-6"><span class="toc-num">5.6</span><span>Phase F — README + Demo 翻新</span></a></li></ol></li>
+    <li class="toc-section"><a href="#s7"><span class="toc-num">§6</span><span>验收清单</span></a></li>
+    <li class="toc-section"><a href="#s8"><span class="toc-num">§7</span><span>风险</span></a></li>
+    <li class="toc-section"><a href="#s9"><span class="toc-num">§8</span><span>下一步</span></a></li>
+  </ol>
+</aside>
+  <main>
+    <header class="frontmatter artifact-header" data-semantic-lens="present">
+  <div class="artifact-title-row">
+    <div class="artifact-title-stack">
+      <p class="eyebrow">SPEC</p>
+      <h1>xdossier MVP-1</h1>
+      <p class="subtitle">Multi-document Dossier View</p>
+    </div>
+    <div class="artifact-meta-rail">
+      <div class="stat-row"><span class="badge ready">已就绪</span><span class="stat"><span class="stat-label">阅读</span><span class="stat-value">约 9 分钟</span></span><span class="stat"><span class="stat-label">更新</span><span class="stat-value">2026-05-22</span></span><span class="stat"><span class="stat-label">负责人</span><span class="stat-value">claude</span></span></div>
+    </div>
+  </div>
+  <div class="executive-brief" aria-label="文档摘要">
+  <p class="executive-brief-label">摘要</p>
+  <div class="executive-brief-body"><p><strong>让用户打开一个 cover HTML，就能在 5 分钟内吃透一组相关 AI 产出文档（vision + 实现 + review）的全貌——并且能从 cover 一键跳进任何成员的渲染版 HTML，从成员回跳到 cover，看到 spec 与它的实现/评审之间的真实关系图。</strong></p></div>
+</div>
+  <details class="document-notes">
+  <summary>1 条文档提示</summary>
+  <div class="document-notes-body"><div class="callout goal" data-document-note><p>🎯 实现 vision spec §7 的 Dossier 视图层。
+现有 <code>src/cover/</code> 已经完成 ~70% 的基础设施（scan / edges / view-model / render）；
+本 spec 只处理剩下的 5 个真实 gap，<strong>不重做已有功能</strong>。</p>
+</div></div>
+</details>
+  
+</header>
+    
+    <div class="semantic-lens" aria-label="Dossier 语义透镜">
+<div id="lens-overview" class="semantic-overview" data-annotation="document-overview">
+  <div class="semantic-overview-lead">
+    <p class="semantic-label">Dossier 总览</p>
+    <p class="semantic-overview-summary">Cortex: 2 / 4 / 1 / 7 / 2 implements / 2 reviews. agent-core: 2 / 18 / 2 / 22 / 5 / 5.</p>
+  </div>
+  <dl class="semantic-facts"><div class="semantic-fact"><dt>读者收益</dt><dd>用这份 spec 对齐实现范围、关键决策和验收标准。</dd></div><div class="semantic-fact"><dt>当前状态</dt><dd>已就绪 · spec · 更新 2026-05-22</dd></div><div class="semantic-fact"><dt>下一步</dt><dd>从「为什么需要这一层」开始，再按相关章节继续。</dd></div></dl>
+  <div class="reading-path-lens" data-annotation="reading-path">
+  <p class="semantic-label">推荐阅读路径</p>
+  <div class="reading-path-cards">
+    <a href="#s2" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 1</span><span class="reading-path-label">为什么需要这一层</span></span>
+      <span>先用本节建立背景和问题。</span>
+    </a>
+<a href="#s5" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 4</span><span class="reading-path-label">设计</span></span>
+      <span>用本节理解关键决策及其理由。</span>
+    </a>
+<a href="#s7" class="reading-path-card">
+      <span class="reading-path-kicker"><span class="reading-path-number">§ 6</span><span class="reading-path-label">验收清单</span></span>
+      <span>用本节核对验证证据。</span>
+    </a>
+  </div>
+</div>
+</div>
+<div class="semantic-model-flow">
+<div id="lens-structure-map-1" class="semantic-block structure-map-lens" data-annotation="semantic-structure-map">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">结构图</p>
+      <h2>文档结构</h2>
+      <p>按原文顺序生成的主要章节阅读地图。</p>
+    </div>
+    <a class="semantic-source-link" href="#s2">查看原文 § 1</a>
+  </div>
+  <div class="structure-map-grid"><article id="lens-structure-map-1-node-s2" class="structure-node structure-node-context" data-map-node-id="s2">
+      <p class="structure-node-kind">背景</p>
+      <h3>为什么需要这一层</h3>
+      <p>Cortex: 2 / 4 / 1 / 7 / 2 implements / 2 reviews. agent-core: 2 / 18 / 2 / 22 / 5 / 5.</p>
+      <a class="semantic-source-link" href="#s2">原文 § 1</a>
+    </article>
+<article id="lens-structure-map-1-node-s5" class="structure-node structure-node-decision" data-map-node-id="s5">
+      <p class="structure-node-kind">决策</p>
+      <h3>设计</h3>
+      <p>输入：workspace 根目录 输出：Dossier[]，每个 Dossier = { id, root_spec, members[], edges[] }</p>
+      <a class="semantic-source-link" href="#s5">原文 § 4</a>
+    </article>
+<article id="lens-structure-map-1-node-s7" class="structure-node structure-node-evidence" data-map-node-id="s7">
+      <p class="structure-node-kind">证据</p>
+      <h3>验收清单</h3>
+      <p>验收清单包含 7 项检查。</p>
+      <a class="semantic-source-link" href="#s7">原文 § 6</a>
+    </article></div>
+  <div class="structure-connections">
+      <p class="semantic-label">连接关系</p>
+      <ol class="structure-edges">
+        <li class="structure-edge">
+            <span class="structure-edge-from">为什么需要这一层</span>
+            <span class="structure-edge-label">框定</span>
+            <span class="structure-edge-to">设计</span>
+          </li>
+<li class="structure-edge">
+            <span class="structure-edge-from">设计</span>
+            <span class="structure-edge-label">由证据验证</span>
+            <span class="structure-edge-to">验收清单</span>
+          </li>
+      </ol>
+    </div>
+</div>
+</div>
+<div class="semantic-judgment-grid" aria-label="关键判断面板">
+<div id="lens-risk-register-2" class="semantic-block risk-register" data-annotation="semantic-risk-register">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">风险</p>
+      <h2>风险</h2>
+    </div>
+    <a class="semantic-source-link" href="#s8">查看原文 § 7</a>
+  </div>
+  <div class="risk-register-cards"><article id="lens-risk-register-2-item-1" class="risk-card">
+      <p class="risk-label">聚类算法误判（spec 与无关 change 被聚在一起）</p>
+      
+      
+      <p class="risk-mitigation"><span>缓解</span> scoring_trace 输出到 manifest，用户能看见为什么；threshold 调到 ≥ 60 保守起步。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </article>
+<article id="lens-risk-register-2-item-2" class="risk-card">
+      <p class="risk-label">SVG 节点超过 12 个时布局崩</p>
+      
+      
+      <p class="risk-mitigation"><span>缓解</span> 降级 vertical grid；不投入到力学求解。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </article>
+<article id="lens-risk-register-2-item-3" class="risk-card">
+      <p class="risk-label">member render 找 manifest 引入循环依赖</p>
+      
+      
+      <p class="risk-mitigation"><span>缓解</span> manifest 是只读 JSON，member render 失败时静默不插 banner，不影响主流程。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </article>
+<details class="semantic-block-extra">
+  <summary>展开 2 项</summary>
+  <div class="semantic-block-extra-items"><article id="lens-risk-register-2-item-4" class="risk-card">
+      <p class="risk-label">hook 增量逻辑复杂、易引入 bug</p>
+      
+      
+      <p class="risk-mitigation"><span>缓解</span> Phase E 提供 --rebuild-all 兜底；如增量出错，用户可一键全量。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </article>
+<article id="lens-risk-register-2-item-5" class="risk-card">
+      <p class="risk-label">finetune-lab 真实内容含敏感数据，不能直接做 demo</p>
+      
+      
+      <p class="risk-mitigation"><span>缓解</span> 用 nlu_lab（11 篇、对外可开源）兜底。</p>
+      <a class="semantic-source-link" href="#s8">原文 § 7</a>
+    </article></div>
+</details></div>
+</div>
+<div id="lens-checklist-3" class="semantic-block checklist-lens" data-annotation="semantic-checklist">
+  <div class="semantic-block-header">
+    <div>
+      <p class="semantic-label">检查清单</p>
+      <h2>验收检查</h2>
+    </div>
+    <a class="semantic-source-link" href="#s7">查看原文 § 6</a>
+  </div>
+  <ol class="checklist-items"><li id="lens-checklist-3-item-1" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>跑 xdossier cover /Users/xforg/AI_SPACE/finetune-lab 产出 ≥ 6 份 dossier cover + 1 份项目级 index，无 e...</h3>
+        
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li>
+<li id="lens-checklist-3-item-2" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>点 finetune-lab roadmap cover 里任一 artifact，浏览器跳到对应渲染 HTML，而非 .md</h3>
+        
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li>
+<li id="lens-checklist-3-item-3" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>打开 roadmap impl-notes 渲染 HTML 顶部出现 &quot;↩ in dossier</h3>
+        <p>…roadmap-spec&quot; 横幅，点击回到 cover。</p>
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li>
+<details class="semantic-block-extra">
+  <summary>展开 4 项</summary>
+  <div class="semantic-block-extra-items"><li id="lens-checklist-3-item-4" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>roadmap cover 显示一张 SVG，spec 居中、7 个 impl-notes 一排、1 个 review 一排，每个节点可点击</h3>
+        
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li>
+<li id="lens-checklist-3-item-5" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>编辑 roadmap 任一 .md 文件保存 → .dossier/out/&lt;roadmap-id&gt;/index.html mtime 更新；其他 5 个 dossier 的 .doss...</h3>
+        
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li>
+<li id="lens-checklist-3-item-6" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>本地 pnpm typecheck &amp;&amp; pnpm test 全绿；测试数 ≥ 现有 155 + 新增的 cluster/graph 用例</h3>
+        
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li>
+<li id="lens-checklist-3-item-7" class="checklist-item checklist-required">
+      <span class="checklist-status">必做</span>
+      <div>
+        <h3>README 第一屏内有 cover 截图 + xdossier cover 命令</h3>
+        
+        <a class="semantic-source-link" href="#s7">原文 § 6</a>
+      </div>
+    </li></div>
+</details></ol>
+</div>
+</div>
+</div>
+    
+    <div id="source-sections" class="source-prose-boundary" aria-label="原文章节">
+  <p class="source-prose-title">原文章节</p>
+  <p class="source-prose-count">9 个一级章节</p>
+</div><nav id="source-section-map" class="source-section-map" aria-label="章节地图">
+  <div class="source-section-map-intro">
+    <p class="semantic-label">章节地图</p>
+    <p>用这张地图带着上下文跳入原文。</p>
+  </div>
+  <div class="source-section-map-lanes" aria-label="章节地图分组">
+<section class="source-section-lane source-section-lane-model">
+    <p class="source-section-lane-title">模型与概念</p>
+    <div class="source-section-lane-links">
+<a class="source-section-lane-link" href="#s2">
+        <span class="source-section-lane-number">§ 1</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">为什么需要这一层</span>
+          <span class="source-section-lane-role">模型：为什么需要这一层</span>
+          <span class="source-section-lane-purpose">Cortex: 2 / 4 / 1 / 7 / 2 implements / 2 reviews. agent-core: 2 / 18 / 2 / 22 / 5 / 5.</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s5">
+        <span class="source-section-lane-number">§ 4</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">设计</span>
+          <span class="source-section-lane-role">模型：设计</span>
+          <span class="source-section-lane-purpose">用本节理解关键决策及其理由。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s7">
+        <span class="source-section-lane-number">§ 6</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">验收清单</span>
+          <span class="source-section-lane-role">模型：验收清单</span>
+          <span class="source-section-lane-purpose">用本节核对验证证据。</span>
+        </span>
+      </a>
+    </div>
+  </section>
+<section class="source-section-lane source-section-lane-judgment">
+    <p class="source-section-lane-title">判断与验证</p>
+    <div class="source-section-lane-links">
+<a class="source-section-lane-link" href="#s7">
+        <span class="source-section-lane-number">§ 6</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">验收清单</span>
+          <span class="source-section-lane-role">检查清单</span>
+          <span class="source-section-lane-purpose">用本节核对验证证据。</span>
+        </span>
+      </a>
+<a class="source-section-lane-link" href="#s8">
+        <span class="source-section-lane-number">§ 7</span>
+        <span class="source-section-lane-body">
+          <span class="source-section-lane-section">风险</span>
+          <span class="source-section-lane-role">风险</span>
+          <span class="source-section-lane-purpose">实现前先用本节检查风险。</span>
+        </span>
+      </a>
+    </div>
+  </section>
+  </div>
+  <div class="source-section-map-grid">
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s2">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 1</span>
+    <span>2 个小节</span>
+  </span>
+  <span class="source-section-title">为什么需要这一层</span>
+  <span class="source-section-summary">Cortex: 2 / 4 / 1 / 7 / 2 implements / 2 reviews. agent-core: 2 / 18 / 2 / 22 / 5 / 5.</span>
+  
+  
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s2-1">1.1 真实材料勘察（2026-05-22 完成）</a><a href="#s2-2">1.2 真实痛点（实测得来）</a></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>2 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：为什么需要这一层</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-s2">模型：为什么需要这一层</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s3">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 2</span>
+    <span>2 个小节</span>
+  </span>
+  <span class="source-section-title">范围</span>
+  <span class="source-section-summary">主题聚类（topic clustering）：在一个 workspace 里检测出 N 个独立 dossier（按 spec → implements/reviews 树聚类，文件名 stem 作为强补充信号）。</span>
+  
+  
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s3-1">2.1 包含</a><a href="#s3-2">2.2 不包含</a></span>
+  
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s4">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 3</span>
+    <span>2 个小节</span>
+  </span>
+  <span class="source-section-title">现状评估：已有什么，gap 在哪</span>
+  <span class="source-section-summary">src/cover/scan.ts — 扫 docs/specs|changes|reviews，解析 frontmatter。</span>
+  
+  
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s4-1">3.1 ✅ 已有（不动）</a><a href="#s4-2">3.2 ❌ 5 个真实 gap</a></span>
+  
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s5">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 4</span>
+    <span>8 个小节</span>
+  </span>
+  <span class="source-section-title">设计</span>
+  <span class="source-section-summary">输入：workspace 根目录 输出：Dossier[]，每个 Dossier = { id, root_spec, members[], edges[] }</span>
+  <span class="source-section-chips"><span>Dossier id 取 root spec 的 filename_stem，如 2026-04-22-finetune-lab-gemma4-e2b-learning-roadmap。</span><span>接受测试：用 finetune-lab 41 件物品，算法应当聚出 6 个 dossier（对应 6 个 spec）+ ≤5 件 orphan。</span></span>
+  <span class="source-section-hint">用本节理解关键决策及其理由。</span>
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s5-1">4.1 聚类算法（detection + clustering）</a><a href="#s5-2">4.2 数据模型扩展</a><a href="#s5-3">4.3 Cover HTML 改造</a><span>还有 5 个小节</span></span>
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>2 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：设计</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-s5">模型：设计</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s6">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 5</span>
+    <span>6 个小节</span>
+  </span>
+  <span class="source-section-title">实施切片（供 codex 顺序执行）</span>
+  <span class="source-section-summary">每个切片应 ≤500 行 delta，独立可测、可 commit。</span>
+  <span class="source-section-chips"><span>新文件 src/cover/cluster.ts：实现 §4.1 算法，导出 clusterArtifacts(artifacts: CoverArtifact[]):...</span><span>单元测试 tests/cluster.test.ts：用 tests/fixtures/clustering/ 下的合成 fixture（≥ 3 个 dossier，含 1 个...</span></span>
+  
+  </a>
+  <span class="source-section-subsections" aria-label="小节"><a href="#s6-1">5.1 Phase A — Clustering（最关键）</a><a href="#s6-2">5.2 Phase B — 多 cover 输出 + 项目级 index</a><a href="#s6-3">5.3 Phase C — Cover ↔ Member 双向链接</a><span>还有 3 个小节</span></span>
+  
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s7">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 6</span>
+    
+  </span>
+  <span class="source-section-title">验收清单</span>
+  <span class="source-section-summary">验收清单包含 7 项检查。</span>
+  
+  <span class="source-section-hint">用本节核对验证证据。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>10 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">路径：验收清单</a><a class="source-section-role-chip section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-s7">模型：验收清单</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3">检查清单</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-1">检查清单：跑 xdossier cover /Users/xforg/AI_SPACE/finetune-lab 产出 ≥ 6 份 dossier cover + 1 份项目级 index，无 e...</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-2">检查清单：点 finetune-lab roadmap cover 里任一 artifact，浏览器跳到对应渲染 HTML，而非 .md</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-3">检查清单：打开 roadmap impl-notes 渲染 HTML 顶部出现 &quot;↩ in dossier</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-4">检查清单：roadmap cover 显示一张 SVG，spec 居中、7 个 impl-notes 一排、1 个 review 一排，每个节点可点击</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-5">检查清单：编辑 roadmap 任一 .md 文件保存 → .dossier/out/&lt;roadmap-id&gt;/index.html mtime 更新；其他 5 个 dossier 的 .doss...</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-6">检查清单：本地 pnpm typecheck &amp;&amp; pnpm test 全绿；测试数 ≥ 现有 155 + 新增的 cluster/graph 用例</a><a class="source-section-role-chip section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-7">检查清单：README 第一屏内有 cover 截图 + xdossier cover 命令</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s8">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 7</span>
+    
+  </span>
+  <span class="source-section-title">风险</span>
+  <span class="source-section-summary">风险包含 5 项风险。</span>
+  
+  <span class="source-section-hint">实现前先用本节检查风险。</span>
+  </a>
+  
+  <details class="source-section-role-summary" aria-label="语义角色">
+  <summary>6 个语义角色</summary>
+  <span class="source-section-role-summary-links"><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-2">风险</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-1">风险：聚类算法误判（spec 与无关 change 被聚在一起）</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-2">风险：SVG 节点超过 12 个时布局崩</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-3">风险：member render 找 manifest 引入循环依赖</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-4">风险：hook 增量逻辑复杂、易引入 bug</a><a class="source-section-role-chip section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-5">风险：finetune-lab 真实内容含敏感数据，不能直接做 demo</a></span>
+</details>
+</article>
+<article class="source-section-map-card">
+  <a class="source-section-map-main" href="#s9">
+  <span class="source-section-kicker">
+    <span class="source-section-num">§ 8</span>
+    
+  </span>
+  <span class="source-section-title">下一步</span>
+  <span class="source-section-summary">用户确认本 spec → status 改 ready → 锁定。</span>
+  
+  <span class="source-section-hint">用本节跟随执行路径。</span>
+  </a>
+  
+  
+</article>
+  </div>
+</nav><section id="s1">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">01</div>
+  <h2 id="s1-title" class="section-cover-title">一句话</h2>
+</header>
+
+<p>辅助一句话：从&quot;每篇文档各自一份漂亮 HTML&quot;升级为&quot;一组文档共享一份导航封面&quot;。</p>
+
+</section>
+<section id="s2">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">02</div>
+  <h2 id="s2-title" class="section-cover-title">为什么需要这一层</h2>
+  <p class="section-cover-kicker">先用本节建立背景和问题。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">Cortex: 2 / 4 / 1 / 7 / 2 implements / 2 reviews. agent-core: 2 / 18 / 2 / 22 / 5 / 5.</p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：为什么需要这一层</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-s2">模型：为什么需要这一层</a>
+</nav>
+
+<h3 id="s2-1"><span class="sub-num">1.1</span>真实材料勘察（2026-05-22 完成）</h3>
+
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>specs</th>
+<th>changes</th>
+<th>reviews</th>
+<th>总文档</th>
+<th>frontmatter 显式链接</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cortex</td>
+<td>2</td>
+<td>4</td>
+<td>1</td>
+<td>7</td>
+<td>2 implements / 2 reviews</td>
+</tr>
+<tr>
+<td>agent-core</td>
+<td>2</td>
+<td>18</td>
+<td>2</td>
+<td>22</td>
+<td>5 / 5</td>
+</tr>
+<tr>
+<td>nlu_lab</td>
+<td>2</td>
+<td>4</td>
+<td>5</td>
+<td>11</td>
+<td>2 / 2</td>
+</tr>
+<tr>
+<td>DecisionF</td>
+<td>2</td>
+<td>4</td>
+<td>2</td>
+<td>9</td>
+<td>4 / 2</td>
+</tr>
+<tr>
+<td><strong>finetune-lab</strong></td>
+<td><strong>6</strong></td>
+<td><strong>28</strong></td>
+<td><strong>7</strong></td>
+<td><strong>41</strong></td>
+<td><strong>17 / 14</strong></td>
+</tr>
+</tbody></table>
+
+<p><code>finetune-lab</code> 的 <code>2026-04-22-finetune-lab-gemma4-e2b-learning-roadmap</code> 主题包含 <strong>1 spec + 7 impl-notes + 1 review = 9 篇文档</strong>。这就是真实 dossier 的形状。</p>
+
+<p><strong>关键发现</strong>：除 <code>finetune-lab</code> 外没有一份 <code>.html</code> 渲染过。<strong>用户从未在真实场景里用过自己的产品</strong>。</p>
+
+<h3 id="s2-2"><span class="sub-num">1.2</span>真实痛点（实测得来）</h3>
+
+<p>跑 <code>xdossier render</code> 单独渲染 spec → 顶部出现 &quot;7 个实现 · 1 个评审&quot; 徽章——<strong>数据存在但不可点击</strong>。
+跑 <code>xdossier build</code> 项目级 cover → &quot;41 artifacts, 34 edges, graph: list-fallback&quot;——<strong>没有真实图，全是列表</strong>。
+点 cover 里的 artifact 链接 → 跳到 <code>.md</code> 原文（<a href="src/cover/render.ts:419">src/cover/render.ts:419</a> 硬编码 <code>../../${path}</code>）——<strong>不是漂亮渲染版</strong>。
+finetune-lab 41 件物品堆成一个 cover →  <strong>6 个独立主题混作一团，找不到聚焦点</strong>。</p>
+
+</section>
+<section id="s3">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">03</div>
+  <h2 id="s3-title" class="section-cover-title">范围</h2>
+  <p class="section-cover-kicker">主题聚类（topic clustering）：在一个 workspace 里检测出 N 个独立 dossier（按 spec → implements/reviews 树聚类，文件名 stem 作为强补充信号）。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">主题聚类（topic clustering）：在一个 workspace 里检测出 N 个独立 dossier（按 spec → implements/reviews 树聚类，文件名 stem 作为强补充信号）。</p>
+
+<h3 id="s3-1"><span class="sub-num">2.1</span>包含</h3>
+
+<ul>
+<li><strong>主题聚类（topic clustering）</strong>：在一个 workspace 里检测出 N 个独立 dossier（按 spec → implements/reviews 树聚类，文件名 stem 作为强补充信号）。</li>
+<li><strong>Cover ↔ Member 双向连接</strong>：cover 链接指向成员的渲染 HTML（fallback 到 <code>.md</code>）；成员 HTML 顶部出现&quot;↩ in dossier: X&quot;返链。</li>
+<li><strong>真实 SVG 关系图</strong>：替换 list-fallback，画 spec/changes/reviews 三层节点 + 真实箭头。</li>
+<li><strong>PostToolUse hook 增量刷新</strong>：渲染一份 member 后，自动重建它所属 dossier 的 cover。</li>
+<li><strong>CLI 命名 + 文档化</strong>：<code>xdossier cover [workspace]</code> 作为推荐入口（保留 <code>build</code> 作 alias），README/Quickstart 把 cover 放在第一行而非 pedagogy。</li>
+<li><strong>真实 demo</strong>：用 <code>finetune-lab</code> roadmap dossier 替换当前 demo 站点的单文档样本。</li>
+</ul>
+
+<h3 id="s3-2"><span class="sub-num">2.2</span>不包含</h3>
+
+<table>
+<thead>
+<tr>
+<th>❌ 不做</th>
+<th>因为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>跨项目 dossier 聚类（跨 workspace）</td>
+<td>MVP-2 范围；当前一个 workspace 内已经够用</td>
+</tr>
+<tr>
+<td>推断信号（标题相似、术语重叠）</td>
+<td>vision spec §7.2 Tier 2，需 LLM；MVP-1 只做 Tier 1 + 1.5</td>
+</tr>
+<tr>
+<td>用户显式 <code>dossier.md</code> index 文件</td>
+<td>vision spec §7.2 Tier 3；用户当前用 frontmatter + 文件名约定已足够</td>
+</tr>
+<tr>
+<td>Dossier 之间的关系（&quot;dossier A 引用 dossier B&quot;）</td>
+<td>一阶问题先解决</td>
+</tr>
+<tr>
+<td>多人协作 / 评论 / 服务端托管</td>
+<td>保持本地优先</td>
+</tr>
+<tr>
+<td>watch mode 守护进程</td>
+<td>推迟到 MVP-2；hook 已经覆盖大多数场景</td>
+</tr>
+</tbody></table>
+
+</section>
+<section id="s4">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">04</div>
+  <h2 id="s4-title" class="section-cover-title">现状评估：已有什么，gap 在哪</h2>
+  <p class="section-cover-kicker">src/cover/scan.ts — 扫 docs/specs|changes|reviews，解析 frontmatter。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">src/cover/scan.ts — 扫 docs/specs|changes|reviews，解析 frontmatter。</p>
+
+<h3 id="s4-1"><span class="sub-num">3.1</span>✅ 已有（不动）</h3>
+
+<ul>
+<li><a href="src/cover/scan.ts">src/cover/scan.ts</a> — 扫 <code>docs/specs|changes|reviews</code>，解析 frontmatter</li>
+<li><a href="src/cover/edges.ts">src/cover/edges.ts</a> — 提取 <code>implements</code> / <code>reviews</code> / <code>reviews_target</code> 关系</li>
+<li><a href="src/cover/view-model.ts">src/cover/view-model.ts</a> — 构造 <code>DossierCoverView</code>，含 reading_paths、open_questions、key_decisions</li>
+<li><a href="src/cover/render.ts">src/cover/render.ts</a> — 输出 cover HTML（含 verdict-strip、artifact-map、artifact-list、reading-paths）</li>
+<li><a href="src/cover/manifest.ts">src/cover/manifest.ts</a> — build manifest，支持 <code>--since</code> 活动 inbox</li>
+<li><a href="src/cli.ts">src/cli.ts</a> <code>build</code> 子命令 — 完整的 CLI 参数 + 错误处理</li>
+</ul>
+
+<h3 id="s4-2"><span class="sub-num">3.2</span>❌ 5 个真实 gap</h3>
+
+<ol>
+<li><strong>聚类粒度错位</strong>：scan 把整个 <code>docs/</code> 当一个 cover。需要在 view-model 上层加一个 cluster 步骤。</li>
+<li><strong>链接指向 .md 而非 .html</strong>：<code>sourceHref()</code> 写死 <code>../../${path}</code>，应优先指向同名 <code>.html</code>。</li>
+<li><strong>图为 list fallback</strong>：<code>graphMode</code> 始终是空字符串或 &quot;Graph disabled&quot; 标记；缺少真实 <code>renderRelationGraph(view)</code> 函数。</li>
+<li><strong>Member 不知道自己在 dossier 里</strong>：<code>src/emit.ts</code>/<code>src/render.ts</code> 渲染单文档时不消费 cover 信息。</li>
+<li><strong>Hook 只渲染 member，不刷新 cover</strong>：[.github/](见 root) 没有 cover-refresh 钩子。</li>
+</ol>
+
+</section>
+<section id="s5">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">05</div>
+  <h2 id="s5-title" class="section-cover-title">设计</h2>
+  <p class="section-cover-kicker">用本节理解关键决策及其理由。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">输入：workspace 根目录 输出：Dossier[]，每个 Dossier = { id, root_spec, members[], edges[] }</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>Dossier id 取 root spec 的 filename_stem，如 2026-04-22-finetune-lab-gemma4-e2b-learning-roadmap。</li><li>接受测试：用 finetune-lab 41 件物品，算法应当聚出 6 个 dossier（对应 6 个 spec）+ ≤5 件 orphan。</li></ul>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节理解关键决策及其理由。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节理解关键决策及其理由。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：设计</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-s5">模型：设计</a>
+</nav>
+
+<h3 id="s5-1"><span class="sub-num">4.1</span>聚类算法（detection + clustering）</h3>
+
+<p>输入：workspace 根目录
+输出：<code>Dossier[]</code>，每个 Dossier = <code>{ id, root_spec, members[], edges[] }</code></p>
+
+<p><strong>算法（两阶段，全部 Tier 1 / 1.5 信号）：</strong></p>
+
+<pre><code>phase 1 — root identification:
+  candidates = artifacts where kind ∈ {&quot;vision-spec&quot;, &quot;mvp-spec&quot;, &quot;design&quot;, &quot;spec&quot;}
+  for each candidate, treat as a potential dossier root.
+
+phase 2 — member assignment (each non-root artifact picks one root):
+  for each non-root artifact `a`:
+    score(root, a) = 0
+    + 100 if root.frontmatter.implements contains a.path
+    + 100 if root.frontmatter.reviews    contains a.path
+    + 80  if a.frontmatter.implements    contains root.path
+    + 80  if a.frontmatter.reviews_target contains root.path
+    +  60 if filename_stem(a) == filename_stem(root)   // -spec / -impl-notes / -review trio
+    +  30 if filename_prefix_overlap_ratio(a, root) ≥ 0.8 (date + slug)
+    +   5 if same directory tree (docs/specs vs docs/changes/&lt;dossier_subdir&gt;/...)
+    assign a to argmax_root if max score ≥ 60; else &quot;orphan&quot;.
+
+phase 3 — orphan handling:
+  orphans collected into a synthetic &quot;Project miscellany&quot; dossier (low priority, shown at bottom of project-wide index page if any).</code></pre>
+
+<p>Dossier id 取 root spec 的 <code>filename_stem</code>，如 <code>2026-04-22-finetune-lab-gemma4-e2b-learning-roadmap</code>。</p>
+
+<p><strong>接受测试</strong>：用 finetune-lab 41 件物品，算法应当聚出 6 个 dossier（对应 6 个 spec）+ ≤5 件 orphan。</p>
+
+<h3 id="s5-2"><span class="sub-num">4.2</span>数据模型扩展</h3>
+
+<pre><code class="lang-ts">// src/cover/types.ts 新增（不动旧类型）
+
+export type Dossier = {
+  id: string;                    // filename stem
+  root: CoverArtifact;           // 起点 spec
+  members: CoverArtifact[];      // 包含 root 自身
+  edges: CoverEdge[];            // edges where from ∈ members &amp;&amp; to ∈ members
+  view: DossierCoverView;        // 复用现有 view-model
+};
+
+export type ClusterResult = {
+  dossiers: Dossier[];
+  orphans: CoverArtifact[];
+  scoring_trace?: Array&lt;{ artifact: string; root: string; score: number }&gt;;
+};</code></pre>
+
+<h3 id="s5-3"><span class="sub-num">4.3</span>Cover HTML 改造</h3>
+
+<p>每个 dossier 产出一份 cover：</p>
+
+<pre><code>&lt;workspace&gt;/.dossier/out/&lt;dossier-id&gt;/index.html      # 主题级 cover
+&lt;workspace&gt;/.dossier/out/index.html                   # 项目级总览（列出所有 dossier）</code></pre>
+
+<p><strong>项目级总览</strong>：一张表，每行 <code>dossier-id, root title, member count, last-updated, status</code>，点击进入对应 dossier cover。</p>
+
+<p><strong>主题级 cover</strong>（基于现有 render.ts，新增图块）：</p>
+
+<ol>
+<li>verdict-strip（已有）</li>
+<li><strong>NEW</strong> relation-graph：inline SVG，分 3 层（spec / change / review），节点点击跳成员 HTML</li>
+<li>artifact-map（保留为 fallback；图与列表互补）</li>
+<li>key-decisions / open-questions / reading-paths（已有）</li>
+</ol>
+
+<h3 id="s5-4"><span class="sub-num">4.4</span>SVG 关系图布局算法</h3>
+
+<p>简单分层（无依赖）：</p>
+
+<pre><code>layer 0 (top):    root spec node (居中)
+layer 1 (middle): impl-notes nodes (水平等间距)
+layer 2 (bottom): review nodes (水平等间距)
+edges:            spec → impl-note 实线箭头；spec → review 虚线箭头
+node size:        固定 180×60，title 截断到 24 字
+spacing:          horizontal 24px，vertical 80px
+viewport:         viewBox `0 0 ${cols*204} ${3*140}` (overflow auto)
+interactivity:    &lt;a xlink:href=&quot;...&quot;&gt; 包装节点；hover 时 highlight 相邻边</code></pre>
+
+<p>实现位置：<code>src/cover/relation-graph.ts</code> 新文件，导出 <code>renderRelationGraph(view: DossierCoverView): string</code>。</p>
+
+<p>如果 dossier members &gt; 12 件，节点过密时降级为 vertical scroll grid（不做强制布局求解）。</p>
+
+<h3 id="s5-5"><span class="sub-num">4.5</span>Cover ↔ Member 双向链接</h3>
+
+<p><strong>Cover → Member</strong>：</p>
+
+<ul>
+<li><a href="src/cover/render.ts:419">src/cover/render.ts:419</a> <code>sourceHref(path)</code> 改造：<pre><code class="lang-ts">function memberHref(path: string, workspaceRoot: string): string {
+  const htmlPath = path.replace(/\.md$/, &quot;.html&quot;);
+  return existsSync(join(workspaceRoot, htmlPath)) ? `../../${htmlPath}` : `../../${path}`;
+}</code></pre></li>
+</ul>
+
+<p><strong>Member → Cover</strong>：</p>
+
+<ul>
+<li>渲染单文档时（<code>src/emit.ts</code>），检测同目录是否存在 <code>../../.dossier/out/&lt;dossier-id&gt;/index.html</code>：<ul>
+<li>存在则在 spec-card 上方插入一个 <code>.dossier-banner</code>：<pre><code>↩ Part of dossier: &lt;root spec title&gt; · &lt;member-count&gt; docs · last build &lt;ts&gt;</code></pre></li>
+</ul>
+</li>
+<li>Banner 加 data-attribute <code>data-dossier-id</code>，方便 hook 找回对应 cover。</li>
+</ul>
+
+<p><strong>实现方式</strong>：CLI flag <code>--dossier-id &lt;id&gt;</code> + <code>--dossier-root &lt;path&gt;</code> 由 cover build 阶段调用 member render 时传入；或者 member render 自动向上找 <code>.dossier/out/manifest.json</code> 查表。后者更优（解耦）。</p>
+
+<h3 id="s5-6"><span class="sub-num">4.6</span>Hook 增量刷新</h3>
+
+<p>文件：<code>hooks/post-tool-use.sh</code>（新建，提供给用户 opt-in）</p>
+
+<pre><code class="lang-bash">#!/usr/bin/env bash
+set -e
+file=&quot;$1&quot;
+[[ &quot;$file&quot; == *.md ]] || exit 0
+[[ &quot;$file&quot; == */docs/specs/*.md || &quot;$file&quot; == */docs/changes/*.md || &quot;$file&quot; == */docs/reviews/*.md ]] || exit 0
+
+# render the single doc
+xdossier render &quot;$file&quot;
+
+# find workspace root (climb until we see .dossier/ or docs/specs/)
+workspace=$(climb_until_dir &quot;$file&quot; &quot;.dossier&quot; &quot;docs/specs&quot;)
+
+# incremental cover refresh — only the dossier that this file belongs to
+xdossier cover &quot;$workspace&quot; --only-dossier-containing &quot;$file&quot;</code></pre>
+
+<p>CLI 增量入口：<code>xdossier cover &lt;workspace&gt; --only-dossier-containing &lt;file.md&gt;</code> —— 复用聚类结果，只重渲染受影响的那一份 cover，不重新扫整个 workspace（用上 build manifest 的 content_hash 判断哪些 dossier 命中）。</p>
+
+<h3 id="s5-7"><span class="sub-num">4.7</span>CLI 表面</h3>
+
+<pre><code>xdossier cover &lt;workspace&gt;           # 推荐入口：build all dossier covers + project index
+xdossier cover &lt;workspace&gt; --only-dossier-containing &lt;member&gt;
+xdossier cover &lt;workspace&gt; --since &lt;git-ref&gt;
+xdossier cover &lt;workspace&gt; --no-graph           # 关闭 SVG 用 list fallback
+
+xdossier build &lt;workspace&gt;           # alias for backward compat（一行 wrapper）
+xdossier render &lt;file.md&gt;            # 现状不变，自动尝试找 dossier 写 banner</code></pre>
+
+<h3 id="s5-8"><span class="sub-num">4.8</span>与 vision spec 对齐</h3>
+
+<ul>
+<li>vision spec §7.2 Tier 1 frontmatter 信号 → 本 spec §4.1 phase 2 中 score +100/+80</li>
+<li>vision spec §7.2 Tier 1.5 filename prefix → 本 spec §4.1 phase 2 中 score +60/+30</li>
+<li>vision spec §7.2 Tier 2 推断信号 → 本 spec §2.2 显式排除</li>
+<li>vision spec §7.2 Tier 3 用户显式 dossier.md → 本 spec §2.2 显式排除</li>
+</ul>
+
+</section>
+<section id="s6">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">06</div>
+  <h2 id="s6-title" class="section-cover-title">实施切片（供 codex 顺序执行）</h2>
+  <p class="section-cover-kicker">每个切片应 ≤500 行 delta，独立可测、可 commit。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">每个切片应 ≤500 行 delta，独立可测、可 commit。</p>
+<ul class="section-key-points" data-annotation="section-key-points" data-density="compact"><li>新文件 src/cover/cluster.ts：实现 §4.1 算法，导出 clusterArtifacts(artifacts: CoverArtifact[]):...</li><li>单元测试 tests/cluster.test.ts：用 tests/fixtures/clustering/ 下的合成 fixture（≥ 3 个 dossier，含 1 个...</li></ul>
+
+<p>每个切片应 ≤500 行 delta，独立可测、可 commit。</p>
+
+<h3 id="s6-1"><span class="sub-num">5.1</span>Phase A — Clustering（最关键）</h3>
+
+<ul>
+<li>新文件 <code>src/cover/cluster.ts</code>：实现 §4.1 算法，导出 <code>clusterArtifacts(artifacts: CoverArtifact[]): ClusterResult</code>。</li>
+<li>单元测试 <code>tests/cluster.test.ts</code>：用 <code>tests/fixtures/clustering/</code> 下的合成 fixture（≥ 3 个 dossier，含 1 个 orphan）验证。</li>
+<li><strong>不动</strong> scan / edges / view-model / render。</li>
+</ul>
+
+<h3 id="s6-2"><span class="sub-num">5.2</span>Phase B — 多 cover 输出 + 项目级 index</h3>
+
+<ul>
+<li>改造 <code>src/cover/render.ts</code> 的 <code>buildDossierCover()</code>：内部对每个 dossier 单独调用 view-model，分别 emit <code>.dossier/out/&lt;id&gt;/index.html</code>，另外 emit <code>.dossier/out/index.html</code>（项目级 list）。</li>
+<li>CLI <a href="src/cli.ts">src/cli.ts</a> <code>build</code> action 跟随；新增 <code>cover</code> 子命令作为别名。</li>
+</ul>
+
+<h3 id="s6-3"><span class="sub-num">5.3</span>Phase C — Cover ↔ Member 双向链接</h3>
+
+<ul>
+<li>§4.5 改造（cover 侧 href 切换 + member 侧 banner 注入）。</li>
+<li>单元测试覆盖：（a）member .html 缺失时 cover 链回 .md，（b）member render 检测到 manifest 后插入 banner。</li>
+</ul>
+
+<h3 id="s6-4"><span class="sub-num">5.4</span>Phase D — SVG 关系图</h3>
+
+<ul>
+<li>新文件 <code>src/cover/relation-graph.ts</code>：§4.4 分层布局 + escape-safe SVG emit。</li>
+<li>改 <code>src/cover/render.ts</code> <code>renderArtifactMap()</code> 在 graph 模式下调用新函数。</li>
+<li>单元测试：≤12 节点的输入应产出 well-formed SVG（无 unclosed tag、所有 href escape 正确）。</li>
+</ul>
+
+<h3 id="s6-5"><span class="sub-num">5.5</span>Phase E — Hook + 增量</h3>
+
+<ul>
+<li>新文件 <code>hooks/post-tool-use.sh</code>，README 引导 opt-in。</li>
+<li>CLI <code>--only-dossier-containing &lt;file&gt;</code>，复用 build manifest 的 content_hash 判断是否需要重渲。</li>
+<li>集成测试：编辑一个 member md → 跑 hook → 验证只重写了对应 dossier 目录，没动其他 dossier。</li>
+</ul>
+
+<h3 id="s6-6"><span class="sub-num">5.6</span>Phase F — README + Demo 翻新</h3>
+
+<ul>
+<li>README 把 quickstart 第一行换成 <code>xdossier cover docs/</code> + 一张 cover 截图。</li>
+<li>用 finetune-lab roadmap dossier 替换当前 GitHub Pages demo（事先脱敏；如有不便公开内容则用 nlu_lab）。</li>
+<li>CHANGELOG 写 <code>[Unreleased]</code> MVP-1 段。</li>
+</ul>
+
+</section>
+<section id="s7">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">07</div>
+  <h2 id="s7-title" class="section-cover-title">验收清单</h2>
+  <p class="section-cover-kicker">用本节核对验证证据。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">验收清单包含 7 项检查。</p>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节核对验证证据。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节核对验证证据。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-path" href="#lens-overview">路径：验收清单</a><a class="section-semantic-chip section-semantic-model" href="#lens-structure-map-1-node-s7">模型：验收清单</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3">检查清单</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-1">检查清单：跑 xdossier cover /Users/xforg/AI_SPACE/finetune-lab 产出 ≥ 6 份 dossier cover + 1 份项目级 index，无 e...</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-2">检查清单：点 finetune-lab roadmap cover 里任一 artifact，浏览器跳到对应渲染 HTML，而非 .md</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-3">检查清单：打开 roadmap impl-notes 渲染 HTML 顶部出现 &quot;↩ in dossier</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-4">检查清单：roadmap cover 显示一张 SVG，spec 居中、7 个 impl-notes 一排、1 个 review 一排，每个节点可点击</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-5">检查清单：编辑 roadmap 任一 .md 文件保存 → .dossier/out/&lt;roadmap-id&gt;/index.html mtime 更新；其他 5 个 dossier 的 .doss...</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-6">检查清单：本地 pnpm typecheck &amp;&amp; pnpm test 全绿；测试数 ≥ 现有 155 + 新增的 cluster/graph 用例</a><a class="section-semantic-chip section-semantic-checklist" href="#lens-checklist-3-item-7">检查清单：README 第一屏内有 cover 截图 + xdossier cover 命令</a>
+</nav>
+
+<p>实施完成后，下列每条要通过：</p>
+
+<ul>
+<li><input disabled="" type="checkbox"> 跑 <code>xdossier cover /Users/xforg/AI_SPACE/finetune-lab</code> 产出 ≥ 6 份 dossier cover + 1 份项目级 index，无 error。</li>
+<li><input disabled="" type="checkbox"> 点 finetune-lab roadmap cover 里任一 artifact，浏览器跳到对应渲染 HTML，而非 .md。</li>
+<li><input disabled="" type="checkbox"> 打开 roadmap impl-notes 渲染 HTML 顶部出现 &quot;↩ in dossier: …roadmap-spec&quot; 横幅，点击回到 cover。</li>
+<li><input disabled="" type="checkbox"> roadmap cover 显示一张 SVG，spec 居中、7 个 impl-notes 一排、1 个 review 一排，每个节点可点击。</li>
+<li><input disabled="" type="checkbox"> 编辑 roadmap 任一 .md 文件保存 → <code>.dossier/out/&lt;roadmap-id&gt;/index.html</code> mtime 更新；其他 5 个 dossier 的 .dossier/out 目录 mtime <strong>未变</strong>（增量正确）。</li>
+<li><input disabled="" type="checkbox"> 本地 <code>pnpm typecheck &amp;&amp; pnpm test</code> 全绿；测试数 ≥ 现有 155 + 新增的 cluster/graph 用例。</li>
+<li><input disabled="" type="checkbox"> README 第一屏内有 cover 截图 + <code>xdossier cover</code> 命令。</li>
+</ul>
+
+</section>
+<section id="s8">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">08</div>
+  <h2 id="s8-title" class="section-cover-title">风险</h2>
+  <p class="section-cover-kicker">风险包含 5 项风险。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">风险包含 5 项风险。</p>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 实现前先用本节检查风险。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>实现前先用本节检查风险。</span></p>
+<nav class="section-semantic-trace" data-annotation="section-semantic-trace" aria-label="本节语义引用">
+  <span class="section-semantic-trace-label">用于</span>
+  <a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-2">风险</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-1">风险：聚类算法误判（spec 与无关 change 被聚在一起）</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-2">风险：SVG 节点超过 12 个时布局崩</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-3">风险：member render 找 manifest 引入循环依赖</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-4">风险：hook 增量逻辑复杂、易引入 bug</a><a class="section-semantic-chip section-semantic-risk" href="#lens-risk-register-2-item-5">风险：finetune-lab 真实内容含敏感数据，不能直接做 demo</a>
+</nav>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>风险</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td>聚类算法误判（spec 与无关 change 被聚在一起）</td>
+<td>scoring_trace 输出到 manifest，用户能看见为什么；threshold 调到 ≥ 60 保守起步</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>SVG 节点超过 12 个时布局崩</td>
+<td>降级 vertical grid；不投入到力学求解</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>member render 找 manifest 引入循环依赖</td>
+<td>manifest 是只读 JSON，member render 失败时静默不插 banner，不影响主流程</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>hook 增量逻辑复杂、易引入 bug</td>
+<td>Phase E 提供 <code>--rebuild-all</code> 兜底；如增量出错，用户可一键全量</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>finetune-lab 真实内容含敏感数据，不能直接做 demo</td>
+<td>用 nlu_lab（11 篇、对外可开源）兜底</td>
+</tr>
+</tbody></table>
+
+</section>
+<section id="s9">
+<header class="section-cover" data-detail-level="section-cover">
+  <div class="section-cover-num">09</div>
+  <h2 id="s9-title" class="section-cover-title">下一步</h2>
+  <p class="section-cover-kicker">用户确认本 spec → status 改 ready → 锁定。</p>
+</header>
+<p class="section-summary" data-annotation="section-summary">用户确认本 spec → status 改 ready → 锁定。</p>
+<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="阅读提示: 用本节跟随执行路径。"><span class="section-reader-hint-label" aria-hidden="true">阅读</span><span>用本节跟随执行路径。</span></p>
+
+<ul>
+<li>用户确认本 spec → status 改 <code>ready</code> → 锁定</li>
+<li>用 codex CLI 按 Phase A → F 顺序实施，每个 phase 一次 commit</li>
+<li>全部完成后整体 review，更新 vision spec §7 status，宣布 MVP-1 ship</li>
+</ul>
+
+</section>
+    <footer class="spec-footer">
+      <span>xdossier MVP-1 — Multi-document Dossier View · 已就绪 · 2026-05-22</span>
+      <span>由 xdossier 渲染</span>
+    </footer>
+  </main>
+</div>
+<script>(function () {
+  const semanticNavEls = Array.from(document.querySelectorAll(".semantic-overview[id], .semantic-block[id], .source-prose-boundary[id], .source-section-map[id]"));
+  const sectionEls = Array.from(document.querySelectorAll("section[id]"));
+  const h3Els = Array.from(document.querySelectorAll("main h3[id]"));
+  const headings = [...semanticNavEls, ...sectionEls, ...h3Els];
+  const tocLinks = new Map();
+  document.querySelectorAll("aside.toc a").forEach((a) => {
+    const href = a.getAttribute("href");
+    if (!href) return;
+    tocLinks.set(href.slice(1), a);
+  });
+
+  const progressFill = document.querySelector(".reading-progress-fill");
+  const tocAside = document.querySelector("aside.toc");
+  let lastActiveId = "";
+  let isSyncingHashTarget = false;
+  const parentH2Id = (id) => {
+    const idx = id.indexOf("-");
+    return idx > 0 ? id.slice(0, idx) : null;
+  };
+
+  const targetFromHash = () => {
+    if (!window.location.hash || window.location.hash.length <= 1) return null;
+    try {
+      return document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    } catch (_e) {
+      return null;
+    }
+  };
+
+  const scrollTocLinkIntoView = (activeLink) => {
+    if (!activeLink || !tocAside) return;
+    const linkRect = activeLink.getBoundingClientRect();
+    const tocRect = tocAside.getBoundingClientRect();
+    if (linkRect.top < tocRect.top) {
+      tocAside.scrollTop -= tocRect.top - linkRect.top + 8;
+    } else if (linkRect.bottom > tocRect.bottom) {
+      tocAside.scrollTop += linkRect.bottom - tocRect.bottom + 8;
+    }
+  };
+
+  const syncHashTarget = () => {
+    const target = targetFromHash();
+    if (!target) return;
+    isSyncingHashTarget = true;
+    target.scrollIntoView({ block: "start", inline: "nearest" });
+    requestAnimationFrame(() => {
+      isSyncingHashTarget = false;
+      onScroll();
+    });
+  };
+
+  const onScroll = () => {
+    let activeId = sectionEls[0]?.id ?? "";
+    const offset = 120;
+    for (const el of headings) {
+      if (el.getBoundingClientRect().top - offset <= 0) activeId = el.id;
+    }
+    const parentId = activeId ? parentH2Id(activeId) : null;
+    tocLinks.forEach((a, id) => {
+      const isActive = id === activeId || (parentId !== null && id === parentId);
+      a.classList.toggle("active", isActive);
+      const sectionItem = a.closest(".toc-section");
+      if (sectionItem && !parentH2Id(id)) {
+        const isCurrentSection = id === activeId || id === parentId;
+        sectionItem.classList.toggle("is-current", isCurrentSection);
+      }
+    });
+
+    if (activeId && activeId !== lastActiveId) {
+      const activeLink = tocLinks.get(activeId) ?? (parentId ? tocLinks.get(parentId) : undefined);
+      if (!isSyncingHashTarget) scrollTocLinkIntoView(activeLink);
+      lastActiveId = activeId;
+    }
+
+    if (progressFill) {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      const pct = max > 0 ? Math.min(100, Math.max(0, (h.scrollTop / max) * 100)) : 0;
+      progressFill.style.width = pct.toFixed(2) + "%";
+    }
+  };
+  const syncAfterLayout = () => requestAnimationFrame(() => {
+    syncHashTarget();
+    onScroll();
+  });
+  document.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  window.addEventListener("hashchange", syncAfterLayout, { passive: true });
+  window.addEventListener("load", syncAfterLayout, { passive: true });
+  onScroll();
+  syncAfterLayout();
+  const tocToggle = document.querySelector(".toc-toggle");
+  const tocBackdrop = document.querySelector(".toc-backdrop");
+  const isMobileToc = () => window.matchMedia && window.matchMedia("(max-width: 1024px)").matches;
+  const syncTocAccessibility = () => {
+    if (!tocAside) return;
+    const drawerClosed = isMobileToc() && !tocAside.hasAttribute("data-open");
+    if (drawerClosed) {
+      tocAside.setAttribute("inert", "");
+      tocAside.setAttribute("aria-hidden", "true");
+    } else {
+      tocAside.removeAttribute("inert");
+      tocAside.setAttribute("aria-hidden", "false");
+    }
+  };
+  const closeToc = () => {
+    if (!tocAside) return;
+    tocAside.removeAttribute("data-open");
+    document.body.removeAttribute("data-toc-open");
+    tocToggle?.setAttribute("aria-expanded", "false");
+    syncTocAccessibility();
+  };
+  const openToc = () => {
+    if (!tocAside) return;
+    tocAside.setAttribute("data-open", "");
+    document.body.setAttribute("data-toc-open", "");
+    tocToggle?.setAttribute("aria-expanded", "true");
+    syncTocAccessibility();
+  };
+  tocToggle?.addEventListener("click", () => {
+    if (tocAside?.hasAttribute("data-open")) closeToc();
+    else openToc();
+  });
+  tocBackdrop?.addEventListener("click", closeToc);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeToc();
+  });
+  tocAside?.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeToc));
+  window.addEventListener("resize", syncTocAccessibility, { passive: true });
+  syncTocAccessibility();
+  const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.querySelectorAll("main pre").forEach((pre) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "code-copy";
+    btn.setAttribute("aria-label", "复制代码");
+    btn.innerHTML = COPY_SVG;
+    btn.addEventListener("click", () => {
+      const code = pre.querySelector("code");
+      const text = (code ? code.textContent : pre.textContent) ?? "";
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add("copied");
+        btn.innerHTML = CHECK_SVG;
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.innerHTML = COPY_SVG;
+        }, 1400);
+      });
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+<script>(function(){var html=document.documentElement;function setReader(value){if(value!=="beginner"&&value!=="intermediate"&&value!=="expert")return;html.setAttribute("data-reader",value);try{localStorage.setItem("dossier.reader", value);}catch(e){}var btns=document.querySelectorAll("[data-reader-set]");for(var i=0;i<btns.length;i++){btns[i].setAttribute("aria-pressed",btns[i].getAttribute("data-reader-set")===value?"true":"false");}}var fromUrl=null;try{var url=new URL(location.href);fromUrl=url.searchParams.get("reader");}catch(e){}var fromStorage=null;try{fromStorage=localStorage.getItem("dossier.reader");}catch(e){}setReader(fromUrl||fromStorage||html.getAttribute("data-reader")||"beginner");document.addEventListener("click",function(e){var target=e.target;while(target&&target!==document.body){if(target.getAttribute&&target.getAttribute("data-reader-set")){setReader(target.getAttribute("data-reader-set"));return;}target=target.parentNode;}});})();
+</script>
+</body>
+</html>
