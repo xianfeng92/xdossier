@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "node --import tsx src/cli.ts",
     "build": "tsc -p . && for d in src/skills/*/; do cp -R \"${d%/}\" dist/skills/; done",
-    "test": "TMPDIR=/private/tmp vitest run",
+    "test": "vitest run",
     "test:watch": "vitest",
     "render:self": "node --import tsx src/cli.ts render docs/specs/2026-05-17-dossier-vision-spec.md",
     "typecheck": "tsc -p . --noEmit",
