@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xdossier — Pedagogical HTML archives for AI-generated specs</title>
+<meta name="description" content="Turn your AI's specs into HTML that beginners, peers, and experts can all read. Tiered reader modes, term popovers, learning checkpoints, single-file output.">
+<style>
+  :root {
+    --bg: #faf9f6;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --accent: #1e3a8a;
+    --warn: #991b1b;
+    --attn: #92400e;
+    --code-bg: #f4f2eb;
+    --hairline: #d8d4cc;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--hairline);
+    padding-bottom: 48px;
+    margin-bottom: 48px;
+  }
+  .hero-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 56px;
+    font-weight: 700;
+    margin: 0 0 24px;
+    letter-spacing: -0.02em;
+  }
+  .hero-tagline {
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink);
+    margin: 0 0 12px;
+    max-width: 640px;
+  }
+  .hero-sub {
+    font-size: 16px;
+    color: var(--muted);
+    margin: 0 0 32px;
+    max-width: 640px;
+  }
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .btn {
+    display: inline-block;
+    padding: 12px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid var(--ink);
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.75; }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  code.install {
+    background: var(--code-bg);
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    border: 1px solid var(--hairline);
+  }
+
+  /* Section heads */
+  h2.section-head {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin: 64px 0 24px;
+    font-weight: 600;
+  }
+
+  /* Demo cards */
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .demo-card {
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 24px;
+    background: var(--bg);
+    transition: border-color 0.15s, transform 0.15s;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+  }
+  .demo-card:hover {
+    border-color: var(--ink);
+    transform: translateY(-2px);
+  }
+  .demo-card-mode {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--attn);
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .demo-card h3 {
+    font-size: 20px;
+    margin: 0 0 8px;
+    line-height: 1.3;
+  }
+  .demo-card p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 0 0 16px;
+    flex: 1;
+  }
+  .demo-card-tag {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Tip block */
+  .tip {
+    background: var(--code-bg);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    border-radius: 0 4px 4px 0;
+    margin-top: 32px;
+  }
+  .tip-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .tip p { margin: 0; }
+
+  /* Why */
+  .why {
+    margin-top: 64px;
+  }
+  .why h2 {
+    font-size: 28px;
+    margin: 0 0 24px;
+  }
+  .why ul {
+    padding-left: 0;
+    list-style: none;
+  }
+  .why li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .why li:last-child { border-bottom: 0; }
+  .why li strong { color: var(--accent); }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: space-between;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    main { padding: 40px 20px 64px; }
+    .hero h1 { font-size: 40px; }
+    .hero-tagline { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <section class="hero">
+    <div class="hero-eyebrow">xdossier · v0.1.0</div>
+    <h1>xdossier</h1>
+    <p class="hero-tagline">
+      Turn your AI's specs into HTML that <strong>beginners, peers, and experts can all read</strong>.
+    </p>
+    <p class="hero-sub">
+      Tiered reader modes · Term popovers · Learning checkpoints · Single-file HTML · Zero CDN · Apache 2.0
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#demos">See the demos ↓</a>
+      <a class="btn btn-ghost" href="https://github.com/xianfeng92/xdossier">GitHub</a>
+      <code class="install">npx xdossier render spec.md</code>
+    </div>
+  </section>
+
+  <h2 class="section-head" id="demos">Live demos</h2>
+  <p style="color: var(--muted); margin-top: -16px; margin-bottom: 24px;">
+    Real specs rendered by xdossier. Click the <strong>零基础 / 系统化 / 速查</strong> toggle at the top of each demo to see the same content adapt to reader skill level.
+  </p>
+
+  <div class="demo-grid">
+    <a class="demo-card" href="demo/pedagogy.html">
+      <div class="demo-card-mode">★ THE DEMO — concept mode</div>
+      <h3>Pedagogy Layer Spec</h3>
+      <p>
+        The spec for xdossier's pedagogy layer, rendered by xdossier itself. Shows every feature in one page: reader toggle, prerequisite card, 5 learning checkpoints, 4 analogy callouts, 5 glossary popovers, inline SVG diagrams, comparison cards.
+      </p>
+      <span class="demo-card-tag">Open →</span>
+    </a>
+
+    <a class="demo-card" href="demo/vision.html">
+      <div class="demo-card-mode">concept mode · 17 sections</div>
+      <h3>Vision Spec</h3>
+      <p>
+        The foundational vision document. Multi-section spec with semantic blocks (risk register, decision grid, structure map), ASCII-to-SVG architecture diagrams, and 18 section covers.
+      </p>
+      <span class="demo-card-tag">Open →</span>
+    </a>
+
+    <a class="demo-card" href="demo/research.html">
+      <div class="demo-card-mode">research / launch planning</div>
+      <h3>OSS Launch Research</h3>
+      <p>
+        Competitor analysis, npm name availability matrix, viral launch tactics, naming recommendation. Reference-style content with dense tables and structured findings.
+      </p>
+      <span class="demo-card-tag">Open →</span>
+    </a>
+  </div>
+
+  <div class="tip">
+    <div class="tip-label">Pro tip</div>
+    <p>
+      Open the same demo in two tabs. In one, switch reader mode to <strong>零基础</strong> (beginner). In the other, <strong>速查</strong> (expert). Same HTML file. Compare what stays and what disappears.
+    </p>
+  </div>
+
+  <section class="why">
+    <h2>Why this exists</h2>
+    <ul>
+      <li>
+        <strong>The wall-of-text problem.</strong> You and your AI agent generate 800+ line specs. A beginner skims and bounces; a senior wants the decision summary. Same doc fails both.
+      </li>
+      <li>
+        <strong>Markdown can't tier itself.</strong> Markdown is linear. HTML carries spatial structure — collapsibles, popovers, sidebars, anchored navigation. xdossier puts that spatial structure to a pedagogical purpose.
+      </li>
+      <li>
+        <strong>Tiered reading is the missing primitive.</strong> No tool today renders the same document for three reader skill levels simultaneously. xdossier toggles inline via a single-file HTML.
+      </li>
+      <li>
+        <strong>Single-file, offline-shareable.</strong> Double-click the HTML; works without network. Share by email, attach to PR, paste into wiki — no CDN, no Docker, no SaaS.
+      </li>
+    </ul>
+  </section>
+
+  <h2 class="section-head">Try it</h2>
+  <pre style="background: var(--code-bg); padding: 20px; border-radius: 4px; overflow-x: auto; border: 1px solid var(--hairline);"><code style="font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px;">npm i -g xdossier
+xdossier render docs/specs/your-spec.md
+# → opens spec.html with the reader toggle at the top</code></pre>
+
+  <footer>
+    <div>
+      Built on
+      <a href="https://thariqs.github.io/html-effectiveness/">Thariq Shihipar's HTML &gt; Markdown thesis</a>
+      · extends
+      <a href="https://github.com/nexu-io/html-anything">nexu-io/html-anything</a>'s SKILL.md protocol
+    </div>
+    <div>
+      <a href="https://github.com/xianfeng92/xdossier">GitHub</a>
+      ·
+      <a href="https://github.com/xianfeng92/xdossier/blob/main/LICENSE">Apache 2.0</a>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>
