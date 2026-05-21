@@ -20,7 +20,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--bg);
@@ -29,6 +29,7 @@ body {
   font-size: 16px;
   line-height: 1.72;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 code, pre, .mono { font-family: var(--font-mono); }
 em { font-style: italic; font-family: var(--font-display); }
@@ -62,7 +63,7 @@ section {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
+  width: 100%;
   height: 3px;
   background: rgba(184, 92, 61, 0.08);
   z-index: 50;
@@ -96,6 +97,7 @@ section {
 .toc-backdrop {
   position: fixed;
   inset: 0;
+  max-width: 100%;
   background: rgba(26, 26, 26, 0.32);
   opacity: 0;
   pointer-events: none;
@@ -233,8 +235,8 @@ html[data-content-mode="reference"] aside.toc{position:sticky;top:0;max-height:1
 }
 .artifact-title-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(210px, max-content);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
 }
 .artifact-title-stack { min-width: 0; }
@@ -253,12 +255,12 @@ html[data-content-mode="reference"] aside.toc{position:sticky;top:0;max-height:1
 }
 .artifact-meta-rail {
   min-width: 0;
-  max-width: 360px;
+  max-width: none;
 }
 .artifact-header .stat-row {
-  border-top: none;
-  padding-top: 1px;
-  justify-content: flex-end;
+  border-top: var(--hairline);
+  padding-top: 10px;
+  justify-content: flex-start;
   gap: 8px 14px;
   line-height: 1.35;
 }
@@ -591,6 +593,13 @@ h1 {
 }
 .semantic-judgment-grid .comparison-cards {
   margin: 0;
+}
+.semantic-judgment-grid .comparison-cards[data-block="scope_boundary"] {
+  grid-column: 1 / -1;
+}
+.semantic-judgment-grid .comparison-cards-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
 }
 .semantic-judgment-grid .open-questions-lens {
   grid-column: span 2;
@@ -1929,6 +1938,7 @@ pre {
   border: var(--hairline);
   border-radius: 6px;
   padding: 18px 20px;
+  max-width: 100%;
   overflow-x: auto;
   font-size: 12.5px;
   line-height: 1.6;

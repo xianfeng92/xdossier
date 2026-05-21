@@ -14,8 +14,8 @@
   <a href="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml">
     <img src="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
-  <a href="https://www.npmjs.com/package/xdossier">
-    <img src="https://img.shields.io/npm/v/xdossier?color=1e3a8a" alt="npm version">
+  <a href="https://github.com/xianfeng92/xdossier">
+    <img src="https://img.shields.io/badge/npm-pending-92400e" alt="npm publish pending">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-1e3a8a" alt="Apache 2.0">
@@ -50,12 +50,14 @@ You and your AI agent generate dozens of markdown files: specs, ADRs, design doc
 ## Quickstart
 
 ```bash
-# Zero install:
-npx xdossier@latest render docs/specs/my-spec.md
+# Zero install from GitHub while npm publishing is pending:
+npx github:xianfeng92/xdossier render docs/specs/my-spec.md
 
-# Or globally:
-npm i -g xdossier
-xdossier render docs/specs/my-spec.md
+# Or clone locally:
+git clone https://github.com/xianfeng92/xdossier.git
+cd xdossier
+pnpm install
+pnpm dev render docs/specs/my-spec.md
 ```
 
 Open the generated `.html` in any browser. Click the reader-mode toggle at the top to switch tiers.

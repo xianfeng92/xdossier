@@ -51,10 +51,10 @@ export function renderTokensToHtml(tokens: MarkdownToken[], annotations?: Render
 
     if (token.type === "heading" && token.depth === 2) {
       if (sectionOpen) chunks.push("</section>");
-      chunks.push(`<section id="${escapeAttribute(token._dossierId ?? "s0")}">`);
+      const sectionId = token._dossierId ?? "s0";
+      chunks.push(`<section id="${escapeAttribute(sectionId)}">`);
       chunks.push(renderSectionCover(token, sectionSummaries, readingPath));
       sectionOpen = true;
-      const sectionId = token._dossierId;
       const summary = sectionId ? sectionSummaries.get(sectionId) : undefined;
       const traceLinks = sectionId ? sectionTraces.get(sectionId) ?? [] : [];
       if ((summary || traceLinks.length) && sectionId) {
@@ -97,8 +97,12 @@ function renderSectionCover(
     : "";
   return `<header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">${escapeHtml(ordinal)}</div>
-  <h2 id="${escapeAttribute(id)}" class="section-cover-title">${renderInlineMarkdown(title)}</h2>${kickerHtml}
+  <h2 id="${escapeAttribute(sectionTitleId(id))}" class="section-cover-title">${renderInlineMarkdown(title)}</h2>${kickerHtml}
 </header>`;
+}
+
+function sectionTitleId(sectionId: string): string {
+  return `${sectionId}-title`;
 }
 
 function sectionCoverKicker(

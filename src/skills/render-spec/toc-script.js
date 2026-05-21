@@ -66,17 +66,31 @@
   const tocToggle = document.querySelector(".toc-toggle");
   const tocAside = document.querySelector("aside.toc");
   const tocBackdrop = document.querySelector(".toc-backdrop");
+  const isMobileToc = () => window.matchMedia && window.matchMedia("(max-width: 1024px)").matches;
+  const syncTocAccessibility = () => {
+    if (!tocAside) return;
+    const drawerClosed = isMobileToc() && !tocAside.hasAttribute("data-open");
+    if (drawerClosed) {
+      tocAside.setAttribute("inert", "");
+      tocAside.setAttribute("aria-hidden", "true");
+    } else {
+      tocAside.removeAttribute("inert");
+      tocAside.setAttribute("aria-hidden", "false");
+    }
+  };
   const closeToc = () => {
     if (!tocAside) return;
     tocAside.removeAttribute("data-open");
     document.body.removeAttribute("data-toc-open");
     tocToggle?.setAttribute("aria-expanded", "false");
+    syncTocAccessibility();
   };
   const openToc = () => {
     if (!tocAside) return;
     tocAside.setAttribute("data-open", "");
     document.body.setAttribute("data-toc-open", "");
     tocToggle?.setAttribute("aria-expanded", "true");
+    syncTocAccessibility();
   };
   tocToggle?.addEventListener("click", () => {
     if (tocAside?.hasAttribute("data-open")) closeToc();
@@ -87,6 +101,8 @@
     if (e.key === "Escape") closeToc();
   });
   tocAside?.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeToc));
+  window.addEventListener("resize", syncTocAccessibility, { passive: true });
+  syncTocAccessibility();
 
   // Code copy buttons
   const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';

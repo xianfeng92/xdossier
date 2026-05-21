@@ -94,12 +94,21 @@
     color: var(--ink);
   }
   code.install {
+    display: inline-block;
+    max-width: 100%;
     background: var(--code-bg);
     padding: 10px 16px;
     border-radius: 4px;
     font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
     font-size: 14px;
     border: 1px solid var(--hairline);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   /* Section heads */
@@ -121,17 +130,88 @@
   .demo-card {
     border: 1px solid var(--hairline);
     border-radius: 6px;
-    padding: 24px;
     background: var(--bg);
     transition: border-color 0.15s, transform 0.15s;
     text-decoration: none;
     color: inherit;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
   .demo-card:hover {
     border-color: var(--ink);
     transform: translateY(-2px);
+  }
+  .demo-card-preview {
+    min-height: 132px;
+    border-bottom: 1px solid var(--hairline);
+    background:
+      linear-gradient(180deg, rgba(30, 58, 138, 0.04), rgba(250, 249, 246, 0)),
+      var(--code-bg);
+    padding: 14px;
+  }
+  .preview-window {
+    height: 104px;
+    border: 1px solid rgba(30, 58, 138, 0.18);
+    border-radius: 5px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(26, 26, 26, 0.05);
+  }
+  .preview-chrome {
+    height: 16px;
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .preview-chrome span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--hairline);
+  }
+  .preview-page {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .preview-side,
+  .preview-line,
+  .preview-cardlet {
+    display: block;
+    border-radius: 2px;
+    background: var(--hairline);
+  }
+  .preview-side { height: 66px; opacity: 0.78; }
+  .preview-main {
+    display: grid;
+    gap: 6px;
+  }
+  .preview-line { height: 6px; }
+  .preview-line.title { width: 62%; height: 12px; background: var(--ink); opacity: 0.88; }
+  .preview-line.accent { width: 38%; background: var(--accent); opacity: 0.72; }
+  .preview-line.short { width: 48%; }
+  .preview-card-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 2px;
+  }
+  .preview-cardlet {
+    height: 24px;
+    background: rgba(30, 58, 138, 0.12);
+    border: 1px solid rgba(30, 58, 138, 0.12);
+  }
+  .preview-research .preview-cardlet { background: rgba(146, 64, 14, 0.13); border-color: rgba(146, 64, 14, 0.14); }
+  .preview-pedagogy .preview-cardlet { background: rgba(20, 83, 45, 0.11); border-color: rgba(20, 83, 45, 0.12); }
+  .demo-card-body {
+    padding: 22px 24px 24px;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
   }
   .demo-card-mode {
     font-size: 11px;
@@ -233,7 +313,7 @@
     <div class="hero-cta">
       <a class="btn btn-primary" href="#demos">See the demos ↓</a>
       <a class="btn btn-ghost" href="https://github.com/xianfeng92/xdossier">GitHub</a>
-      <code class="install">npx xdossier render spec.md</code>
+      <code class="install">npx github:xianfeng92/xdossier</code>
     </div>
   </section>
 
@@ -244,30 +324,78 @@
 
   <div class="demo-grid">
     <a class="demo-card" href="demo/pedagogy.html">
-      <div class="demo-card-mode">★ THE DEMO — concept mode</div>
-      <h3>Pedagogy Layer Spec</h3>
-      <p>
-        The spec for xdossier's pedagogy layer, rendered by xdossier itself. Shows every feature in one page: reader toggle, prerequisite card, 5 learning checkpoints, 4 analogy callouts, 5 glossary popovers, inline SVG diagrams, comparison cards.
-      </p>
-      <span class="demo-card-tag">Open →</span>
+      <div class="demo-card-preview preview-pedagogy" role="img" aria-label="Preview of Pedagogy Layer Spec">
+        <div class="preview-window" aria-hidden="true">
+          <div class="preview-chrome"><span></span><span></span><span></span></div>
+          <div class="preview-page">
+            <span class="preview-side"></span>
+            <span class="preview-main">
+              <span class="preview-line title"></span>
+              <span class="preview-line accent"></span>
+              <span class="preview-line"></span>
+              <span class="preview-card-row"><span class="preview-cardlet"></span><span class="preview-cardlet"></span><span class="preview-cardlet"></span></span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="demo-card-body">
+        <div class="demo-card-mode">★ THE DEMO — concept mode</div>
+        <h3>Pedagogy Layer Spec</h3>
+        <p>
+          The spec for xdossier's pedagogy layer, rendered by xdossier itself. Shows every feature in one page: reader toggle, prerequisite card, 5 learning checkpoints, 4 analogy callouts, 5 glossary popovers, inline SVG diagrams, comparison cards.
+        </p>
+        <span class="demo-card-tag">Open →</span>
+      </div>
     </a>
 
     <a class="demo-card" href="demo/vision.html">
-      <div class="demo-card-mode">concept mode · 17 sections</div>
-      <h3>Vision Spec</h3>
-      <p>
-        The foundational vision document. Multi-section spec with semantic blocks (risk register, decision grid, structure map), ASCII-to-SVG architecture diagrams, and 18 section covers.
-      </p>
-      <span class="demo-card-tag">Open →</span>
+      <div class="demo-card-preview preview-vision" role="img" aria-label="Preview of Vision Spec">
+        <div class="preview-window" aria-hidden="true">
+          <div class="preview-chrome"><span></span><span></span><span></span></div>
+          <div class="preview-page">
+            <span class="preview-side"></span>
+            <span class="preview-main">
+              <span class="preview-line title"></span>
+              <span class="preview-line accent"></span>
+              <span class="preview-line"></span>
+              <span class="preview-card-row"><span class="preview-cardlet"></span><span class="preview-cardlet"></span><span class="preview-cardlet"></span></span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="demo-card-body">
+        <div class="demo-card-mode">concept mode · 17 sections</div>
+        <h3>Vision Spec</h3>
+        <p>
+          The foundational vision document. Multi-section spec with semantic blocks (risk register, decision grid, structure map), ASCII-to-SVG architecture diagrams, and 18 section covers.
+        </p>
+        <span class="demo-card-tag">Open →</span>
+      </div>
     </a>
 
     <a class="demo-card" href="demo/research.html">
-      <div class="demo-card-mode">research / launch planning</div>
-      <h3>OSS Launch Research</h3>
-      <p>
-        Competitor analysis, npm name availability matrix, viral launch tactics, naming recommendation. Reference-style content with dense tables and structured findings.
-      </p>
-      <span class="demo-card-tag">Open →</span>
+      <div class="demo-card-preview preview-research" role="img" aria-label="Preview of OSS Launch Research">
+        <div class="preview-window" aria-hidden="true">
+          <div class="preview-chrome"><span></span><span></span><span></span></div>
+          <div class="preview-page">
+            <span class="preview-side"></span>
+            <span class="preview-main">
+              <span class="preview-line title"></span>
+              <span class="preview-line accent"></span>
+              <span class="preview-line"></span>
+              <span class="preview-card-row"><span class="preview-cardlet"></span><span class="preview-cardlet"></span><span class="preview-cardlet"></span></span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="demo-card-body">
+        <div class="demo-card-mode">research / launch planning</div>
+        <h3>OSS Launch Research</h3>
+        <p>
+          Competitor analysis, npm name availability matrix, viral launch tactics, naming recommendation. Reference-style content with dense tables and structured findings.
+        </p>
+        <span class="demo-card-tag">Open →</span>
+      </div>
     </a>
   </div>
 
@@ -297,8 +425,7 @@
   </section>
 
   <h2 class="section-head">Try it</h2>
-  <pre style="background: var(--code-bg); padding: 20px; border-radius: 4px; overflow-x: auto; border: 1px solid var(--hairline);"><code style="font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px;">npm i -g xdossier
-xdossier render docs/specs/your-spec.md
+  <pre style="background: var(--code-bg); padding: 20px; border-radius: 4px; overflow-x: auto; border: 1px solid var(--hairline);"><code style="font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px;">npx github:xianfeng92/xdossier render docs/specs/your-spec.md
 # → opens spec.html with the reader toggle at the top</code></pre>
 
   <footer>

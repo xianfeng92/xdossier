@@ -39,7 +39,8 @@ describe("MVP-0 end-to-end: vision spec → HTML", () => {
     expect(html.trimStart()).toMatch(/^<!DOCTYPE html>/);
     expect(html).not.toMatch(/TODO \(Codex\)/);
 
-    expect(html).toMatch(/<header class="section-cover" data-detail-level="section-cover">[\s\S]*?<div class="section-cover-num">01<\/div>[\s\S]*?<h2 id="s1" class="section-cover-title">一句话<\/h2>/);
+    expect(html).toMatch(/<section id="s1">/);
+    expect(html).toMatch(/<header class="section-cover" data-detail-level="section-cover">[\s\S]*?<div class="section-cover-num">01<\/div>[\s\S]*?<h2 id="s1-title" class="section-cover-title">一句话<\/h2>/);
     expect(html).toMatch(/<h3 id="s2-1"><span class="sub-num">1\.1<\/span>一个被忽视的现实<\/h3>/);
     expect(html).not.toMatch(/<span class="sec-num">§ 1<\/span><span>0\. /);
     expect(html).not.toMatch(/<span class="sub-num">2\.1<\/span>1\.1 /);
@@ -148,6 +149,27 @@ describe("MVP-0 end-to-end: vision spec → HTML", () => {
     expect(html).toContain('localStorage.setItem("dossier.reader", value)');
     expect(html).toContain('url.searchParams.get("reader")');
     expect(html).not.toMatch(/<script src=|<link rel="stylesheet" href=|<img src="http/i);
+  });
+
+  test("keeps section anchors unique while labeling section cover titles", async () => {
+    const md = `# Anchor Demo
+
+## First Section
+
+Text.
+
+## Second Section
+
+More text.
+`;
+    const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
+    const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
+    const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+
+    expect(duplicates).toEqual([]);
+    expect(html).toContain('<section id="s1">');
+    expect(html).toContain('<h2 id="s1-title" class="section-cover-title">First Section</h2>');
+    expect(html).toContain('<a href="#s1"');
   });
 
   test("render options can override reader and content mode", async () => {
@@ -272,8 +294,8 @@ The second section starts here.
       },
     });
 
-    expect(html).toMatch(/<header class="section-cover" data-detail-level="section-cover">[\s\S]*?<div class="section-cover-num">01<\/div>[\s\S]*?<h2 id="s1" class="section-cover-title">First Section<\/h2>[\s\S]*?<p class="section-cover-kicker">Why read this section from the reading path\.<\/p>[\s\S]*?<\/header>/);
-    expect(html).toMatch(/<header class="section-cover" data-detail-level="section-cover">[\s\S]*?<div class="section-cover-num">02<\/div>[\s\S]*?<h2 id="s2" class="section-cover-title">Second Section<\/h2>[\s\S]*?<p class="section-cover-kicker">Use this first sentence\.<\/p>[\s\S]*?<\/header>/);
+    expect(html).toMatch(/<header class="section-cover" data-detail-level="section-cover">[\s\S]*?<div class="section-cover-num">01<\/div>[\s\S]*?<h2 id="s1-title" class="section-cover-title">First Section<\/h2>[\s\S]*?<p class="section-cover-kicker">Why read this section from the reading path\.<\/p>[\s\S]*?<\/header>/);
+    expect(html).toMatch(/<header class="section-cover" data-detail-level="section-cover">[\s\S]*?<div class="section-cover-num">02<\/div>[\s\S]*?<h2 id="s2-title" class="section-cover-title">Second Section<\/h2>[\s\S]*?<p class="section-cover-kicker">Use this first sentence\.<\/p>[\s\S]*?<\/header>/);
   });
 
   test("upgrades long standalone non-callout blockquotes into pull quotes", async () => {
@@ -639,7 +661,7 @@ This source section would otherwise receive a scaffold summary.
       withToc: true,
     });
 
-    expect(html).toMatch(/<h2 id="s1" class="section-cover-title">Manual <code>open<\/code> Review<\/h2>/);
+    expect(html).toMatch(/<h2 id="s1-title" class="section-cover-title">Manual <code>open<\/code> Review<\/h2>/);
     expect(html).toMatch(/<h3 id="s1-1"><span class="sub-num">3\.1<\/span>Check <code>scroll-spy<\/code><\/h3>/);
     expect(html).toMatch(/<span>Manual open Review<\/span>/);
     expect(html).toMatch(/<span>Check scroll-spy<\/span>/);
@@ -1199,6 +1221,8 @@ The source prose starts here.
     expect(css).toMatch(/\.semantic-judgment-grid\s*\{[\s\S]*display: grid[\s\S]*grid-template-columns: repeat\(auto-fit, minmax\(240px, 1fr\)\)/);
     expect(css).toMatch(/\.semantic-judgment-grid \.semantic-block\s*\{[\s\S]*margin: 0/);
     expect(css).toMatch(/\.semantic-judgment-grid \.comparison-cards\s*\{[\s\S]*margin: 0/);
+    expect(css).toMatch(/\.semantic-judgment-grid \.comparison-cards\[data-block="scope_boundary"\]\s*\{[\s\S]*grid-column: 1 \/ -1/);
+    expect(css).toMatch(/\.semantic-judgment-grid \.comparison-cards-grid\s*\{[\s\S]*grid-template-columns: repeat\(auto-fit, minmax\(280px, 1fr\)\)/);
     expect(css).toMatch(/\.semantic-judgment-grid \.open-questions-lens\s*\{[\s\S]*grid-column: span 2/);
     expect(css).toMatch(/\.open-question-items\s*\{[\s\S]*display: grid/);
     expect(css).toMatch(/\.open-question-status\s*\{[\s\S]*font-family: var\(--font-mono\)/);
@@ -1731,7 +1755,7 @@ More body text.
     });
 
     expect(html).toMatch(
-      /<h2 id="s1" class="section-cover-title">First Section<\/h2>[\s\S]*?<p class="section-summary" data-annotation="section-summary">This section explains why the experiment matters\.<\/p>/,
+      /<h2 id="s1-title" class="section-cover-title">First Section<\/h2>[\s\S]*?<p class="section-summary" data-annotation="section-summary">This section explains why the experiment matters\.<\/p>/,
     );
     expect(html).toMatch(/Escapes &lt;unsafe&gt; summary text\./);
     expect(html).not.toMatch(/This should not render/);
@@ -1977,10 +2001,36 @@ describe("page-level HTML interactions", () => {
     expect(html).toMatch(/reading-progress-fill/);
     // Drawer toggle
     expect(html).toMatch(/data-toc-open/);
+    expect(html).toMatch(/tocAside\.setAttribute\("inert", ""\)/);
+    expect(html).toMatch(/tocAside\.removeAttribute\("inert"\)/);
+    expect(html).toMatch(/tocAside\.setAttribute\("aria-hidden", "true"\)/);
+    expect(html).toMatch(/tocAside\.setAttribute\("aria-hidden", "false"\)/);
     expect(html).toMatch(/Escape/);
     // Code copy injection
     expect(html).toMatch(/code-copy/);
     expect(html).toMatch(/navigator\.clipboard/);
+  });
+
+  test("keeps artifact header metadata below the title so long titles are not squeezed", async () => {
+    const md = `---
+title: Dossier OSS Launch Research
+subtitle: 命名、竞品、传播路径
+status: ready
+kind: research
+updated: 2026-05-21
+owner: claude
+---
+
+# Dossier OSS Launch Research
+
+## npm 名字可用性矩阵
+
+Body.
+`;
+    const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
+
+    expect(html).toMatch(/\.artifact-title-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\);/);
+    expect(html).not.toMatch(/\.artifact-title-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax/);
   });
 
   test("estimated reading time appears in stat row", async () => {

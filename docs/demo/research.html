@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-reader="beginner" data-content-mode="concept">
+<html lang="zh-CN" data-reader="beginner" data-content-mode="reference">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +26,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--bg);
@@ -35,6 +35,7 @@ body {
   font-size: 16px;
   line-height: 1.72;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 code, pre, .mono { font-family: var(--font-mono); }
 em { font-style: italic; font-family: var(--font-display); }
@@ -68,7 +69,7 @@ section {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
+  width: 100%;
   height: 3px;
   background: rgba(184, 92, 61, 0.08);
   z-index: 50;
@@ -102,6 +103,7 @@ section {
 .toc-backdrop {
   position: fixed;
   inset: 0;
+  max-width: 100%;
   background: rgba(26, 26, 26, 0.32);
   opacity: 0;
   pointer-events: none;
@@ -239,8 +241,8 @@ html[data-content-mode="reference"] aside.toc{position:sticky;top:0;max-height:1
 }
 .artifact-title-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(210px, max-content);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
 }
 .artifact-title-stack { min-width: 0; }
@@ -259,12 +261,12 @@ html[data-content-mode="reference"] aside.toc{position:sticky;top:0;max-height:1
 }
 .artifact-meta-rail {
   min-width: 0;
-  max-width: 360px;
+  max-width: none;
 }
 .artifact-header .stat-row {
-  border-top: none;
-  padding-top: 1px;
-  justify-content: flex-end;
+  border-top: var(--hairline);
+  padding-top: 10px;
+  justify-content: flex-start;
   gap: 8px 14px;
   line-height: 1.35;
 }
@@ -597,6 +599,13 @@ h1 {
 }
 .semantic-judgment-grid .comparison-cards {
   margin: 0;
+}
+.semantic-judgment-grid .comparison-cards[data-block="scope_boundary"] {
+  grid-column: 1 / -1;
+}
+.semantic-judgment-grid .comparison-cards-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
 }
 .semantic-judgment-grid .open-questions-lens {
   grid-column: span 2;
@@ -1935,6 +1944,7 @@ pre {
   border: var(--hairline);
   border-radius: 6px;
   padding: 18px 20px;
+  max-width: 100%;
   overflow-x: auto;
   font-size: 12.5px;
   line-height: 1.6;
@@ -2520,7 +2530,7 @@ hr { border: none; border-top: var(--hairline); margin: 24px 0; }
 </nav><section id="s1">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">01</div>
-  <h2 id="s1" class="section-cover-title">npm 名字可用性矩阵</h2>
+  <h2 id="s1-title" class="section-cover-title">npm 名字可用性矩阵</h2>
   <p class="section-cover-kicker">先用本节建立背景和问题。</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">跑了 18 个候选，可用 11 个：dossier: 占用 / manage application statistics using redis。</p>
@@ -2637,7 +2647,7 @@ hr { border: none; border-top: var(--hairline); margin: 24px 0; }
 <section id="s2">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">02</div>
-  <h2 id="s2" class="section-cover-title">竞品 deep-dive</h2>
+  <h2 id="s2-title" class="section-cover-title">竞品 deep-dive</h2>
   <p class="section-cover-kicker">调研 4 个直接相关项目（按 stars 从大到小）：Hook: &quot;Local-first, open-source alternative to Claude Design&quot;.</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">调研 4 个直接相关项目（按 stars 从大到小）：Hook: &quot;Local-first, open-source alternative to Claude Design&quot;. 定位：本地 Claude Design 替代品，设计向...</p>
@@ -2695,7 +2705,7 @@ hr { border: none; border-top: var(--hairline); margin: 24px 0; }
 <section id="s3">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">03</div>
-  <h2 id="s3" class="section-cover-title">dossier 的位置（差异化矩阵）</h2>
+  <h2 id="s3-title" class="section-cover-title">dossier 的位置（差异化矩阵）</h2>
   <p class="section-cover-kicker">先用本节建立背景和问题。</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">结论：dossier 应该把 README 第一屏改成卖&quot;教学层&quot;——这是唯一独占的能力，立刻可见可演示。</p>
@@ -2718,7 +2728,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s4">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">04</div>
-  <h2 id="s4" class="section-cover-title">2024-2025 Viral Launch 战术总结</h2>
+  <h2 id="s4-title" class="section-cover-title">2024-2025 Viral Launch 战术总结</h2>
   <p class="section-cover-kicker">来源：Cline launch HN、AFFiNE 60K stars 复盘、arXiv 2511.04453 HN diffusion 数据、markepear dev tool HN launch</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">来源：Cline launch HN、AFFiNE 60K stars 复盘、arXiv 2511.04453 HN diffusion 数据、markepear dev tool HN launch</p>
@@ -2760,7 +2770,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s5">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">05</div>
-  <h2 id="s5" class="section-cover-title">命名推荐：<code>specfold</code></h2>
+  <h2 id="s5-title" class="section-cover-title">命名推荐：<code>specfold</code></h2>
   <p class="section-cover-kicker">主推：specfold</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">主推：specfold</p>
@@ -2800,7 +2810,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s6">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">06</div>
-  <h2 id="s6" class="section-cover-title">GitHub 仓库位置</h2>
+  <h2 id="s6-title" class="section-cover-title">GitHub 仓库位置</h2>
   <p class="section-cover-kicker">推荐：github.com/xforg/specfold（你的个人账号）</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">推荐：github.com/xforg/specfold（你的个人账号）</p>
@@ -2825,7 +2835,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s7">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">07</div>
-  <h2 id="s7" class="section-cover-title">关键 push-back</h2>
+  <h2 id="s7-title" class="section-cover-title">关键 push-back</h2>
   <p class="section-cover-kicker">现在 launch 还太早：没 npx、没 GIF、没 live demo、MVP-1 多文档关系图未实现。</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">现在 launch 还太早：没 npx、没 GIF、没 live demo、MVP-1 多文档关系图未实现。</p>
@@ -2841,7 +2851,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s8">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">08</div>
-  <h2 id="s8" class="section-cover-title">建议下一步</h2>
+  <h2 id="s8-title" class="section-cover-title">建议下一步</h2>
   <p class="section-cover-kicker">用本节跟随执行路径。</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">按 W1 完整序列：W1.1: 拍板命名（默认 specfold）+ 改 package.json name / 你确认 → 我执行。</p>
@@ -2899,7 +2909,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s9">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">09</div>
-  <h2 id="s9" class="section-cover-title">产出清单（子文件）</h2>
+  <h2 id="s9-title" class="section-cover-title">产出清单（子文件）</h2>
   <p class="section-cover-kicker">README v2 草稿：docs/specs/2026-05-21-dossier-readme-v2-draft.md。</p>
 </header>
 <p class="section-summary" data-annotation="section-summary">README v2 草稿：docs/specs/2026-05-21-dossier-readme-v2-draft.md。</p>
@@ -2921,7 +2931,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 <section id="s10">
 <header class="section-cover" data-detail-level="section-cover">
   <div class="section-cover-num">10</div>
-  <h2 id="s10" class="section-cover-title">参考 Sources</h2>
+  <h2 id="s10-title" class="section-cover-title">参考 Sources</h2>
   <p class="section-cover-kicker">竞品：nexu-io/html-anything 4.4k stars.</p>
 </header>
 <details class="section-brief section-brief-collapsible" data-annotation="section-brief">
@@ -3020,17 +3030,31 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
   const tocToggle = document.querySelector(".toc-toggle");
   const tocAside = document.querySelector("aside.toc");
   const tocBackdrop = document.querySelector(".toc-backdrop");
+  const isMobileToc = () => window.matchMedia && window.matchMedia("(max-width: 1024px)").matches;
+  const syncTocAccessibility = () => {
+    if (!tocAside) return;
+    const drawerClosed = isMobileToc() && !tocAside.hasAttribute("data-open");
+    if (drawerClosed) {
+      tocAside.setAttribute("inert", "");
+      tocAside.setAttribute("aria-hidden", "true");
+    } else {
+      tocAside.removeAttribute("inert");
+      tocAside.setAttribute("aria-hidden", "false");
+    }
+  };
   const closeToc = () => {
     if (!tocAside) return;
     tocAside.removeAttribute("data-open");
     document.body.removeAttribute("data-toc-open");
     tocToggle?.setAttribute("aria-expanded", "false");
+    syncTocAccessibility();
   };
   const openToc = () => {
     if (!tocAside) return;
     tocAside.setAttribute("data-open", "");
     document.body.setAttribute("data-toc-open", "");
     tocToggle?.setAttribute("aria-expanded", "true");
+    syncTocAccessibility();
   };
   tocToggle?.addEventListener("click", () => {
     if (tocAside?.hasAttribute("data-open")) closeToc();
@@ -3041,6 +3065,8 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
     if (e.key === "Escape") closeToc();
   });
   tocAside?.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeToc));
+  window.addEventListener("resize", syncTocAccessibility, { passive: true });
+  syncTocAccessibility();
   const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
   document.querySelectorAll("main pre").forEach((pre) => {
