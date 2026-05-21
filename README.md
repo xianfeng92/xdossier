@@ -1,5 +1,9 @@
 # `xdossier`
 
+<p align="right">
+  <strong>English</strong> · <a href="./README.zh-CN.md">简体中文</a>
+</p>
+
 > **Turn your AI's specs into HTML that beginners, peers, and experts can all read.**
 >
 > Tiered reading modes · Term popovers · Learning checkpoints · Multi-doc archives · Zero deps · Single-file HTML.
@@ -22,7 +26,7 @@
   </a>
 </p>
 
-🌐 **Try it now without installing**: [xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) — switch reader modes (零基础 / 系统化 / 速查) in the live HTML.
+🌐 **Try it now without installing**: [xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) — switch reader modes (beginner / systematic / reference) in the live HTML.
 
 <p align="center">
   <a href="https://xianfeng92.github.io/xdossier/demo/pedagogy.html">
@@ -42,18 +46,18 @@ You and your AI agent generate dozens of markdown files: specs, ADRs, design doc
 
 `xdossier` is a **pedagogical HTML archive** for AI-generated technical docs. Reader picks a mode; the same single-file HTML adapts.
 
-> 💡 **Want to see the difference?** Open the [pedagogy demo](https://xianfeng92.github.io/xdossier/demo/pedagogy.html) in two tabs. Set one to 零基础 and the other to 速查. Same HTML file; the spatial structure adapts.
+> 💡 **Want to see the difference?** Open the [pedagogy demo](https://xianfeng92.github.io/xdossier/demo/pedagogy.html) in two tabs. Set one to *beginner* and the other to *reference*. Same HTML file; the spatial structure adapts.
 
 ## What you get
 
-- **3-tier reader mode** (零基础 / 系统化 / 速查) — toggle in HTML, no rerender, no rebuild. Term popovers, prerequisite cards, learning checkpoints, analogies — all appear/hide based on reader profile
-- **Auto content-mode detection** — tutorial / concept / reference / course (heuristic, 0 token)
-- **Single-file HTML** — share by double-click; works offline; no CDN
-- **Spec semantic blocks** — risk register, decision grid, principle grid, scope boundary, concept glossary, structure map — auto-rendered from markdown without authoring HTML
-- **Inline SVG diagrams** — ASCII layered-box art → real SVG with arrows
-- **Pull quotes, section covers, comparison cards** — visual rhythm so 1000-line specs don't read as a wall
+- **3-tier reader mode** (beginner / systematic / reference) — toggle in HTML, no rerender, no rebuild. Term popovers, prerequisite cards, learning checkpoints, analogies — all appear/hide based on reader profile.
+- **Auto content-mode detection** — tutorial / concept / reference / course (heuristic, 0 token).
+- **Single-file HTML** — share by double-click; works offline; no CDN.
+- **Spec semantic blocks** — risk register, decision grid, principle grid, scope boundary, concept glossary, structure map — auto-rendered from markdown without authoring HTML.
+- **Inline SVG diagrams** — ASCII layered-box art → real SVG with arrows.
+- **Pull quotes, section covers, comparison cards** — visual rhythm so 1000-line specs don't read as a wall.
 
-🛠 **Coming (MVP-1)**: Multi-document **dossier view** — automatically link related specs (`implements:` / `reviews:` frontmatter), render a relationship graph as a navigable archive cover
+🛠 **Coming (MVP-1)**: Multi-document **dossier view** — automatically link related specs (`implements:` / `reviews:` frontmatter), render a relationship graph as a navigable archive cover.
 
 ## Quickstart
 
@@ -72,8 +76,8 @@ Open the generated `.html` in any browser. Click the reader-mode toggle at the t
 
 ## Built on
 
-- [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) — the philosophy that HTML > Markdown for AI output
-- [nexu-io/html-anything](https://github.com/nexu-io/html-anything) — SKILL.md protocol pioneer
+- [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) — the philosophy that HTML > Markdown for AI output.
+- [nexu-io/html-anything](https://github.com/nexu-io/html-anything) — SKILL.md protocol pioneer.
 
 `xdossier` extends both: artifact-first (not on-demand), pedagogy-first (not just visual), multi-document (not single-file).
 
@@ -99,16 +103,16 @@ markdown.md  →  enrich (heuristic + optional LLM)  →  render-spec skill  →
 ```
 
 Three layers:
-1. **Discover** — read frontmatter, classify content-mode, extract section structure
-2. **Enrich** — generate teaching annotations (prereq / checkpoint / analogy) via scaffold (0 token) or codex/claude provider
-3. **Render** — single-file HTML with reader-toggle, inlined CSS + JS, no external resources
+1. **Discover** — read frontmatter, classify content-mode, extract section structure.
+2. **Enrich** — generate teaching annotations (prereq / checkpoint / analogy) via scaffold (0 token) or codex/claude provider.
+3. **Render** — single-file HTML with reader-toggle, inlined CSS + JS, no external resources.
 
 ## Use cases
 
-- AI-written spec → designed HTML for your team
-- Design doc archive that an intern can read on Monday and a principal can speed-read on Tuesday
-- DecisionF-style 简历版本档案：5 版简历 + 改动注释，按读者档位呈现给不同 HR
-- Open-source project docs that don't require markdown viewer plugins
+- AI-written spec → designed HTML for your team.
+- Design doc archive an intern can read on Monday and a principal can speed-read on Tuesday.
+- Multi-version résumé archive: 5 versions + change annotations, tiered by reader profile for different recruiters.
+- Open-source project docs that don't require markdown viewer plugins.
 
 ## Status
 
@@ -124,9 +128,11 @@ Three layers:
 
 We welcome new skills, new pedagogy elements, and new render targets. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+Looking for a first contribution? Try the open [`good first issue`](https://github.com/xianfeng92/xdossier/issues?q=is%3Aopen+label%3A%22good+first+issue%22) tickets.
+
 ## License
 
-Apache-2.0 — see [LICENSE](./LICENSE)
+Apache-2.0 — see [LICENSE](./LICENSE).
 
 ## Inspiration
 
