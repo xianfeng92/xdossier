@@ -1,7 +1,7 @@
 // CLI entry — argv parsing, dispatch, error handling.
 // See docs/specs/2026-05-18-dossier-mvp-0-spec.md §4 for the CLI surface and §6.5 for skill dispatch.
 
-import { readFile, writeFile, access } from "node:fs/promises";
+import { readFile, writeFile, access, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { render } from "./render.js";
 import { parseAnnotationsJson } from "./annotations.js";
@@ -35,7 +35,7 @@ type Argv =
       verbose: boolean;
     }
   | {
-      command: "build";
+      command: "build" | "cover";
       workspace: string;
       outDir?: string;
       since?: string;
@@ -52,6 +52,7 @@ const HELP_TEXT = `xdossier ${VERSION}
 Usage:
   xdossier render <input.md> [options]
   xdossier enrich <input.md> [options]
+  xdossier cover [workspace] [options]
   xdossier build [workspace] [options]
   xdossier --help
   xdossier --version
@@ -87,6 +88,13 @@ Build options:
   -h, --help                Show help
   -v, --version             Show version
 
+Output:
+  .dossier/out/index.html                  Project index linking all dossiers
+  .dossier/out/<dossier-id>/index.html     Per-dossier cover
+
+cover:
+  alias: xdossier build
+
 Exit codes:
   0   success
   1   input file missing or unreadable
@@ -99,7 +107,8 @@ export function parseArgv(argv: string[]): Argv {
   if (argv.length === 0) return { command: "help" };
   if (argv[0] === "-h" || argv[0] === "--help") return { command: "help" };
   if (argv[0] === "-v" || argv[0] === "--version") return { command: "version" };
-  if (argv[0] === "build") return parseBuildArgv(argv.slice(1));
+  if (argv[0] === "build") return parseBuildArgv(argv.slice(1), "build");
+  if (argv[0] === "cover") return parseBuildArgv(argv.slice(1), "cover");
   if (argv[0] === "enrich") return parseEnrichArgv(argv.slice(1));
   if (argv[0] !== "render") {
     return { command: "error", message: `unknown command: ${argv[0]}` };
@@ -231,7 +240,7 @@ function isContentMode(value: string): value is ContentMode {
   return value === "tutorial" || value === "concept" || value === "reference" || value === "course";
 }
 
-function parseBuildArgv(argv: string[]): Argv {
+function parseBuildArgv(argv: string[], command: "build" | "cover"): Argv {
   let workspace: string | undefined;
   let outDir: string | undefined;
   let since: string | undefined;
@@ -264,7 +273,7 @@ function parseBuildArgv(argv: string[]): Argv {
     }
   }
 
-  return { command: "build", workspace: workspace ?? ".", outDir, since, singleFile, graph, verbose };
+  return { command, workspace: workspace ?? ".", outDir, since, singleFile, graph, verbose };
 }
 
 export async function main(): Promise<void> {
@@ -339,7 +348,7 @@ export async function main(): Promise<void> {
     return;
   }
 
-  if (parsed.command === "build") {
+  if (parsed.command === "build" || parsed.command === "cover") {
     const workspaceAbs = resolve(parsed.workspace);
     try {
       await access(workspaceAbs);
@@ -357,16 +366,27 @@ export async function main(): Promise<void> {
         graph: parsed.graph,
       });
       if (parsed.verbose) {
+        const artifactCount = result.covers.reduce((sum, cover) => sum + cover.view.artifacts.length, 0);
+        const edgeCount = result.covers.reduce((sum, cover) => sum + cover.view.edges.length, 0);
+        const newCount = result.covers.reduce((sum, cover) => sum + cover.view.activity.new_artifacts.length, 0);
+        const changedCount = result.covers.reduce((sum, cover) => sum + cover.view.activity.changed_artifacts.length, 0);
         process.stderr.write(
-          `cover artifacts: ${result.view.artifacts.length}, edges: ${result.view.edges.length}, graph: ${parsed.graph ? "list-fallback" : "disabled"}, activity: ${result.view.activity.new_artifacts.length} new/${result.view.activity.changed_artifacts.length} changed\n`,
+          `cover artifacts: ${artifactCount}, edges: ${edgeCount}, graph: ${parsed.graph ? "list-fallback" : "disabled"}, activity: ${newCount} new/${changedCount} changed\n`,
         );
       }
-      process.stdout.write(`wrote ${result.outPath} (${result.html.length} bytes)\n`);
+      for (const cover of result.covers) {
+        process.stdout.write(`wrote ${cover.outPath} (${(await stat(cover.outPath)).size} bytes)\n`);
+      }
+      process.stdout.write(`wrote ${result.indexPath} (${(await stat(result.indexPath)).size} bytes)\n`);
       return;
     } catch (e) {
       process.stderr.write(`error: build failed: ${(e as Error).message}\n`);
       process.exit(64);
     }
+  }
+
+  if (parsed.command !== "render") {
+    return;
   }
 
   const inputAbs = resolve(parsed.input);

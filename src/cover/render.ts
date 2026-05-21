@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { escapeHtml } from "../parse/markdown.js";
 import { render as renderMarkdown } from "../render.js";
+import { clusterArtifacts, type ClusterResult, type Dossier } from "./cluster.js";
 import { buildCoverEdges } from "./edges.js";
 import {
   createBuildManifest,
@@ -21,7 +22,7 @@ import type {
 } from "./types.js";
 import { buildCoverView } from "./view-model.js";
 
-type BuildDossierCoverInput = {
+export type BuildDossierCoverInput = {
   workspaceRoot: string;
   outDir?: string;
   since?: string;
@@ -30,9 +31,10 @@ type BuildDossierCoverInput = {
 };
 
 export type BuildDossierCoverResult = {
-  outPath: string;
-  html: string;
-  view: DossierCoverView;
+  indexPath: string;
+  covers: Array<{ dossierId: string; outPath: string; view: DossierCoverView }>;
+  orphans: CoverArtifact[];
+  trace: ClusterResult["trace"];
 };
 
 const KIND_ORDER = [
@@ -52,33 +54,103 @@ export async function buildDossierCover(
   const workspaceRoot = resolve(input.workspaceRoot);
   const artifacts = await scanArtifacts(workspaceRoot);
   const edges = buildCoverEdges(artifacts);
+  const { dossiers, orphans, trace } = clusterArtifacts(artifacts);
   const baselineManifest = await readBaselineManifest(workspaceRoot, input.since);
-  const renderedDocuments = input.singleFile
-    ? await renderArtifactDocuments(artifacts)
-    : undefined;
-  const view = buildCoverView({
-    workspaceRoot,
-    artifacts,
-    edges,
-    baselineManifest,
-    privacyWarning: input.singleFile ? privacyWarning(workspaceRoot) : undefined,
-    includeSourceBundle: input.singleFile,
-    renderedDocuments,
-    graphDisabled: input.graph === false,
-  });
-  const html = renderCoverHtml(view);
   const outDir = input.outDir ? resolve(input.outDir) : join(workspaceRoot, ".dossier/out");
-  const outPath = join(outDir, "index.html");
+  const indexPath = join(outDir, "index.html");
   const manifest = createBuildManifest(workspaceRoot, artifacts);
+  const covers: BuildDossierCoverResult["covers"] = [];
 
   await mkdir(outDir, { recursive: true });
-  await writeFile(outPath, html, "utf8");
+
+  for (const dossier of dossiers) {
+    assertFilesystemSafeDossierId(dossier.id);
+    const memberPaths = new Set(dossier.members.map((artifact) => artifact.path));
+    const dossierEdges = edges.filter((edge) => memberPaths.has(edge.from) && memberPaths.has(edge.to));
+    const renderedDocuments = input.singleFile
+      ? await renderArtifactDocuments(dossier.members)
+      : undefined;
+    const view = buildDossierView({
+      workspaceRoot,
+      dossier,
+      edges: dossierEdges,
+      baselineManifest,
+      privacyWarning: input.singleFile ? privacyWarning(workspaceRoot) : undefined,
+      includeSourceBundle: input.singleFile,
+      renderedDocuments,
+      graphDisabled: input.graph === false,
+    });
+    const html = renderCoverHtml(view, { workspaceRoot, hrefPrefix: "../../../" });
+    const dossierOutDir = join(outDir, dossier.id);
+    const outPath = join(dossierOutDir, "index.html");
+    await mkdir(dossierOutDir, { recursive: true });
+    await writeFile(outPath, html, "utf8");
+    covers.push({ dossierId: dossier.id, outPath, view });
+  }
+
+  const indexHtml = renderProjectIndexHtml({
+    workspaceRoot,
+    builtAt: manifest.built_at,
+    artifacts,
+    covers,
+    orphans,
+  });
+  await writeFile(indexPath, indexHtml, "utf8");
   await writeBuildManifest(workspaceRoot, manifest);
 
-  return { outPath, html, view };
+  return { indexPath, covers, orphans, trace };
 }
 
-export function renderCoverHtml(view: DossierCoverView): string {
+type RenderCoverHtmlOptions = {
+  workspaceRoot?: string;
+  hrefPrefix?: string;
+};
+
+type RenderContext = {
+  workspaceRoot?: string;
+  hrefPrefix: string;
+};
+
+function buildDossierView(input: {
+  workspaceRoot: string;
+  dossier: Dossier;
+  edges: CoverEdge[];
+  baselineManifest?: Awaited<ReturnType<typeof readBaselineManifest>>;
+  privacyWarning?: string;
+  includeSourceBundle?: boolean;
+  renderedDocuments?: DossierCoverView["rendered_documents"];
+  graphDisabled?: boolean;
+}): DossierCoverView {
+  const view = buildCoverView({
+    workspaceRoot: input.workspaceRoot,
+    artifacts: input.dossier.members,
+    edges: input.edges,
+    baselineManifest: input.baselineManifest,
+    privacyWarning: input.privacyWarning,
+    includeSourceBundle: input.includeSourceBundle,
+    renderedDocuments: input.renderedDocuments,
+    graphDisabled: input.graphDisabled,
+  });
+
+  return {
+    ...view,
+    dossier: {
+      ...view.dossier,
+      id: input.dossier.id,
+      title: input.dossier.root.title,
+      description: `${input.dossier.members.length} artifacts rooted at ${input.dossier.root.title}`,
+    },
+  };
+}
+
+export function renderCoverHtml(
+  view: DossierCoverView,
+  options: RenderCoverHtmlOptions = {},
+): string {
+  const context: RenderContext = {
+    workspaceRoot: options.workspaceRoot,
+    hrefPrefix: options.hrefPrefix ?? "../../",
+  };
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -90,16 +162,16 @@ export function renderCoverHtml(view: DossierCoverView): string {
 <body>
   <main class="cover">
     ${renderVerdictStrip(view)}
-    ${renderActivityInbox(view)}
+    ${renderActivityInbox(view, context)}
     ${renderPrivacyWarning(view)}
     <section class="cover-grid">
-      ${renderArtifactMap(view)}
+      ${renderArtifactMap(view, context)}
       <div class="judgment-stack">
-        ${renderKeyDecisions(view.decisions)}
-        ${renderOpenQuestions(view.open_questions)}
+        ${renderKeyDecisions(view.decisions, context)}
+        ${renderOpenQuestions(view.open_questions, context)}
       </div>
     </section>
-    ${renderReadingPaths(view.reading_paths)}
+    ${renderReadingPaths(view.reading_paths, context)}
     ${renderEvidenceDrawer(view)}
     ${renderRenderedDocumentBundle(view)}
     ${renderSourceBundle(view)}
@@ -141,7 +213,7 @@ function renderVerdictStrip(view: DossierCoverView): string {
 </section>`;
 }
 
-function renderActivityInbox(view: DossierCoverView): string {
+function renderActivityInbox(view: DossierCoverView, context: RenderContext): string {
   const hasActivity = view.activity.new_artifacts.length > 0 ||
     view.activity.changed_artifacts.length > 0 ||
     view.activity.open_items.length > 0;
@@ -149,17 +221,17 @@ function renderActivityInbox(view: DossierCoverView): string {
 
   return `<section class="activity-inbox" id="activity-inbox">
   <h2>Activity Inbox</h2>
-  ${renderActivityGroup("New artifacts", view.activity.new_artifacts)}
-  ${renderActivityGroup("Changed artifacts", view.activity.changed_artifacts)}
-  ${renderActivityGroup("Open items", view.activity.open_items)}
+  ${renderActivityGroup("New artifacts", view.activity.new_artifacts, context)}
+  ${renderActivityGroup("Changed artifacts", view.activity.changed_artifacts, context)}
+  ${renderActivityGroup("Open items", view.activity.open_items, context)}
 </section>`;
 }
 
-function renderActivityGroup(label: string, artifacts: ArtifactRef[]): string {
+function renderActivityGroup(label: string, artifacts: ArtifactRef[], context: RenderContext): string {
   if (artifacts.length === 0) return "";
   return `<section class="activity-group">
   <h3>${escapeHtml(label)}</h3>
-  <ul>${artifacts.map((artifact) => `<li><a href="${escapeAttribute(artifact.href ?? sourceHref(artifact.path))}">${escapeHtml(artifact.title)}</a><code>${escapeHtml(artifact.path)}</code></li>`).join("")}</ul>
+  <ul>${artifacts.map((artifact) => `<li><a href="${escapeAttribute(rebaseHref(artifact.href ?? sourceHref(artifact.path, context), context))}">${escapeHtml(artifact.title)}</a><code>${escapeHtml(artifact.path)}</code></li>`).join("")}</ul>
 </section>`;
 }
 
@@ -171,10 +243,10 @@ function renderPrivacyWarning(view: DossierCoverView): string {
 </section>`;
 }
 
-function renderArtifactMap(view: DossierCoverView): string {
+function renderArtifactMap(view: DossierCoverView, context: RenderContext): string {
   const visibleEdges = view.edges.filter((edge) => edge.confidence === "high" || edge.confidence === "medium");
   const edgeRows = visibleEdges.length > 0
-    ? visibleEdges.map((edge) => renderEdgeRow(edge, view.artifacts)).join("\n")
+    ? visibleEdges.map((edge) => renderEdgeRow(edge, view.artifacts, context)).join("\n")
     : `<p class="empty-state">No high or medium confidence edges found.</p>`;
   const graphMode = view.graph_disabled
     ? `<p class="map-mode">Graph disabled; showing list fallback.</p>`
@@ -186,24 +258,24 @@ function renderArtifactMap(view: DossierCoverView): string {
   <div class="edge-list">
     ${edgeRows}
   </div>
-  ${renderArtifactList(view.artifacts)}
+  ${renderArtifactList(view.artifacts, context)}
 </section>`;
 }
 
-function renderEdgeRow(edge: CoverEdge, artifacts: CoverArtifact[]): string {
+function renderEdgeRow(edge: CoverEdge, artifacts: CoverArtifact[], context: RenderContext): string {
   const byPath = new Map(artifacts.map((artifact) => [artifact.path, artifact]));
   const from = byPath.get(edge.from);
   const to = byPath.get(edge.to);
   return `<article class="edge-row">
-  <a href="${escapeAttribute(sourceHref(edge.from))}">${escapeHtml(from?.title ?? edge.from)}</a>
+  <a href="${escapeAttribute(sourceHref(edge.from, context))}">${escapeHtml(from?.title ?? edge.from)}</a>
   <span class="edge-relation">${escapeHtml(edge.relation)}</span>
-  <a href="${escapeAttribute(sourceHref(edge.to))}">${escapeHtml(to?.title ?? edge.to)}</a>
+  <a href="${escapeAttribute(sourceHref(edge.to, context))}">${escapeHtml(to?.title ?? edge.to)}</a>
   <span class="confidence">${escapeHtml(edge.confidence)}</span>
   <p>${escapeHtml(edge.label)}</p>
 </article>`;
 }
 
-function renderArtifactList(artifacts: CoverArtifact[]): string {
+function renderArtifactList(artifacts: CoverArtifact[], context: RenderContext): string {
   const byKind = new Map<string, CoverArtifact[]>();
   for (const kind of KIND_ORDER) byKind.set(kind, []);
   for (const artifact of artifacts) {
@@ -218,7 +290,7 @@ function renderArtifactList(artifacts: CoverArtifact[]): string {
         .sort((a, b) => a.path.localeCompare(b.path))
         .map((artifact) => {
           return `<li>
-  <a href="../../${escapeAttribute(artifact.path)}">${escapeHtml(artifact.title)}</a>
+  <a href="${escapeAttribute(sourceHref(artifact.path, context))}">${escapeHtml(artifact.title)}</a>
   <span class="pill">${escapeHtml(artifact.status ?? "unknown")}</span>
   <code>${escapeHtml(artifact.path)}</code>
 </li>`;
@@ -237,10 +309,10 @@ function renderArtifactList(artifacts: CoverArtifact[]): string {
 </section>`;
 }
 
-function renderKeyDecisions(decisions: CoverDecision[]): string {
+function renderKeyDecisions(decisions: CoverDecision[], context: RenderContext): string {
   const items = decisions.length > 0
     ? decisions.map((decision) => `<li>
-  <a href="${escapeAttribute(decision.href)}">${escapeHtml(decision.title)}</a>
+  <a href="${escapeAttribute(rebaseHref(decision.href, context))}">${escapeHtml(decision.title)}</a>
   <code>${escapeHtml(decision.source_artifact)}</code>
   ${decision.evidence ? `<p>${escapeHtml(decision.evidence)}</p>` : ""}
 </li>`).join("\n")
@@ -252,10 +324,10 @@ function renderKeyDecisions(decisions: CoverDecision[]): string {
 </section>`;
 }
 
-function renderOpenQuestions(openQuestions: CoverOpenQuestion[]): string {
+function renderOpenQuestions(openQuestions: CoverOpenQuestion[], context: RenderContext): string {
   const items = openQuestions.length > 0
     ? openQuestions.map((question) => `<li>
-  <a href="${escapeAttribute(question.href)}">${escapeHtml(question.title)}</a>
+  <a href="${escapeAttribute(rebaseHref(question.href, context))}">${escapeHtml(question.title)}</a>
   <code>${escapeHtml(question.source_artifact)}</code>
   ${question.blocks ? `<p><span class="label">Blocks</span> ${escapeHtml(question.blocks)}</p>` : ""}
 </li>`).join("\n")
@@ -267,10 +339,10 @@ function renderOpenQuestions(openQuestions: CoverOpenQuestion[]): string {
 </section>`;
 }
 
-function renderReadingPaths(paths: ReadingPath[]): string {
+function renderReadingPaths(paths: ReadingPath[], context: RenderContext): string {
   const renderedPaths = paths.map((path) => `<article class="reading-path">
   <h3>${escapeHtml(path.role)}</h3>
-  <ol>${path.steps.map(renderReadingStep).join("")}</ol>
+  <ol>${path.steps.map((step) => renderReadingStep(step, context)).join("")}</ol>
 </article>`).join("\n");
 
   return `<section class="reading-paths" id="reading-paths">
@@ -279,8 +351,8 @@ function renderReadingPaths(paths: ReadingPath[]): string {
 </section>`;
 }
 
-function renderReadingStep(step: ArtifactRef): string {
-  const href = step.href ?? sourceHref(step.path);
+function renderReadingStep(step: ArtifactRef, context: RenderContext): string {
+  const href = rebaseHref(step.href ?? sourceHref(step.path, context), context);
   return `<li><a href="${escapeAttribute(href)}">${escapeHtml(step.title)}</a></li>`;
 }
 
@@ -334,6 +406,72 @@ function renderRenderedDocumentBundle(view: DossierCoverView): string {
   <summary>Rendered Documents (${view.rendered_documents.length})</summary>
   ${documents}
 </details>`;
+}
+
+function renderProjectIndexHtml(input: {
+  workspaceRoot: string;
+  builtAt: string;
+  artifacts: CoverArtifact[];
+  covers: BuildDossierCoverResult["covers"];
+  orphans: CoverArtifact[];
+}): string {
+  const workspaceName = basename(input.workspaceRoot);
+  const dossierRows = input.covers
+    .map((cover) => `<tr>
+  <td><a href="${escapeAttribute(`${cover.dossierId}/index.html`)}">${escapeHtml(cover.view.dossier.title)}</a><code>${escapeHtml(cover.dossierId)}</code></td>
+  <td>${cover.view.artifacts.length}</td>
+  <td>${escapeHtml(cover.view.dossier.status)}</td>
+  <td>${escapeHtml(cover.view.dossier.updated_at || "unknown")}</td>
+</tr>`)
+    .join("\n");
+  const dossierTable = dossierRows
+    ? `<table>
+    <thead><tr><th>Dossier</th><th>Members</th><th>Status</th><th>Last updated</th></tr></thead>
+    <tbody>${dossierRows}</tbody>
+  </table>`
+    : `<p class="empty-state">No spec roots detected.</p>`;
+  const orphans = input.orphans.length > 0
+    ? `<section class="project-orphans">
+  <h2>Orphans</h2>
+  <ul>${input.orphans.map((artifact) => `<li><a href="${escapeAttribute(memberHref(artifact.path, input.workspaceRoot, "../../"))}">${escapeHtml(artifact.title)}</a><code>${escapeHtml(artifact.path)}</code></li>`).join("")}</ul>
+</section>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(workspaceName)} Project Dossier Index</title>
+  <style>${coverCss()}
+.project-summary { margin-bottom: 22px; }
+.project-dossiers, .project-orphans { margin-top: 22px; border: 1px solid #ddd6ca; border-radius: 8px; background: #fffdf8; padding: 18px; }
+.project-dossiers table code { display: block; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <main class="cover">
+    <section class="verdict-strip project-summary">
+      <div>
+        <p class="eyebrow">Project Dossier Index</p>
+        <h1>${escapeHtml(workspaceName)}</h1>
+        <p>Built ${escapeHtml(input.builtAt)}</p>
+      </div>
+      <dl>
+        <div><dt>Artifacts</dt><dd>${input.artifacts.length}</dd></div>
+        <div><dt>Dossiers</dt><dd>${input.covers.length}</dd></div>
+        <div><dt>Orphans</dt><dd>${input.orphans.length}</dd></div>
+        <div><dt>Workspace</dt><dd>${escapeHtml(workspaceName)}</dd></div>
+      </dl>
+    </section>
+    <section class="project-dossiers">
+      <h2>Dossiers</h2>
+      ${dossierTable}
+    </section>
+    ${orphans}
+  </main>
+</body>
+</html>`;
 }
 
 function coverCss(): string {
@@ -416,8 +554,31 @@ function escapeAttribute(value: string): string {
   return escapeHtml(value).replaceAll("'", "&#39;");
 }
 
-function sourceHref(path: string): string {
-  return `../../${path}`;
+function sourceHref(path: string, context?: RenderContext): string {
+  return memberHref(path, context?.workspaceRoot, context?.hrefPrefix ?? "../../");
+}
+
+function memberHref(path: string, workspaceRoot: string | undefined, hrefPrefix: string): string {
+  const htmlPath = path.replace(/\.md$/i, ".html");
+  const target = workspaceRoot && htmlPath !== path && existsSync(join(workspaceRoot, htmlPath))
+    ? htmlPath
+    : path;
+  return `${hrefPrefix}${target}`;
+}
+
+function rebaseHref(href: string, context: RenderContext): string {
+  if (!href.startsWith("../../")) return href;
+  const rebased = href.slice("../../".length);
+  const hashIndex = rebased.indexOf("#");
+  const path = hashIndex >= 0 ? rebased.slice(0, hashIndex) : rebased;
+  const anchor = hashIndex >= 0 ? rebased.slice(hashIndex) : "";
+  return `${memberHref(path, context.workspaceRoot, context.hrefPrefix)}${anchor}`;
+}
+
+function assertFilesystemSafeDossierId(dossierId: string): void {
+  if (!dossierId || dossierId === "." || dossierId === ".." || /[/\\\0]/.test(dossierId)) {
+    throw new Error(`unsafe dossier id: ${dossierId}`);
+  }
 }
 
 function privacyWarning(workspaceRoot: string): string | undefined {

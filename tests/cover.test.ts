@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -274,7 +274,7 @@ describe("Cover-1 deterministic extraction", () => {
 });
 
 describe("Cover-0 CLI behavior", () => {
-  test("xdossier build writes .dossier/out/index.html with artifacts and edge evidence", async () => {
+  test("xdossier build writes a project index plus per-dossier covers", async () => {
     const root = await makeWorkspace();
     const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
 
@@ -285,14 +285,99 @@ describe("Cover-0 CLI behavior", () => {
     );
 
     expect(result.status, result.stderr).toBe(0);
-    const outPath = join(root, ".dossier/out/index.html");
-    expect(existsSync(outPath)).toBe(true);
-    const html = await readFile(outPath, "utf8");
-    expect(html).toMatch(/<section class="verdict-strip">/);
-    expect(html).toMatch(/MVP-0 Spec implements Vision Spec/);
-    expect(html).toMatch(/Vision Review reviews Vision Spec/);
-    expect(html).toMatch(/confidence.*high/);
-    expect(result.stdout).toContain(outPath);
+    const indexPath = join(root, ".dossier/out/index.html");
+    const visionCoverPath = join(root, ".dossier/out/2026-05-17-dossier-vision/index.html");
+    const mvpCoverPath = join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html");
+    expect(existsSync(indexPath)).toBe(true);
+    expect(existsSync(visionCoverPath)).toBe(true);
+    expect(existsSync(mvpCoverPath)).toBe(true);
+
+    const indexHtml = await readFile(indexPath, "utf8");
+    expect(indexHtml).toMatch(/Project Dossier Index/);
+    expect(indexHtml).toMatch(/<a href="2026-05-17-dossier-vision\/index\.html">Vision Spec<\/a>/);
+    expect(indexHtml).toMatch(/<a href="2026-05-18-dossier-mvp-0\/index\.html">MVP-0 Spec<\/a>/);
+
+    const visionHtml = await readFile(visionCoverPath, "utf8");
+    expect(visionHtml).toMatch(/<section class="verdict-strip">/);
+    expect(visionHtml).toMatch(/Vision Review reviews Vision Spec/);
+    expect(visionHtml).toMatch(/confidence.*high/);
+
+    const mvpHtml = await readFile(mvpCoverPath, "utf8");
+    expect(mvpHtml).toMatch(/<section class="verdict-strip">/);
+    expect(mvpHtml).toMatch(/MVP-0 Change implements MVP-0 Spec/);
+    expect(mvpHtml).not.toMatch(/MVP-0 Spec implements Vision Spec/);
+
+    expect(result.stdout).toContain(visionCoverPath);
+    expect(result.stdout).toContain(mvpCoverPath);
+    expect(result.stdout).toContain(indexPath);
+  });
+
+  test("xdossier cover writes one index plus per-dossier covers from a 2-dossier workspace", async () => {
+    const root = await makeWorkspace();
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", root],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(existsSync(join(root, ".dossier/out/index.html"))).toBe(true);
+    expect(existsSync(join(root, ".dossier/out/2026-05-17-dossier-vision/index.html"))).toBe(true);
+    expect(existsSync(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"))).toBe(true);
+    expect(result.stdout.match(/\.dossier\/out\/[^/\n]+\/index\.html/g)).toHaveLength(2);
+  });
+
+  test("project index lists all dossiers with link hrefs", async () => {
+    const root = await makeWorkspace();
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", root],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    expect(html).toMatch(/<section class="project-dossiers"/);
+    expect(html).toContain('href="2026-05-17-dossier-vision/index.html"');
+    expect(html).toContain('href="2026-05-18-dossier-mvp-0/index.html"');
+    expect(html).not.toContain('href="../../.dossier/out/');
+  });
+
+  test("workspace with no root specs writes only a project index with orphans", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-cover-no-roots-"));
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/changes/2026-05-20-orphan-impl-notes.md"),
+      `---
+title: Orphan Change
+status: ready
+kind: change
+updated: 2026-05-20
+---
+
+# Orphan Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", root],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const outEntries = await readdir(join(root, ".dossier/out"), { withFileTypes: true });
+    expect(outEntries.filter((entry) => entry.isDirectory())).toHaveLength(0);
+    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    expect(html).toMatch(/No spec roots detected/);
+    expect(html).toMatch(/Orphans/);
+    expect(html).toMatch(/Orphan Change/);
   });
 });
 
@@ -332,7 +417,7 @@ describe("Cover-2 backlog behavior", () => {
 
     expect(result.status, result.stderr).toBe(0);
     expect(existsSync(join(root, ".dossier/build-manifest.json"))).toBe(true);
-    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    const html = await readFile(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"), "utf8");
     expect(html).not.toMatch(/<section class="activity-inbox"/);
   });
 
@@ -381,7 +466,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     );
 
     expect(second.status).toBe(0);
-    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    const html = await readFile(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"), "utf8");
     expect(html).toMatch(/<section class="activity-inbox"/);
     expect(html).toMatch(/New Change/);
     expect(html).toMatch(/MVP-0 Spec/);
@@ -402,7 +487,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     );
 
     expect(result.status, result.stderr).toBe(0);
-    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    const html = await readFile(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"), "utf8");
     expect(html).toMatch(/class="privacy-warning"/);
     expect(html).toMatch(/No .dossierignore or redaction rules were found/);
     expect(html).toMatch(/<details class="source-bundle">/);
@@ -435,7 +520,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     );
 
     expect(second.status, second.stderr).toBe(0);
-    expect(activityInboxHtml(await readFile(join(root, ".dossier/out/index.html"), "utf8"))).toMatch(/Vision Spec/);
+    expect(activityInboxHtml(await readFile(join(root, ".dossier/out/2026-05-17-dossier-vision/index.html"), "utf8"))).toMatch(/Vision Spec/);
   });
 
   test("--since git ref populates activity inbox without a previous manifest", async () => {
@@ -482,7 +567,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     );
 
     expect(result.status, result.stderr).toBe(0);
-    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    const html = await readFile(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"), "utf8");
     expect(html).toMatch(/<section class="activity-inbox"/);
     expect(html).toMatch(/Git Baseline Change/);
     expect(html).toMatch(/Changed artifacts/);
@@ -500,7 +585,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     );
 
     expect(result.status).toBe(0);
-    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    const html = await readFile(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"), "utf8");
     expect(html).toMatch(/<details class="rendered-document-bundle">/);
     expect(html).toMatch(/<iframe/);
     expect(html).toMatch(/srcdoc="/);
@@ -575,7 +660,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     );
 
     expect(result.status, result.stderr).toBe(0);
-    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    const html = await readFile(join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html"), "utf8");
     expect(html).toMatch(/Graph disabled/);
   });
 
@@ -591,6 +676,21 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toMatch(/Build options:[\s\S]*--out <dir>/);
     expect(result.stdout).toMatch(/Output directory/);
+    expect(result.stdout).toMatch(/\.dossier\/out\/index\.html\s+Project index linking all dossiers/);
+    expect(result.stdout).toMatch(/\.dossier\/out\/<dossier-id>\/index\.html\s+Per-dossier cover/);
+  });
+
+  test("cover help notes build alias", () => {
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", "--help"],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toMatch(/alias: xdossier build/);
   });
 
   test("the real vision spec no longer declares that it implements MVP-0", async () => {
