@@ -4,7 +4,13 @@
 >
 > Tiered reading modes · Term popovers · Learning checkpoints · Multi-doc archives · Zero deps · Single-file HTML.
 
-[TODO: 30s GIF showing reader-toggle切换 beginner → intermediate → expert]
+<p align="center">
+  <a href="https://xianfeng92.github.io/xdossier/demo/pedagogy.html">
+    <img src="https://img.shields.io/badge/Live%20Demo-Click%20to%20see%20reader%20toggle-1e3a8a?style=for-the-badge" alt="Live demo">
+  </a>
+</p>
+
+🌐 **Try it now without installing**: [xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) — switch reader modes (零基础 / 系统化 / 速查) in the live HTML.
 
 ## Why this exists
 
@@ -16,7 +22,7 @@ You and your AI agent generate dozens of markdown files: specs, ADRs, design doc
 
 `xdossier` is a **pedagogical HTML archive** for AI-generated technical docs. Reader picks a mode; the same single-file HTML adapts.
 
-[TODO: side-by-side screenshot: same spec in beginner mode vs expert mode]
+> 💡 **Want to see the difference?** Open the [pedagogy demo](https://xianfeng92.github.io/xdossier/demo/pedagogy.html) in two tabs. Set one to 零基础 and the other to 速查. Same HTML file; the spatial structure adapts.
 
 ## What you get
 
@@ -91,8 +97,6 @@ Three layers:
 | Multi-doc dossier view (MVP-1) | ⏳ In design |
 | MCP server (MVP-2) | 📝 Spec'd |
 | Claude Code session adapter | 📝 Spec'd |
-
-[TODO: Roadmap GIF or board screenshot]
 
 ## Contributing
 
