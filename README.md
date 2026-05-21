@@ -10,6 +10,18 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml">
+    <img src="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://www.npmjs.com/package/xdossier">
+    <img src="https://img.shields.io/npm/v/xdossier?color=1e3a8a" alt="npm version">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-1e3a8a" alt="Apache 2.0">
+  </a>
+</p>
+
 🌐 **Try it now without installing**: [xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) — switch reader modes (零基础 / 系统化 / 速查) in the live HTML.
 
 ## Why this exists

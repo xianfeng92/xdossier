@@ -67,7 +67,7 @@ xdossier treats the spec as a structured artifact: section covers, decision grid
 
 The input stays reviewable in git. The output becomes readable in a browser.
 
-6. Thanks to @thariqs for the HTML > Markdown argument, and to nexu-io/html-anything for proving agent-written HTML can be a real workflow.
+6. Thanks to @trq212 for the HTML > Markdown argument, and to nexu-io/html-anything for proving agent-written HTML can be a real workflow.
 
 xdossier takes that idea toward technical specs and pedagogical archives.
 
