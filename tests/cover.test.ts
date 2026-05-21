@@ -274,7 +274,7 @@ describe("Cover-1 deterministic extraction", () => {
 });
 
 describe("Cover-0 CLI behavior", () => {
-  test("dossier build writes .dossier/out/index.html with artifacts and edge evidence", async () => {
+  test("xdossier build writes .dossier/out/index.html with artifacts and edge evidence", async () => {
     const root = await makeWorkspace();
     const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
 

@@ -16,12 +16,45 @@
   });
 
   const progressFill = document.querySelector(".reading-progress-fill");
+  const tocAside = document.querySelector("aside.toc");
   let lastActiveId = "";
+  let isSyncingHashTarget = false;
 
   // Bound to semantic.ts ids: H2 = s<n>, H3 = s<n>-<m>.
   const parentH2Id = (id) => {
     const idx = id.indexOf("-");
     return idx > 0 ? id.slice(0, idx) : null;
+  };
+
+  const targetFromHash = () => {
+    if (!window.location.hash || window.location.hash.length <= 1) return null;
+    try {
+      return document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    } catch (_e) {
+      return null;
+    }
+  };
+
+  const scrollTocLinkIntoView = (activeLink) => {
+    if (!activeLink || !tocAside) return;
+    const linkRect = activeLink.getBoundingClientRect();
+    const tocRect = tocAside.getBoundingClientRect();
+    if (linkRect.top < tocRect.top) {
+      tocAside.scrollTop -= tocRect.top - linkRect.top + 8;
+    } else if (linkRect.bottom > tocRect.bottom) {
+      tocAside.scrollTop += linkRect.bottom - tocRect.bottom + 8;
+    }
+  };
+
+  const syncHashTarget = () => {
+    const target = targetFromHash();
+    if (!target) return;
+    isSyncingHashTarget = true;
+    target.scrollIntoView({ block: "start", inline: "nearest" });
+    requestAnimationFrame(() => {
+      isSyncingHashTarget = false;
+      onScroll();
+    });
   };
 
   const onScroll = () => {
@@ -43,7 +76,7 @@
 
     if (activeId && activeId !== lastActiveId) {
       const activeLink = tocLinks.get(activeId) ?? (parentId ? tocLinks.get(parentId) : undefined);
-      activeLink?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+      if (!isSyncingHashTarget) scrollTocLinkIntoView(activeLink);
       lastActiveId = activeId;
     }
 
@@ -54,7 +87,10 @@
       progressFill.style.width = pct.toFixed(2) + "%";
     }
   };
-  const syncAfterLayout = () => requestAnimationFrame(onScroll);
+  const syncAfterLayout = () => requestAnimationFrame(() => {
+    syncHashTarget();
+    onScroll();
+  });
   document.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
   window.addEventListener("hashchange", syncAfterLayout, { passive: true });
@@ -64,7 +100,6 @@
 
   // Mobile TOC drawer
   const tocToggle = document.querySelector(".toc-toggle");
-  const tocAside = document.querySelector("aside.toc");
   const tocBackdrop = document.querySelector(".toc-backdrop");
   const isMobileToc = () => window.matchMedia && window.matchMedia("(max-width: 1024px)").matches;
   const syncTocAccessibility = () => {

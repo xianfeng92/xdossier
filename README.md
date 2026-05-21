@@ -24,6 +24,14 @@
 
 🌐 **Try it now without installing**: [xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) — switch reader modes (零基础 / 系统化 / 速查) in the live HTML.
 
+<p align="center">
+  <a href="https://xianfeng92.github.io/xdossier/demo/pedagogy.html">
+    <img src="docs/assets/reader-toggle-hero.png" alt="xdossier reader-mode toggle in a rendered HTML archive" width="720">
+  </a>
+  <br>
+  <em>Same single-file HTML — three reader profiles. Click to try the live demo.</em>
+</p>
+
 ## Why this exists
 
 You and your AI agent generate dozens of markdown files: specs, ADRs, design docs, change notes. Each one is **800+ lines of dense text** that:

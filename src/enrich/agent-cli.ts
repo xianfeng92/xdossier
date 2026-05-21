@@ -317,7 +317,7 @@ Self-check before submitting:
 PREREQUISITE self-check — for each prerequisite, ask:
   "If a reader who never heard of this term reads my plain_language, do they learn what the thing actually IS or DOES — or just a synonym rephrasing of the term itself?"
   - Synonym rephrasing test: "render_skill" → "负责渲染的技能" / "把文件渲染成页面的技能" — these FAIL because they only restate the words in the term. They contain no new information.
-  - Mechanism test (passes): "render_skill" → "dossier 用来挑选 HTML 模板的标识，每个 kind 对应一个". This tells the reader what role render_skill plays (an identifier) and how it maps (one per kind).
+  - Mechanism test (passes): "render_skill" → "xdossier 用来挑选 HTML 模板的标识，每个 kind 对应一个". This tells the reader what role render_skill plays (an identifier) and how it maps (one per kind).
   - Hard rule: if you delete plain_language and only show the term, would the reader miss any information? If the answer is no, rewrite plain_language to explain mechanism, role, scope, or concrete behavior.
   - why_needed must answer "why this prereq matters for understanding THIS document", not describe what the document does to the concept. "This spec does not replace render_skill" FAILS — it describes the spec. "Readers must know it exists because new pedagogy layer sits on top of it without changing it" PASSES.
 

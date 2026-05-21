@@ -33,7 +33,7 @@ jobs:
       - run: pnpm test
 
       - name: Render self-test
-        run: pnpm build && node bin/dossier.js render docs/specs/2026-05-17-dossier-vision-spec.md
+        run: pnpm build && node bin/xdossier.js render docs/specs/2026-05-17-dossier-vision-spec.md
 
       - name: Verify rendered HTML has no external resources
         run: |

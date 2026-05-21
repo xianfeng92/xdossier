@@ -14,7 +14,7 @@ body:
       label: What happened?
       description: What did you do, what did you expect, what did you actually get?
       placeholder: |
-        Ran `dossier render docs/specs/foo.md`. Expected single-file HTML. Got an error about missing skill.
+        Ran `xdossier render docs/specs/foo.md`. Expected single-file HTML. Got an error about missing skill.
     validations:
       required: true
 

@@ -1,4 +1,4 @@
-// Internal types for the dossier renderer.
+// Internal types for the xdossier renderer.
 // See docs/specs/2026-05-18-dossier-mvp-0-spec.md §6.5 for the skill dispatch model.
 
 export type SkillId = string;

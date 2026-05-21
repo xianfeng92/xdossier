@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Four visual reinforcements for long specs: section covers, pull quotes, inline SVG diagrams, and comparison cards.
 - Single-file HTML output with inlined CSS and JavaScript for offline sharing.
 - Claude Code hook support for automatic render workflows.
-- `/dossier` slash command entry for agent-side rendering.
+- `/xdossier` slash command entry for agent-side rendering.
 - Global `xdossier` CLI symlink flow.
 - Test coverage for the release surface: 150 tests.
 

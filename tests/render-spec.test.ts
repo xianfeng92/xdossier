@@ -61,7 +61,7 @@ describe("MVP-0 end-to-end: vision spec → HTML", () => {
     expect(html).toMatch(/<p class="toc-header">文档 · 18 节<\/p>/);
     expect(html).toMatch(/btn\.setAttribute\("aria-label", "复制代码"\)/);
     expect(html).toMatch(
-      /<footer class="spec-footer">[\s\S]*?<span>Dossier — 把 AI 给你的每一份设计 \/ 方案 \/ 文档自动渲染成可读、可分享、可关联的 HTML 档案 · 已就绪 · 2026-05-18<\/span>[\s\S]*?<span>由 dossier 渲染<\/span>/,
+      /<footer class="spec-footer">[\s\S]*?<span>Dossier — 把 AI 给你的每一份设计 \/ 方案 \/ 文档自动渲染成可读、可分享、可关联的 HTML 档案 · 已就绪 · 2026-05-18<\/span>[\s\S]*?<span>由 xdossier 渲染<\/span>/,
     );
 
     const headerHtml = html.slice(
@@ -1985,8 +1985,10 @@ describe("page-level HTML interactions", () => {
     expect(html).toMatch(/<li class="toc-section"><a href="#s1"/);
     expect(html).toMatch(/<ol class="toc-children">/);
     expect(html).toMatch(/toc-section\.is-current/);
-    expect(html).toMatch(/scrollIntoView\(\{ block: "nearest", inline: "nearest", behavior: "instant" \}\)/);
-    expect(html).toMatch(/requestAnimationFrame\(onScroll\)/);
+    expect(html).toMatch(/scrollTocLinkIntoView/);
+    expect(html).toMatch(/syncHashTarget/);
+    expect(html).not.toMatch(/activeLink\?\.scrollIntoView/);
+    expect(html).toMatch(/requestAnimationFrame\(\(\) => \{/);
   });
 
   test("toc-script wires H3 scroll-spy, drawer open/close, and per-pre copy buttons", async () => {

@@ -6,7 +6,7 @@ import("../dist/cli.js")
   .catch((e) => {
     if (e && typeof e === "object" && "code" in e && e.code === "ERR_MODULE_NOT_FOUND") {
       console.error(
-        "dossier: dist/cli.js not found.\n" +
+        "xdossier: dist/cli.js not found.\n" +
           "  In this repo, run `pnpm dev render <file>` for development.\n" +
           "  Or `pnpm build` first, then re-run this command.",
       );
