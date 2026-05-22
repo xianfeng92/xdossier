@@ -1,7 +1,7 @@
 // CLI entry — argv parsing, dispatch, error handling.
 // See docs/specs/2026-05-18-dossier-mvp-0-spec.md §4 for the CLI surface and §6.5 for skill dispatch.
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile, writeFile, access, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { render } from "./render.js";
@@ -14,7 +14,16 @@ import { buildDossierCover } from "./cover/render.js";
 import { renderDossierBannerForInput } from "./cover/membership.js";
 import type { ContentMode, ReaderProfile, RenderAnnotations } from "./types.js";
 
-const VERSION = "0.1.0";
+// Read version from package.json at runtime so npm + --version stay in sync.
+// Both src/cli.ts and dist/cli.js sit one level above package.json after install.
+const VERSION = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8")) as { version?: string };
+    return pkg.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+})();
 
 type Argv =
   | {

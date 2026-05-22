@@ -112,6 +112,20 @@ pnpm link
 
 3. After this, any time Claude Code writes `docs/specs|changes|reviews/*.md`, the corresponding `.html` regenerates and the parent dossier cover refreshes. No command to remember.
 
+## FAQ
+
+**How is this different from a markdown viewer with a sidebar?**
+
+Two reasons. (1) Spatial structure — relation graphs, expandable source bundles, fixed back-link banners — doesn't translate to a stream of markdown blocks; `xdossier` emits real HTML you can email or commit. (2) Single-file output: a `<dossier-id>/index.html` is fully self-contained; no clone, no install, no render context needed to read it.
+
+**Why not use an LLM to do the clustering?**
+
+Clustering needs to be deterministic, fast, and runnable inside a PostToolUse hook on every save — that rules out an LLM call. The algorithm is ~150 lines, scored by signals: frontmatter `implements:` / `reviews:` (+100/+80), filename-stem match (+60), prefix overlap (+30), shared subtree (+5). Threshold to assign is 60. Code is in `src/cover/cluster.ts`.
+
+**Why HTML, not a wiki / Notion / Obsidian export?**
+
+`xdossier` consumes the artifacts you already have (markdown in `docs/`) and turns them into a navigable archive without forcing a platform migration. It's read-only output, not a knowledge-base. Use this when (a) the source-of-truth is markdown checked into git, (b) you want offline-friendly single-file HTML, (c) the readers include people who don't know your wiki of choice.
+
 ## Built on
 
 - [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) — the philosophy that HTML > Markdown for AI output.

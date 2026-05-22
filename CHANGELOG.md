@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-22
+
+### Fixed
+
+- `xdossier --version` and `xdossier --help` reported a stale `0.1.0` even though the published package was `0.2.0`. Version is now read from `package.json` at runtime so the CLI string can never drift from the npm-published version again.
+
+### Added
+
+- README + README.zh-CN: a short FAQ section pre-empting the three most common HN-style objections (vs. markdown viewer, why no LLM clustering, why HTML over wiki/Notion/Obsidian).
+
 ## [0.2.0] - 2026-05-22
 
 ### Added

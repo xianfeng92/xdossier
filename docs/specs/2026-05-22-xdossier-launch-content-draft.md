@@ -34,7 +34,7 @@ Show HN: I made AI's 8-file feature specs readable in 5 minutes (multi-doc HTML 
 
 ### Body
 
-I write a lot of features with Claude Code, Codex, and Cursor. One "design this feature" conversation often produces a vision spec, an MVP spec, several implementation notes, and one or two reviews — 6–12 markdown files, all related, none linking to each other. After a week, I can no longer remember which note implemented which decision.
+After a week, I can no longer remember which note implemented which decision. One "design this feature" conversation often produces a vision spec, an MVP spec, several implementation notes, and one or two reviews — 6–12 markdown files, all related, none linking to each other. I write a lot of these features with Claude Code, Codex, and Cursor.
 
 xdossier is a tiny CLI that fixes the read-side of that workflow:
 
@@ -48,7 +48,7 @@ Each single document also renders with three reader profiles (beginner / systema
 
 Tested on a real 41-document workspace: clustered into 6 topic dossiers + 12 orphans, no LLM in the loop, all heuristics from frontmatter and filename stems.
 
-Live demo (v0.2.0): https://xianfeng92.github.io/xdossier/demo/dossier.html — the MVP-0 spec of xdossier itself, rendered as a self-documenting dossier (1 spec + 8 impl notes + 3 reviews, all in one HTML).
+Self-documenting demo: the live demo at https://xianfeng92.github.io/xdossier/demo/dossier.html is xdossier rendering xdossier's own MVP-0 spec — 1 spec + 8 impl notes + 3 reviews, all in one HTML.
 
 GitHub: https://github.com/xianfeng92/xdossier
 Release notes: https://github.com/xianfeng92/xdossier/releases/tag/v0.2.0
@@ -66,6 +66,8 @@ Some context that didn't fit the post:
 **Why HTML instead of a Markdown viewer with a sidebar?** Two reasons. (1) Spatial structure — relation graphs, expandable source bundles, fixed top banners — don't translate to a stream of markdown blocks. (2) Single-file output: I can email an HTML dossier to someone without a clone, an install, or a render context.
 
 **Inspiration**: Thariq Shihipar's *Unreasonable Effectiveness of HTML* and nexu-io/html-anything. xdossier is the "archive-first, multi-doc" variant of those ideas.
+
+**What about LangGraph / Phoenix / Langfuse?** Those are observability tools for agent _developers_ debugging an agent. xdossier is for the person _using_ an agent who needs to read what came out. Different audience, same general space.
 
 ## 2. X / Twitter Thread
 

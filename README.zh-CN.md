@@ -112,6 +112,20 @@ pnpm link
 
 3. 之后 Claude Code 每次写入 `docs/specs|changes|reviews/*.md`，对应的 `.html` 会自动重新生成，父 dossier cover 也会同步刷新。不需要再记命令。
 
+## FAQ
+
+**这和带侧边栏的 Markdown viewer 有什么区别？**
+
+两个原因。（1）空间结构不同：关系图、可展开的源文档集合、固定的 dossier 返回横幅，不能简单摊平成一串 markdown block；`xdossier` 输出的是可以直接发给别人、也可以提交进仓库的真实 HTML。（2）单文件输出：`<dossier-id>/index.html` 自包含；读者不需要 clone、不需要安装工具、也不需要知道渲染上下文。
+
+**为什么不用 LLM 来做 clustering？**
+
+Clustering 必须确定、快速，而且能放进 PostToolUse hook 里每次保存都跑；这就排除了 LLM 调用。现在的算法大约 150 行，按信号打分：frontmatter `implements:` / `reviews:`（+100/+80）、文件名 stem 匹配（+60）、前缀重叠（+30）、共享子目录（+5）。达到 60 分就归入同一个 dossier。代码在 `src/cover/cluster.ts`。
+
+**为什么输出 HTML，而不是 wiki / Notion / Obsidian export？**
+
+`xdossier` 吃的是你已经有的产物（`docs/` 里的 markdown），把它们变成可导航的档案，而不是逼你迁移平台。它是只读输出，不是知识库。适合这些场景：（a）source-of-truth 是提交进 git 的 markdown；（b）你想要离线友好的单文件 HTML；（c）读者里有人并不了解你常用的 wiki 工具。
+
 ## 站在谁的肩膀上
 
 - [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) —— 「AI 输出应该用 HTML 而非 Markdown」的原始论点。
