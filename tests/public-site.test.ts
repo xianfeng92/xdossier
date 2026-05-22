@@ -29,9 +29,9 @@ describe("public xdossier site", () => {
 
     expect(html).toMatch(/\.demo-card-preview\s*\{/);
     expect(html.match(/class="demo-card-preview\b[^"]*"/g)).toHaveLength(4);
-    expect(html).toContain('aria-label="Preview of MVP-0 dossier with relation graph"');
-    expect(html).toContain('aria-label="Preview of Pedagogy Layer Spec"');
-    expect(html).toContain('aria-label="Preview of Vision Spec"');
-    expect(html).toContain('aria-label="Preview of OSS Launch Research"');
+    expect(html).toContain('aria-label="MVP-0 dossier 与关系图预览"');
+    expect(html).toContain('aria-label="教学层 Spec 预览"');
+    expect(html).toContain('aria-label="愿景 Spec 预览"');
+    expect(html).toContain('aria-label="开源发布调研预览"');
   });
 });

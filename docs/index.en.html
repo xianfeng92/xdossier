@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>xdossier —— 把 AI specs 渲染成可分层阅读的 HTML 档案</title>
-<meta name="description" content="把 AI 生成的 spec / ADR / 设计文档渲染成新人、同行、资深 reviewer 都能读的 HTML。支持三档阅读模式、术语弹窗、学习检查点、多文档 dossier 和单文件输出。">
+<title>xdossier — Pedagogical HTML archives for AI-generated specs</title>
+<meta name="description" content="Turn your AI's specs into HTML that beginners, peers, and experts can all read. Tiered reader modes, term popovers, learning checkpoints, single-file output.">
 <style>
   :root {
     --bg: #faf9f6;
@@ -325,52 +325,34 @@
 </head>
 <body>
 <p align="right" style="max-width: 880px; margin: 0 auto; padding: 12px 24px 0; font-size: 13px;">
-  <a href="./index.en.html">English</a> · <strong>简体中文</strong>
+  <strong>English</strong> · <a href="./index.html">简体中文</a>
 </p>
 <main>
 
   <section class="hero">
-    <div class="hero-eyebrow">xdossier · v0.2.3</div>
+    <div class="hero-eyebrow">xdossier · v0.1.0</div>
     <h1>xdossier</h1>
     <p class="hero-tagline">
-      把 AI 生成的 spec 渲染成一份<strong>新人、同行、资深 reviewer 都能读</strong>的 HTML。
+      Turn your AI's specs into HTML that <strong>beginners, peers, and experts can all read</strong>.
     </p>
     <p class="hero-sub">
-      三档阅读模式 · 术语弹窗 · 学习检查点 · 多文档 dossier · 单文件 HTML · Apache 2.0
+      Tiered reader modes · Term popovers · Learning checkpoints · Single-file HTML · Zero CDN · Apache 2.0
     </p>
     <div class="hero-cta">
-      <a class="btn btn-primary" href="#demos">查看 demo ↓</a>
+      <a class="btn btn-primary" href="#demos">See the demos ↓</a>
       <a class="btn btn-ghost" href="https://github.com/xianfeng92/xdossier">GitHub</a>
       <code class="install">npm i -g xdossier</code>
     </div>
   </section>
 
-  <section class="why">
-    <h2>你拿到的能力</h2>
-    <ul>
-      <li>
-        <strong>三档阅读模式。</strong> 零基础 / 系统化 / 速查在同一份 HTML 里切换，不重渲染、不重构建。
-      </li>
-      <li>
-        <strong>教学层自动显隐。</strong> 术语弹窗、前置知识卡、学习检查点、类比说明，会按读者档位出现或收起。
-      </li>
-      <li>
-        <strong>多文档 dossier。</strong> 按 frontmatter 和文件名把 spec、changes、reviews 聚成一组，生成关系图和项目级索引。
-      </li>
-      <li>
-        <strong>单文件输出。</strong> 双击即开、可离线、无 CDN；可以发邮件、贴 PR，也可以提交进仓库。
-      </li>
-    </ul>
-  </section>
-
-  <h2 class="section-head" id="demos">在线 demo</h2>
+  <h2 class="section-head" id="demos">Live demos</h2>
   <p style="color: var(--muted); margin-top: -16px; margin-bottom: 24px;">
-    这些都是真实 spec 经 xdossier 渲染后的页面。打开任意单文档 demo，可以在顶部切换 <strong>零基础 / 系统化 / 速查</strong>；打开多文档 dossier，可以看到关系图如何把相关文档串起来。
+    Real specs rendered by xdossier. Toggle <strong>零基础 / 系统化 / 速查</strong> at the top of any single-doc demo, or open the multi-doc dossier to see relation-graph clustering in action.
   </p>
 
   <div class="demo-grid">
     <a class="demo-card" href="demo/dossier.html">
-      <div class="demo-card-preview preview-dossier" role="img" aria-label="MVP-0 dossier 与关系图预览">
+      <div class="demo-card-preview preview-dossier" role="img" aria-label="Preview of MVP-0 dossier with relation graph">
         <div class="preview-window" aria-hidden="true">
           <div class="preview-chrome"><span></span><span></span><span></span></div>
           <div class="preview-page">
@@ -397,17 +379,17 @@
         </div>
       </div>
       <div class="demo-card-body">
-        <div class="demo-card-mode">★ 新 — 多文档视图 (v0.2.0)</div>
+        <div class="demo-card-mode">★ NEW — multi-doc view (v0.2.0)</div>
         <h3>MVP-0 Dossier</h3>
         <p>
-          用 xdossier 整理 xdossier 自己：MVP-0 spec、8 份实现说明、3 份 review，会按 frontmatter 和文件名前缀自动聚类，渲染成一份带内联 SVG 关系图的可导航 HTML。
+          xdossier organizing xdossier: the MVP-0 spec, 8 implementation notes, and 3 reviews — clustered automatically by frontmatter and filename stems, rendered as one navigable HTML with an inline SVG relation graph. Self-documenting.
         </p>
-        <span class="demo-card-tag">打开 →</span>
+        <span class="demo-card-tag">Open →</span>
       </div>
     </a>
 
     <a class="demo-card" href="demo/pedagogy.html">
-      <div class="demo-card-preview preview-pedagogy" role="img" aria-label="教学层 Spec 预览">
+      <div class="demo-card-preview preview-pedagogy" role="img" aria-label="Preview of Pedagogy Layer Spec">
         <div class="preview-window" aria-hidden="true">
           <div class="preview-chrome"><span></span><span></span><span></span></div>
           <div class="preview-page">
@@ -422,17 +404,17 @@
         </div>
       </div>
       <div class="demo-card-body">
-        <div class="demo-card-mode">★ 主 demo — concept 模式</div>
+        <div class="demo-card-mode">★ THE DEMO — concept mode</div>
         <h3>Pedagogy Layer Spec</h3>
         <p>
-          xdossier 教学层自己的 spec，由 xdossier 渲染。一个页面里集中展示阅读档位、前置知识卡、学习检查点、类比说明、术语弹窗、内联 SVG 图和对照卡。
+          The spec for xdossier's pedagogy layer, rendered by xdossier itself. Shows every feature in one page: reader toggle, prerequisite card, 5 learning checkpoints, 4 analogy callouts, 5 glossary popovers, inline SVG diagrams, comparison cards.
         </p>
-        <span class="demo-card-tag">打开 →</span>
+        <span class="demo-card-tag">Open →</span>
       </div>
     </a>
 
     <a class="demo-card" href="demo/vision.html">
-      <div class="demo-card-preview preview-vision" role="img" aria-label="愿景 Spec 预览">
+      <div class="demo-card-preview preview-vision" role="img" aria-label="Preview of Vision Spec">
         <div class="preview-window" aria-hidden="true">
           <div class="preview-chrome"><span></span><span></span><span></span></div>
           <div class="preview-page">
@@ -447,17 +429,17 @@
         </div>
       </div>
       <div class="demo-card-body">
-        <div class="demo-card-mode">concept 模式 · 17 个章节</div>
+        <div class="demo-card-mode">concept mode · 17 sections</div>
         <h3>Vision Spec</h3>
         <p>
-          最初的愿景文档。包含多章节结构、风险登记、决策矩阵、结构图等语义块，也展示 ASCII 图转 SVG 架构图和章节封面。
+          The foundational vision document. Multi-section spec with semantic blocks (risk register, decision grid, structure map), ASCII-to-SVG architecture diagrams, and 18 section covers.
         </p>
-        <span class="demo-card-tag">打开 →</span>
+        <span class="demo-card-tag">Open →</span>
       </div>
     </a>
 
     <a class="demo-card" href="demo/research.html">
-      <div class="demo-card-preview preview-research" role="img" aria-label="开源发布调研预览">
+      <div class="demo-card-preview preview-research" role="img" aria-label="Preview of OSS Launch Research">
         <div class="preview-window" aria-hidden="true">
           <div class="preview-chrome"><span></span><span></span><span></span></div>
           <div class="preview-page">
@@ -475,52 +457,49 @@
         <div class="demo-card-mode">research / launch planning</div>
         <h3>OSS Launch Research</h3>
         <p>
-          竞品分析、npm 名称可用性矩阵、发布传播打法和命名建议。偏速查型内容，表格密集，结论结构化。
+          Competitor analysis, npm name availability matrix, viral launch tactics, naming recommendation. Reference-style content with dense tables and structured findings.
         </p>
-        <span class="demo-card-tag">打开 →</span>
+        <span class="demo-card-tag">Open →</span>
       </div>
     </a>
   </div>
 
   <div class="tip">
-    <div class="tip-label">小提示</div>
+    <div class="tip-label">Pro tip</div>
     <p>
-      把同一个 demo 开在两个标签页里。一个切到 <strong>零基础</strong>，另一个切到 <strong>速查</strong>。同一份 HTML，对比一下哪些内容保留，哪些内容收起。
+      Open the same demo in two tabs. In one, switch reader mode to <strong>零基础</strong> (beginner). In the other, <strong>速查</strong> (expert). Same HTML file. Compare what stays and what disappears.
     </p>
   </div>
 
   <section class="why">
-    <h2>这玩意儿为什么存在</h2>
+    <h2>Why this exists</h2>
     <ul>
       <li>
-        <strong>长文档不是小问题。</strong> 你和 AI agent 会生产 800+ 行 spec。新人缺上下文，老兵只想看决策摘要，同一份文档经常同时劝退两边。
+        <strong>The wall-of-text problem.</strong> You and your AI agent generate 800+ line specs. A beginner skims and bounces; a senior wants the decision summary. Same doc fails both.
       </li>
       <li>
-        <strong>Markdown 不能自己分层。</strong> Markdown 是线性的；HTML 可以承载折叠、弹窗、侧栏和锚点导航。xdossier 把这些空间结构用于教学和 review。
+        <strong>Markdown can't tier itself.</strong> Markdown is linear. HTML carries spatial structure — collapsibles, popovers, sidebars, anchored navigation. xdossier puts that spatial structure to a pedagogical purpose.
       </li>
       <li>
-        <strong>阅读档位应该是基础能力。</strong> 同一份技术文档，零基础、系统化阅读、速查三种需求都真实存在。xdossier 用单文件 HTML 在页内切换。
+        <strong>Tiered reading is the missing primitive.</strong> No tool today renders the same document for three reader skill levels simultaneously. xdossier toggles inline via a single-file HTML.
       </li>
       <li>
-        <strong>离线可分享。</strong> 双击 HTML 就能读，不需要网络。可以发邮件、附在 PR 里、贴进 wiki；不需要 CDN、Docker 或 SaaS。
+        <strong>Single-file, offline-shareable.</strong> Double-click the HTML; works without network. Share by email, attach to PR, paste into wiki — no CDN, no Docker, no SaaS.
       </li>
     </ul>
   </section>
 
-  <h2 class="section-head">试一下</h2>
-  <p style="color: var(--muted); margin-top: -16px; margin-bottom: 16px;">
-    安装 CLI，然后渲染单份 spec，或为一个目录生成多文档 dossier。
-  </p>
+  <h2 class="section-head">Try it</h2>
   <pre style="background: var(--code-bg); padding: 20px; border-radius: 4px; overflow-x: auto; border: 1px solid var(--hairline);"><code style="font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px;">npm install -g xdossier
 xdossier render docs/specs/your-spec.md   # opens spec.html with the reader toggle
 xdossier cover docs/                       # builds dossier covers + project index</code></pre>
 
   <footer>
     <div>
-      基于
-      <a href="https://thariqs.github.io/html-effectiveness/">Thariq Shihipar 的 HTML &gt; Markdown thesis</a>
-      · 延展自
-      <a href="https://github.com/nexu-io/html-anything">nexu-io/html-anything</a> 的 SKILL.md protocol
+      Built on
+      <a href="https://thariqs.github.io/html-effectiveness/">Thariq Shihipar's HTML &gt; Markdown thesis</a>
+      · extends
+      <a href="https://github.com/nexu-io/html-anything">nexu-io/html-anything</a>'s SKILL.md protocol
     </div>
     <div>
       <a href="https://github.com/xianfeng92/xdossier">GitHub</a>

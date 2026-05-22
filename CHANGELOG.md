@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-05-22
+
+### Changed
+
+- README default language is now Chinese (`README.md` is the Chinese version; English version moved to `README.en.md`). Both versions ship in the npm tarball. Switch between them via the language link at the top of either file.
+- GitHub Pages landing (`/`) defaults to Chinese; English version available at `/index.en.html`. Switch via the link at the top of either page.
+- `README.zh-CN.md` removed (the Chinese is now the default `README.md`).
+
 ## [0.2.2] - 2026-05-22
 
 ### Fixed

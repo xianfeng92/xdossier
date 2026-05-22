@@ -1,16 +1,16 @@
 # `xdossier`
 
 <p align="right">
-  <strong>English</strong> · <a href="./README.zh-CN.md">简体中文</a>
+  <a href="./README.en.md">English</a> · <strong>简体中文</strong>
 </p>
 
-> **Turn your AI's specs into HTML that beginners, peers, and experts can all read.**
+> **把 AI 生成的 spec / ADR / 设计文档渲染成一份新人、同行、资深 reviewer 都能读的 HTML。**
 >
-> Tiered reading modes · Term popovers · Learning checkpoints · Multi-doc archives · Zero deps · Single-file HTML.
+> 三档阅读模式 · 术语弹窗 · 学习检查点 · 多文档档案 · 零依赖 · 单文件 HTML。
 
 <p align="center">
   <a href="https://xianfeng92.github.io/xdossier/demo/pedagogy.html">
-    <img src="https://img.shields.io/badge/Live%20Demo-Click%20to%20see%20reader%20toggle-1e3a8a?style=for-the-badge" alt="Live demo">
+    <img src="https://img.shields.io/badge/在线 Demo-点击体验阅读档位切换-1e3a8a?style=for-the-badge" alt="在线 Demo">
   </a>
 </p>
 
@@ -19,83 +19,83 @@
     <img src="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
   <a href="https://www.npmjs.com/package/xdossier">
-    <img src="https://img.shields.io/npm/v/xdossier.svg?color=1e3a8a" alt="npm version">
+    <img src="https://img.shields.io/npm/v/xdossier.svg?color=1e3a8a" alt="npm 版本">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-1e3a8a" alt="Apache 2.0">
   </a>
 </p>
 
-🌐 **Try it now without installing**: [xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) — switch reader modes (beginner / systematic / reference) in the live HTML.
+🌐 **不用安装就能体验**：[xianfeng92.github.io/xdossier](https://xianfeng92.github.io/xdossier/) —— 在 HTML 顶部切换「零基础 / 系统化 / 速查」三档阅读模式。
 
 <p align="center">
   <a href="https://xianfeng92.github.io/xdossier/demo/pedagogy.html">
-    <img src="docs/assets/reader-toggle-hero.png" alt="xdossier reader-mode toggle in a rendered HTML archive" width="720">
+    <img src="docs/assets/reader-toggle-hero.png" alt="xdossier 阅读档位切换示例" width="720">
   </a>
   <br>
-  <em>Same single-file HTML — three reader profiles. Click to try the live demo.</em>
+  <em>同一份 HTML，三种读者档位。点击查看在线 demo。</em>
 </p>
 
 <p align="center">
-  <img src="docs/assets/dossier-cover-hero.png" alt="xdossier multi-doc dossier cover with relation graph and project index" width="720">
+  <img src="docs/assets/dossier-cover-hero.png" alt="xdossier 多文档 dossier cover：关系图和项目级索引" width="720">
   <br>
-  <em>Multi-doc view: an inline SVG relation graph plus a project-wide index linking every related spec, change, and review.</em>
+  <em>多文档视图：内联 SVG 关系图 + 一份项目级索引，把相关 spec / changes / reviews 全部串起来。</em>
 </p>
 
-## Why this exists
+## 这玩意儿为什么存在
 
-You and your AI agent generate dozens of markdown files: specs, ADRs, design docs, change notes. Each one is **800+ lines of dense text** that:
+你和 AI agent 一起会生产几十份 markdown：spec、ADR、设计稿、变更说明。每一份都是 **800+ 行的密文**：
 
-- Overwhelms a beginner who needs context
-- Bores a senior who needs the decision summary
-- Frustrates anyone trying to navigate relationships between docs
+- 新人看不懂上下文
+- 老兵不耐烦读完决策摘要前的铺垫
+- 任何人想在文档之间跳转、对照都很痛
 
-`xdossier` is a **pedagogical HTML archive** for AI-generated technical docs. Reader picks a mode; the same single-file HTML adapts.
+`xdossier` 把它们渲染成**带教学层的 HTML 档案**。读者自己挑档位，同一份单文件 HTML 自适应。
 
-> 💡 **Want to see the difference?** Open the [pedagogy demo](https://xianfeng92.github.io/xdossier/demo/pedagogy.html) in two tabs. Set one to *beginner* and the other to *reference*. Same HTML file; the spatial structure adapts.
+> 💡 **想直观感受差别？** 打开 [pedagogy demo](https://xianfeng92.github.io/xdossier/demo/pedagogy.html) 两个标签页，一个切到「零基础」，一个切到「速查」。同一份 HTML，空间结构会变。
 
-## What you get
+## 你拿到的能力
 
-- **3-tier reader mode** (beginner / systematic / reference) — toggle in HTML, no rerender, no rebuild. Term popovers, prerequisite cards, learning checkpoints, analogies — all appear/hide based on reader profile.
-- **Auto content-mode detection** — tutorial / concept / reference / course (heuristic, 0 token).
-- **Single-file HTML** — share by double-click; works offline; no CDN.
-- **Multi-doc dossier view** — clusters related specs/changes/reviews by `implements:` / `reviews:` frontmatter or filename stem; emits a per-dossier cover with an inline SVG relation graph plus a project-wide index. Each member's rendered HTML carries a back-link to its dossier.
-- **Spec semantic blocks** — risk register, decision grid, principle grid, scope boundary, concept glossary, structure map — auto-rendered from markdown without authoring HTML.
-- **Inline SVG diagrams** — ASCII layered-box art → real SVG with arrows.
-- **Pull quotes, section covers, comparison cards** — visual rhythm so 1000-line specs don't read as a wall.
+- **三档阅读模式**（零基础 / 系统化 / 速查）—— 在 HTML 里切换，不重渲染、不重构建。术语弹窗、前置知识卡、学习检查点、类比等，会按档位自动出现/隐藏。
+- **内容类型自动识别** —— tutorial / concept / reference / course，启发式判断，零 token 成本。
+- **单文件 HTML** —— 双击即开、可离线、不依赖 CDN。
+- **多文档 dossier 视图** —— 根据 frontmatter 里的 `implements:` / `reviews:` 或文件名前缀，把相关 spec / changes / reviews 聚成 dossier；输出单个 dossier cover，内含 SVG 关系图，并生成项目级索引。每个成员 HTML 顶部都会带回到所属 dossier 的链接。
+- **Spec 语义块** —— 风险登记、决策矩阵、原则栅格、scope 边界、术语表、结构图，从 markdown 自动渲染，不用手写 HTML。
+- **内联 SVG 图** —— ASCII 层级框图 → 带箭头的真 SVG。
+- **抽栏、章节封面、对照卡** —— 让 1000 行 spec 不像砖墙。
 
-## Quickstart
+## 快速开始
 
 ```bash
-# From npm (recommended):
+# npm 安装（推荐）：
 npm install -g xdossier
 xdossier render docs/specs/my-spec.md
 
-# Or build a dossier cover linking all related specs, changes, and reviews:
+# 或构建一份串起相关 specs、changes、reviews 的 dossier cover：
 xdossier cover docs/
 
-# Or clone locally:
+# 或本地 clone：
 git clone https://github.com/xianfeng92/xdossier.git
 cd xdossier
 pnpm install
 pnpm dev render docs/specs/my-spec.md
 ```
 
-Open the generated `.html` in any browser. Click the reader-mode toggle at the top to switch tiers.
+打开生成的 `.html`，点顶部档位按钮就能切。
 
-`xdossier cover docs/` opens a project index at `docs/.dossier/out/index.html` and a per-dossier cover at `docs/.dossier/out/<dossier-id>/index.html`.
+`xdossier cover docs/` 会生成项目级索引 `docs/.dossier/out/index.html`，以及每个 dossier 的封面 `docs/.dossier/out/<dossier-id>/index.html`。
 
-## Auto-render in Claude Code
+## Claude Code 自动渲染
 
-1. Install `xdossier` globally:
+1. 全局安装 `xdossier`：
 
 ```bash
 npm install -g xdossier
-# or, from a local checkout:
+# 或在本地 checkout 里：
 pnpm link
 ```
 
-2. Add a PostToolUse hook to `.claude/settings.json`:
+2. 在 `.claude/settings.json` 里加 PostToolUse hook：
 
 ```json
 {
@@ -110,82 +110,82 @@ pnpm link
 
 `# verify settings.json keys with your Claude Code version`
 
-3. After this, any time Claude Code writes `docs/specs|changes|reviews/*.md`, the corresponding `.html` regenerates and the parent dossier cover refreshes. No command to remember.
+3. 之后 Claude Code 每次写入 `docs/specs|changes|reviews/*.md`，对应的 `.html` 会自动重新生成，父 dossier cover 也会同步刷新。不需要再记命令。
 
 ## FAQ
 
-**How is this different from a markdown viewer with a sidebar?**
+**这和带侧边栏的 Markdown viewer 有什么区别？**
 
-Two reasons. (1) Spatial structure — relation graphs, expandable source bundles, fixed back-link banners — doesn't translate to a stream of markdown blocks; `xdossier` emits real HTML you can email or commit. (2) Single-file output: a `<dossier-id>/index.html` is fully self-contained; no clone, no install, no render context needed to read it.
+两个原因。（1）空间结构不同：关系图、可展开的源文档集合、固定的 dossier 返回横幅，不能简单摊平成一串 markdown block；`xdossier` 输出的是可以直接发给别人、也可以提交进仓库的真实 HTML。（2）单文件输出：`<dossier-id>/index.html` 自包含；读者不需要 clone、不需要安装工具、也不需要知道渲染上下文。
 
-**Why not use an LLM to do the clustering?**
+**为什么不用 LLM 来做 clustering？**
 
-Clustering needs to be deterministic, fast, and runnable inside a PostToolUse hook on every save — that rules out an LLM call. The algorithm is ~150 lines, scored by signals: frontmatter `implements:` / `reviews:` (+100/+80), filename-stem match (+60), prefix overlap (+30), shared subtree (+5). Threshold to assign is 60. Code is in `src/cover/cluster.ts`.
+Clustering 必须确定、快速，而且能放进 PostToolUse hook 里每次保存都跑；这就排除了 LLM 调用。现在的算法大约 150 行，按信号打分：frontmatter `implements:` / `reviews:`（+100/+80）、文件名 stem 匹配（+60）、前缀重叠（+30）、共享子目录（+5）。达到 60 分就归入同一个 dossier。代码在 `src/cover/cluster.ts`。
 
-**Why HTML, not a wiki / Notion / Obsidian export?**
+**为什么输出 HTML，而不是 wiki / Notion / Obsidian export？**
 
-`xdossier` consumes the artifacts you already have (markdown in `docs/`) and turns them into a navigable archive without forcing a platform migration. It's read-only output, not a knowledge-base. Use this when (a) the source-of-truth is markdown checked into git, (b) you want offline-friendly single-file HTML, (c) the readers include people who don't know your wiki of choice.
+`xdossier` 吃的是你已经有的产物（`docs/` 里的 markdown），把它们变成可导航的档案，而不是逼你迁移平台。它是只读输出，不是知识库。适合这些场景：（a）source-of-truth 是提交进 git 的 markdown；（b）你想要离线友好的单文件 HTML；（c）读者里有人并不了解你常用的 wiki 工具。
 
-## Built on
+## 站在谁的肩膀上
 
-- [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) — the philosophy that HTML > Markdown for AI output.
-- [nexu-io/html-anything](https://github.com/nexu-io/html-anything) — SKILL.md protocol pioneer.
+- [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) —— 「AI 输出应该用 HTML 而非 Markdown」的原始论点。
+- [nexu-io/html-anything](https://github.com/nexu-io/html-anything) —— SKILL.md 协议的先驱实现。
 
-`xdossier` extends both: artifact-first (not on-demand), pedagogy-first (not just visual), multi-document (not single-file).
+`xdossier` 在它们的基础上往前走一步：**artifact-first**（不是 on-demand），**pedagogy-first**（不只是视觉），**multi-document**（不只是单文件）。
 
-## How does it compare?
+## 横向对比
 
 | | `xdossier` | html-anything | markdown-viewer/skills | Marky / MacMD |
 |---|---|---|---|---|
-| Tiered reader modes | ✅ | ❌ | ❌ | ❌ |
-| Term popovers / glossary | ✅ | ❌ | ❌ | ❌ |
-| Multi-doc relationship graph | ✅ | ❌ | ❌ | ❌ |
-| Single-file offline HTML | ✅ | ✅ | partial | partial |
-| Spec/ADR semantic blocks | ✅ | ❌ | partial | ❌ |
-| Visual surfaces (deck/social/poster) | ❌ | ✅ | partial | ❌ |
-| Live markdown preview | ❌ | ❌ | ❌ | ✅ |
+| 三档阅读模式 | ✅ | ❌ | ❌ | ❌ |
+| 术语弹窗 / 术语表 | ✅ | ❌ | ❌ | ❌ |
+| 多文档关系图 | ✅ | ❌ | ❌ | ❌ |
+| 单文件离线 HTML | ✅ | ✅ | partial | partial |
+| Spec/ADR 语义块 | ✅ | ❌ | partial | ❌ |
+| 视觉产物（slides/海报/社媒） | ❌ | ✅ | partial | ❌ |
+| Markdown 实时预览 | ❌ | ❌ | ❌ | ✅ |
 
-We're not trying to be the universal AI-HTML generator. We do **one thing well**: technical-doc archives that real humans (not just senior engineers) can read.
+我们不做通用「AI 转 HTML」工具。**只把一件事做好**：让非高阶工程师也能读懂的技术文档档案。
 
-## How it works
+## 工作流
 
 ```
-markdown.md  →  enrich (heuristic + optional LLM)  →  render-spec skill  →  single-file HTML
-       (your AI writes)        (annotations.json)         (template + CSS)        (share / commit)
+markdown.md  →  enrich（启发式 + 可选 LLM）  →  render-spec skill  →  单文件 HTML
+       （你的 AI 写）           （annotations.json）        （模板 + CSS）          （分享 / 提交）
 ```
 
-Three layers:
-1. **Discover** — read frontmatter, classify content-mode, extract section structure.
-2. **Enrich** — generate teaching annotations (prereq / checkpoint / analogy) via scaffold (0 token) or codex/claude provider.
-3. **Render** — single-file HTML with reader-toggle, inlined CSS + JS, no external resources.
+三层：
+1. **Discover** —— 读 frontmatter、识别内容类型、抽 section 结构。
+2. **Enrich** —— 生成教学注释（前置 / checkpoint / 类比），用 scaffold（零 token）或 codex / claude provider。
+3. **Render** —— 输出单文件 HTML，CSS / JS 全内联，零外部资源。
 
-## Use cases
+## 使用场景
 
-- AI-written spec → designed HTML for your team.
-- Design doc archive an intern can read on Monday and a principal can speed-read on Tuesday.
-- Multi-version résumé archive: 5 versions + change annotations, tiered by reader profile for different recruiters.
-- Open-source project docs that don't require markdown viewer plugins.
+- AI 写的 spec → 设计感够好的 HTML 给团队。
+- 设计文档档案：实习生周一能读懂，principal 周二能 5 分钟扫完。
+- 多版本简历档案：5 版简历 + 改动注释，按读者档位呈现给不同 HR。
+- 开源项目文档，不需要 markdown 预览插件就能体面阅读。
 
-## Status
+## 进度
 
-| Component | Status |
+| 组件 | 状态 |
 |---|---|
-| Single-doc rendering (MVP-0) | ✅ Implemented |
-| Pedagogy layer (P0/P1/P2) | ✅ Implemented |
-| Multi-doc dossier view (MVP-1) | ✅ Implemented |
-| MCP server (MVP-2) | 📝 Spec'd |
-| Claude Code session adapter | 📝 Spec'd |
+| 单文档渲染（MVP-0） | ✅ 已实现 |
+| Pedagogy 层（P0/P1/P2） | ✅ 已实现 |
+| 多文档 dossier 视图（MVP-1） | ✅ 已实现 |
+| MCP server（MVP-2） | 📝 已 spec |
+| Claude Code session adapter | 📝 已 spec |
 
-## Contributing
+## 贡献
 
-We welcome new skills, new pedagogy elements, and new render targets. See [CONTRIBUTING.md](./CONTRIBUTING.md).
+欢迎新 skill、新 pedagogy 元素、新渲染目标。详见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
-Looking for a first contribution? Try the open [`good first issue`](https://github.com/xianfeng92/xdossier/issues?q=is%3Aopen+label%3A%22good+first+issue%22) tickets.
+想找个入手任务？看一眼 [`good first issue`](https://github.com/xianfeng92/xdossier/issues?q=is%3Aopen+label%3A%22good+first+issue%22) 标签。
 
 ## License
 
-Apache-2.0 — see [LICENSE](./LICENSE).
+Apache-2.0 —— 见 [LICENSE](./LICENSE)。
 
-## Inspiration
+## 灵感来源
 
-[Thariq Shihipar](https://thariqs.github.io/html-effectiveness/) argued in May 2026 that the Claude Code team had stopped writing internal docs in Markdown and switched to HTML. Anthropic's reasoning: HTML carries spatial structure (sidebars, collapsibles, anchored navigation) that Markdown can't. `xdossier` takes the next step: **make that HTML pedagogical**, so the same document teaches a junior and briefs a senior.
+[Thariq Shihipar](https://thariqs.github.io/html-effectiveness/) 在 2026 年 5 月指出：Claude Code 团队已经不再用 Markdown 写内部文档，而是直接写 HTML。Anthropic 给的理由是 —— HTML 自带 Markdown 没有的空间结构（侧栏、折叠、锚点导航）。`xdossier` 在这个基础上再往前一步：**让 HTML 自带教学结构**，让同一份文档既能教一个新人，又能简报给一个 senior。
