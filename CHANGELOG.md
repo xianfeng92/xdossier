@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-22
+
 ### Added
 
 - **Multi-doc dossier view (MVP-1)**: `xdossier cover <workspace>` clusters related specs, changes, and reviews into topic-rooted dossiers, emits a per-dossier HTML cover with an inline SVG relation graph, and writes a workspace-level project index.
