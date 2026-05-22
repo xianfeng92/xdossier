@@ -338,7 +338,7 @@
     <div class="hero-cta">
       <a class="btn btn-primary" href="#demos">See the demos ↓</a>
       <a class="btn btn-ghost" href="https://github.com/xianfeng92/xdossier">GitHub</a>
-      <code class="install">npx github:xianfeng92/xdossier</code>
+      <code class="install">npm i -g xdossier</code>
     </div>
   </section>
 
@@ -487,8 +487,9 @@
   </section>
 
   <h2 class="section-head">Try it</h2>
-  <pre style="background: var(--code-bg); padding: 20px; border-radius: 4px; overflow-x: auto; border: 1px solid var(--hairline);"><code style="font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px;">npx github:xianfeng92/xdossier render docs/specs/your-spec.md
-# → opens spec.html with the reader toggle at the top</code></pre>
+  <pre style="background: var(--code-bg); padding: 20px; border-radius: 4px; overflow-x: auto; border: 1px solid var(--hairline);"><code style="font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px;">npm install -g xdossier
+xdossier render docs/specs/your-spec.md   # opens spec.html with the reader toggle
+xdossier cover docs/                       # builds dossier covers + project index</code></pre>
 
   <footer>
     <div>

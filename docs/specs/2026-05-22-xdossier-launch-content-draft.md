@@ -281,7 +281,7 @@ Would love feedback on the clustering heuristics specifically — `src/cover/clu
 - [x] Pages demo deployed, /demo/dossier.html accessible
 - [x] README hero updated to dossier-cover-hero.png
 - [x] CHANGELOG \[0.2.0\] published with 5 phases of MVP-1
-- [ ] **Open**: npm publish (still `npm install -g github:...` only)
+- [x] **npm publish** — `xdossier@0.2.0` is live on npm. `npm install -g xdossier` works.
 - [ ] **Open**: launch GIF or asciicast (issue #2 is the long-form version of this)
 
-The first item gates broad reach; the second sweetens the README hero. Either is a follow-up, neither blocks launch.
+All ship gates closed. The asciicast is a sweetener; safe to launch without it.

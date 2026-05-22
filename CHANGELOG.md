@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **First npm release**: `npm install -g xdossier` now works. Published as `xdossier@0.2.0` on the npm registry.
 - **Multi-doc dossier view (MVP-1)**: `xdossier cover <workspace>` clusters related specs, changes, and reviews into topic-rooted dossiers, emits a per-dossier HTML cover with an inline SVG relation graph, and writes a workspace-level project index.
 - Per-dossier covers link to each member's rendered HTML (sibling `.html` preferred over `.md`).
 - Member HTML now carries a `↩ in dossier: <title>` banner pointing back to its cover, driven by `.dossier/out/membership.json`.

@@ -18,8 +18,8 @@
   <a href="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml">
     <img src="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
-  <a href="https://github.com/xianfeng92/xdossier">
-    <img src="https://img.shields.io/badge/npm-pending-92400e" alt="npm publish pending">
+  <a href="https://www.npmjs.com/package/xdossier">
+    <img src="https://img.shields.io/npm/v/xdossier.svg?color=1e3a8a" alt="npm version">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-1e3a8a" alt="Apache 2.0">
@@ -67,29 +67,30 @@ You and your AI agent generate dozens of markdown files: specs, ADRs, design doc
 ## Quickstart
 
 ```bash
-# Zero install from GitHub while npm publishing is pending:
-npx github:xianfeng92/xdossier render docs/specs/my-spec.md
+# From npm (recommended):
+npm install -g xdossier
+xdossier render docs/specs/my-spec.md
+
+# Or build a dossier cover linking all related specs, changes, and reviews:
+xdossier cover docs/
 
 # Or clone locally:
 git clone https://github.com/xianfeng92/xdossier.git
 cd xdossier
 pnpm install
 pnpm dev render docs/specs/my-spec.md
-
-# Or build a dossier cover linking all related specs, changes, and reviews:
-pnpm dev cover docs/
 ```
 
 Open the generated `.html` in any browser. Click the reader-mode toggle at the top to switch tiers.
 
-`pnpm dev cover docs/` opens a project index at `docs/.dossier/out/index.html` and a per-dossier cover at `docs/.dossier/out/<dossier-id>/index.html`.
+`xdossier cover docs/` opens a project index at `docs/.dossier/out/index.html` and a per-dossier cover at `docs/.dossier/out/<dossier-id>/index.html`.
 
 ## Auto-render in Claude Code
 
 1. Install `xdossier` globally:
 
 ```bash
-npm install -g github:xianfeng92/xdossier
+npm install -g xdossier
 # or, from a local checkout:
 pnpm link
 ```

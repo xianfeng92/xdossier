@@ -18,8 +18,8 @@
   <a href="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml">
     <img src="https://github.com/xianfeng92/xdossier/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
-  <a href="https://github.com/xianfeng92/xdossier">
-    <img src="https://img.shields.io/badge/npm-pending-92400e" alt="npm 待发布">
+  <a href="https://www.npmjs.com/package/xdossier">
+    <img src="https://img.shields.io/npm/v/xdossier.svg?color=1e3a8a" alt="npm 版本">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-1e3a8a" alt="Apache 2.0">
@@ -67,29 +67,30 @@
 ## 快速开始
 
 ```bash
-# npm 还没发，先从 GitHub 直跑：
-npx github:xianfeng92/xdossier render docs/specs/my-spec.md
+# npm 安装（推荐）：
+npm install -g xdossier
+xdossier render docs/specs/my-spec.md
+
+# 或构建一份串起相关 specs、changes、reviews 的 dossier cover：
+xdossier cover docs/
 
 # 或本地 clone：
 git clone https://github.com/xianfeng92/xdossier.git
 cd xdossier
 pnpm install
 pnpm dev render docs/specs/my-spec.md
-
-# 或构建一份串起相关 specs、changes、reviews 的 dossier cover：
-pnpm dev cover docs/
 ```
 
 打开生成的 `.html`，点顶部档位按钮就能切。
 
-`pnpm dev cover docs/` 会生成项目级索引 `docs/.dossier/out/index.html`，以及每个 dossier 的封面 `docs/.dossier/out/<dossier-id>/index.html`。
+`xdossier cover docs/` 会生成项目级索引 `docs/.dossier/out/index.html`，以及每个 dossier 的封面 `docs/.dossier/out/<dossier-id>/index.html`。
 
 ## Claude Code 自动渲染
 
 1. 全局安装 `xdossier`：
 
 ```bash
-npm install -g github:xianfeng92/xdossier
+npm install -g xdossier
 # 或在本地 checkout 里：
 pnpm link
 ```

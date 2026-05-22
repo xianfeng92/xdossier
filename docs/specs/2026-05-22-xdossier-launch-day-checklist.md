@@ -27,14 +27,13 @@ updated: 2026-05-22
 | Discussions enabled | ✅ | repo settings |
 | Homepage URL set | ✅ | https://xianfeng92.github.io/xdossier/ |
 
+## ✅ Done since v0.2.0 ship state
+
+- **npm publish** — `xdossier@0.2.0` is live: https://www.npmjs.com/package/xdossier. Install command shrunk to `npm install -g xdossier` across README, README.zh-CN, and the Pages landing.
+  - Token note: first publish used a Granular Token with **Bypass two-factor authentication** + **All packages** scope. For long-term automation, regenerate as a Granular Token scoped to `xdossier` only (bypass-2FA still on); delete the all-packages token after.
+
 ## ⏳ Open before launch
 
-- [ ] **npm publish** — currently `npm install -g github:xianfeng92/xdossier`. Publishing to npm means the README install command can shrink to `npm install -g xdossier`. Run from a clean networked shell:
-  ```bash
-  pnpm login
-  pnpm pack --pack-destination /tmp   # final sanity check on tarball contents
-  pnpm publish --access public
-  ```
 - [ ] **launch screencast** (issue #2) — optional but lifts the README. Asciinema preferred (smallest, embeddable). Record:
   1. `xdossier render docs/specs/foo.md` → open the HTML, toggle 零基础 → 速查.
   2. `xdossier cover docs/` → open project index, click into a dossier, point at SVG, click into a member.
