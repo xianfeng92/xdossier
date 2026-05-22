@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-05-22
+
+### Fixed
+
+- **dossier.html mobile iframe scroll-trap [P0]**: On screens smaller than 768px, the rendered document iframes in the multi-file dossier view are now hidden to prevent scrolling traps. A hint is shown suggesting the use of a desktop browser or clicking the source links.
+- **research.html table overflow on mobile [P0]**: Tables in all rendered documents (via `render-spec`) now support horizontal scrolling on small screens instead of breaking the layout.
+
+### Changed
+
+- **Relation graph title wrapping [P1]**: SVG nodes now support titles up to 32 characters by wrapping into two lines. Node height now dynamically adjusts (60px for short titles, 80px for wrapped ones), and the vertical gap between layers is increased to 100px.
+- **Landing page reader-mode explanation [P1]**: Expanded the "3-tier reader mode" bullet points on both Chinese and English landing pages to mention specific pedagogical elements (popovers, cards, checkpoints, analogies).
+- **Landing page layout improvements [P2]**: Language switcher moved inside the main 880px container in both landing pages.
+- **Landing page styling [nit]**: Increased padding for list items in the "Why" sections from 14px to 24px to match the hero section's airy spacing.
+
 ## [0.2.3] - 2026-05-22
 
 ### Changed

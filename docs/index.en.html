@@ -295,7 +295,7 @@
     list-style: none;
   }
   .why li {
-    padding: 14px 0;
+    padding: 24px 0;
     border-bottom: 1px solid var(--hairline);
   }
   .why li:last-child { border-bottom: 0; }
@@ -324,25 +324,46 @@
 </style>
 </head>
 <body>
-<p align="right" style="max-width: 880px; margin: 0 auto; padding: 12px 24px 0; font-size: 13px;">
+<main>
+<p align="right" style="font-size: 13px; margin-bottom: 0;">
   <strong>English</strong> · <a href="./index.html">简体中文</a>
 </p>
-<main>
 
   <section class="hero">
-    <div class="hero-eyebrow">xdossier · v0.1.0</div>
+    <div class="hero-eyebrow">xdossier · v0.2.3</div>
     <h1>xdossier</h1>
     <p class="hero-tagline">
       Turn your AI's specs into HTML that <strong>beginners, peers, and experts can all read</strong>.
     </p>
     <p class="hero-sub">
-      Tiered reader modes · Term popovers · Learning checkpoints · Single-file HTML · Zero CDN · Apache 2.0
+      3-tier reader mode · Term popovers · Learning checkpoints · Multi-doc dossier · Single-file HTML · Apache 2.0
     </p>
     <div class="hero-cta">
       <a class="btn btn-primary" href="#demos">See the demos ↓</a>
       <a class="btn btn-ghost" href="https://github.com/xianfeng92/xdossier">GitHub</a>
       <code class="install">npm i -g xdossier</code>
     </div>
+  </section>
+
+  <section class="why">
+    <h2>What you get</h2>
+    <ul>
+      <li>
+        <strong>3-tier reader mode.</strong> Switch between Beginner / Intermediate / Expert in the same HTML, without re-rendering.
+        <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">
+          Shows term popovers, prerequisite cards, learning checkpoints, or analogies as needed, serving both novices and pros.
+        </div>
+      </li>
+      <li>
+        <strong>Automatic pedagogy toggles.</strong> Term popovers, prerequisite cards, learning checkpoints, and analogies appear or hide based on the reader's level.
+      </li>
+      <li>
+        <strong>Multi-doc dossier.</strong> Cluster specs, changes, and reviews into a unified group based on frontmatter and filenames, generating relation graphs and project-level indexes.
+      </li>
+      <li>
+        <strong>Single-file output.</strong> Double-click to open, works offline, no CDN required. Can be emailed, attached to PRs, or committed to the repository.
+      </li>
+    </ul>
   </section>
 
   <h2 class="section-head" id="demos">Live demos</h2>

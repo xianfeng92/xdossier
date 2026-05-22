@@ -5,11 +5,12 @@ import type { CoverArtifact, CoverEdge, DossierCoverView } from "./types.js";
 import type { RenderContext } from "./render.js";
 
 const NODE_WIDTH = 180;
-const NODE_HEIGHT = 60;
+const NODE_HEIGHT_SMALL = 60;
+const NODE_HEIGHT_LARGE = 80;
 const HORIZONTAL_GAP = 24;
-const VERTICAL_GAP = 80;
+const VERTICAL_GAP = 100;
 const CELL_WIDTH = NODE_WIDTH + HORIZONTAL_GAP;
-const LAYER_HEIGHT = NODE_HEIGHT + VERTICAL_GAP;
+const LAYER_HEIGHT = NODE_HEIGHT_LARGE + VERTICAL_GAP;
 const PADDING = 16;
 const MIN_SMALL_GRAPH_WIDTH = 600;
 const MAX_SMALL_GRAPH_WIDTH = 800;
@@ -36,6 +37,7 @@ type PositionedArtifact = {
   layer: LayerName;
   x: number;
   y: number;
+  nodeHeight: number;
 };
 
 export function renderRelationGraph(view: DossierCoverView, context: RenderContext): string {
@@ -130,6 +132,7 @@ function positionLayers(
       layer,
       x: PADDING + rowOffset + index * columnWidth,
       y: PADDING + layerIndex * LAYER_HEIGHT,
+      nodeHeight: artifact.title.length <= 16 ? NODE_HEIGHT_SMALL : NODE_HEIGHT_LARGE,
     }));
   });
 }
@@ -145,11 +148,18 @@ function graphWidth(cols: number): number {
 
 function renderNode(node: PositionedArtifact): string {
   const kind = node.artifact.kind;
+  const title = node.artifact.title;
+  const line1 = title.slice(0, 16);
+  const line2 = title.length > 16 ? title.slice(16, 32) : "";
+  const titleContent = line2
+    ? `<tspan x="12" dy="0">${escapeHtml(line1)}</tspan><tspan x="12" dy="18">${escapeHtml(line2)}</tspan>`
+    : `<tspan x="12" dy="0">${escapeHtml(line1)}</tspan>`;
+
   return `    <a href="${escapeAttribute(node.href)}" xlink:href="${escapeAttribute(node.href)}" data-kind="${escapeAttribute(kind)}" data-id="${escapeAttribute(node.id)}">
       <g class="rg-node rg-node--${node.layer}" transform="translate(${node.x} ${node.y})">
-        <rect width="${NODE_WIDTH}" height="${NODE_HEIGHT}" rx="8" />
+        <rect width="${NODE_WIDTH}" height="${node.nodeHeight}" rx="8" />
         <text x="12" y="22" class="rg-node-kind">${escapeHtml(kindLabel(kind))}</text>
-        <text x="12" y="44" class="rg-node-title">${escapeHtml(truncate(node.artifact.title, 24))}</text>
+        <text x="12" y="44" class="rg-node-title">${titleContent}</text>
       </g>
     </a>`;
 }
@@ -160,7 +170,7 @@ function renderEdge(edge: CoverEdge, byPath: Map<string, PositionedArtifact>): s
   if (!from || !to) return "";
 
   const fromX = from.x + NODE_WIDTH / 2;
-  const fromY = from.y + NODE_HEIGHT;
+  const fromY = from.y + from.nodeHeight;
   const toX = to.x + NODE_WIDTH / 2;
   const toY = to.y;
   const midY = (fromY + toY) / 2;
@@ -183,10 +193,6 @@ function kindLabel(kind: string): string {
 
 function pathId(path: string): string {
   return path.replace(/\.md$/i, "").replaceAll("/", "_");
-}
-
-function truncate(value: string, length: number): string {
-  return value.length <= length ? value : `${value.slice(0, length - 1)}…`;
 }
 
 function escapeAttribute(value: string): string {

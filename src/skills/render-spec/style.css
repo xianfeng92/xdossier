@@ -1926,6 +1926,15 @@ table {
   border: var(--hairline);
   border-radius: 6px;
   overflow: hidden;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 768px) {
+  table {
+    display: table;
+    overflow-x: visible;
+  }
 }
 th, td {
   padding: 10px 14px;

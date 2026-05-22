@@ -1088,7 +1088,7 @@ describe("Cover-1 relation graph", () => {
     expect(svg).toContain("docs/changes/phase-d-change-1&lt;&amp;&quot;.md");
     expect(svg).not.toContain('href="../../docs/changes/phase-d-change-1<&"');
     expect(svg).not.toContain('data-id="docs_changes_phase-d-change-1<&"');
-    expect(svg).toContain("Escaped &lt;&gt;&amp;&quot; Change");
+    expect(svg).toContain('<tspan x="12" dy="0">Escaped &lt;&gt;&amp;&quot; Cha</tspan><tspan x="12" dy="18">nge</tspan>');
   });
 
   test("degrades instead of rendering more than 12 members", () => {
@@ -1254,6 +1254,21 @@ describe("Cover-1 relation graph", () => {
     expect(html).not.toContain('<svg class="relation-graph"');
     expect(html).toContain('<div class="edge-list">');
     expect(html).toContain("Phase D Spec implements Phase D Change 1");
+  });
+
+  test("wraps long titles into two lines and uses taller nodes", () => {
+    const longTitle = "A very long title that should wrap"; // 34 chars
+    const artifacts = [
+      syntheticArtifact({ path: "docs/specs/long.md", title: longTitle, kind: "spec" }),
+      syntheticArtifact({ path: "docs/specs/short.md", title: "Short Title", kind: "spec" }),
+    ];
+
+    const svg = renderRelationGraph(syntheticView({ artifacts }), { hrefPrefix: "../../" });
+
+    expect(svg).toContain('height="80"'); // for long title
+    expect(svg).toContain('height="60"'); // for short title
+    expect(svg).toContain('<tspan x="12" dy="0">A very long titl</tspan>');
+    expect(svg).toContain('<tspan x="12" dy="18">e that should wr</tspan>');
   });
 });
 

@@ -608,6 +608,20 @@ code { color: #5f5b52; font-size: 12px; overflow-wrap: anywhere; }
 .evidence-drawer summary, .rendered-document-bundle summary, .source-bundle summary { cursor: pointer; font-weight: 700; }
 .rendered-document { margin-top: 12px; border-top: 1px solid #e7e0d4; padding-top: 10px; }
 .rendered-document iframe { width: 100%; min-height: 520px; border: 1px solid #ddd6ca; border-radius: 6px; background: #fff; }
+@media (max-width: 768px) {
+  .rendered-document iframe { display: none; }
+  .rendered-document::after {
+    content: "在移动端请使用电脑打开本档案查看内联文档（或点击下方源链接）。";
+    display: block;
+    padding: 16px;
+    color: #6b6357;
+    font-size: 14px;
+    background: rgba(184, 92, 61, 0.06);
+    border-left: 3px solid rgba(184, 92, 61, 0.5);
+    border-radius: 6px;
+    margin-top: 12px;
+  }
+}
 .evidence-drawer table { margin-top: 14px; }
 .source-bundle details { margin-top: 12px; border-top: 1px solid #e7e0d4; padding-top: 10px; }
 .source-bundle pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f4f2eb; padding: 12px; border: 1px solid #e3dccf; border-radius: 6px; }

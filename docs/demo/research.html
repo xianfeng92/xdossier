@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-reader="beginner" data-content-mode="reference">
+<html lang="zh-CN" data-reader="beginner" data-content-mode="concept">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,6 +64,26 @@ main,
 section {
   overflow-wrap: anywhere;
 }
+
+.dossier-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 0 0 16px 0;
+  background: rgba(184, 92, 61, 0.06);
+  border-left: 3px solid rgba(184, 92, 61, 0.5);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--ink-muted, #6b6357);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+.dossier-banner:hover { background: rgba(184, 92, 61, 0.12); }
+.dossier-banner-arrow { font-size: 16px; }
+.dossier-banner-label { opacity: 0.8; }
+.dossier-banner-title { font-weight: 600; color: var(--ink, #1f1d18); }
+.dossier-banner-meta { opacity: 0.65; font-size: 13px; }
 
 .reading-progress {
   position: fixed;
@@ -1912,6 +1932,15 @@ table {
   border: var(--hairline);
   border-radius: 6px;
   overflow: hidden;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 768px) {
+  table {
+    display: table;
+    overflow-x: visible;
+  }
 }
 th, td {
   padding: 10px 14px;
@@ -2130,6 +2159,12 @@ hr { border: none; border-top: var(--hairline); margin: 24px 0; }
   </ol>
 </aside>
   <main>
+    <a class="dossier-banner" href="../../.dossier/out/2026-05-21-dossier-oss-launch-research/index.html" data-dossier-id="2026-05-21-dossier-oss-launch-research" data-role="root">
+  <span class="dossier-banner-arrow">↩</span>
+  <span class="dossier-banner-label">in dossier:</span>
+  <span class="dossier-banner-title">Dossier OSS Launch Research — 命名、竞品、传播路径</span>
+  <span class="dossier-banner-meta">· 1 docs</span>
+</a>
     <header class="frontmatter artifact-header" data-semantic-lens="present">
   <div class="artifact-title-row">
     <div class="artifact-title-stack">
@@ -2967,7 +3002,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 </section>
     <footer class="spec-footer">
       <span>Dossier OSS Launch Research — 命名、竞品、传播路径 · 已就绪 · 2026-05-21</span>
-      <span>由 dossier 渲染</span>
+      <span>由 xdossier 渲染</span>
     </footer>
   </main>
 </div>
@@ -2984,10 +3019,43 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
   });
 
   const progressFill = document.querySelector(".reading-progress-fill");
+  const tocAside = document.querySelector("aside.toc");
   let lastActiveId = "";
+  let isSyncingHashTarget = false;
   const parentH2Id = (id) => {
     const idx = id.indexOf("-");
     return idx > 0 ? id.slice(0, idx) : null;
+  };
+
+  const targetFromHash = () => {
+    if (!window.location.hash || window.location.hash.length <= 1) return null;
+    try {
+      return document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    } catch (_e) {
+      return null;
+    }
+  };
+
+  const scrollTocLinkIntoView = (activeLink) => {
+    if (!activeLink || !tocAside) return;
+    const linkRect = activeLink.getBoundingClientRect();
+    const tocRect = tocAside.getBoundingClientRect();
+    if (linkRect.top < tocRect.top) {
+      tocAside.scrollTop -= tocRect.top - linkRect.top + 8;
+    } else if (linkRect.bottom > tocRect.bottom) {
+      tocAside.scrollTop += linkRect.bottom - tocRect.bottom + 8;
+    }
+  };
+
+  const syncHashTarget = () => {
+    const target = targetFromHash();
+    if (!target) return;
+    isSyncingHashTarget = true;
+    target.scrollIntoView({ block: "start", inline: "nearest" });
+    requestAnimationFrame(() => {
+      isSyncingHashTarget = false;
+      onScroll();
+    });
   };
 
   const onScroll = () => {
@@ -3009,7 +3077,7 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
 
     if (activeId && activeId !== lastActiveId) {
       const activeLink = tocLinks.get(activeId) ?? (parentId ? tocLinks.get(parentId) : undefined);
-      activeLink?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+      if (!isSyncingHashTarget) scrollTocLinkIntoView(activeLink);
       lastActiveId = activeId;
     }
 
@@ -3020,7 +3088,10 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
       progressFill.style.width = pct.toFixed(2) + "%";
     }
   };
-  const syncAfterLayout = () => requestAnimationFrame(onScroll);
+  const syncAfterLayout = () => requestAnimationFrame(() => {
+    syncHashTarget();
+    onScroll();
+  });
   document.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
   window.addEventListener("hashchange", syncAfterLayout, { passive: true });
@@ -3028,7 +3099,6 @@ dossier (you)    ✅           ⏳ MVP-1      ✅ P0-P2 已实现 ← 独占</co
   onScroll();
   syncAfterLayout();
   const tocToggle = document.querySelector(".toc-toggle");
-  const tocAside = document.querySelector("aside.toc");
   const tocBackdrop = document.querySelector(".toc-backdrop");
   const isMobileToc = () => window.matchMedia && window.matchMedia("(max-width: 1024px)").matches;
   const syncTocAccessibility = () => {
