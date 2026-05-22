@@ -74,6 +74,33 @@ pnpm dev render docs/specs/my-spec.md
 
 打开生成的 `.html`，点顶部档位按钮就能切。
 
+## Claude Code 自动渲染
+
+1. 全局安装 `xdossier`：
+
+```bash
+npm install -g github:xianfeng92/xdossier
+# 或在本地 checkout 里：
+pnpm link
+```
+
+2. 在 `.claude/settings.json` 里加 PostToolUse hook：
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "hooks": [{ "type": "command", "command": "/Users/<you>/path/to/xdossier/hooks/post-tool-use.sh \"${tool.fileEdit.file_path}\"" }]
+    }]
+  }
+}
+```
+
+`# verify settings.json keys with your Claude Code version`
+
+3. 之后 Claude Code 每次写入 `docs/specs|changes|reviews/*.md`，对应的 `.html` 会自动重新生成，父 dossier cover 也会同步刷新。不需要再记命令。
+
 ## 站在谁的肩膀上
 
 - [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) —— 「AI 输出应该用 HTML 而非 Markdown」的原始论点。

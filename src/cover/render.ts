@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 import { escapeHtml } from "../parse/markdown.js";
 import { render as renderMarkdown } from "../render.js";
 import { clusterArtifacts, type ClusterResult, type Dossier } from "./cluster.js";
@@ -31,6 +31,7 @@ export type BuildDossierCoverInput = {
   since?: string;
   singleFile?: boolean;
   graph?: boolean;
+  onlyDossierContaining?: string;
 };
 
 export type BuildDossierCoverResult = {
@@ -63,6 +64,14 @@ export async function buildDossierCover(
   const indexPath = join(outDir, "index.html");
   const manifest = createBuildManifest(workspaceRoot, artifacts);
   const covers: BuildDossierCoverResult["covers"] = [];
+  const indexCovers: BuildDossierCoverResult["covers"] = [];
+  const hasOnlyFilter = input.onlyDossierContaining !== undefined;
+  const onlyMemberPath = input.onlyDossierContaining
+    ? normalizeWorkspaceRelativePath(workspaceRoot, input.onlyDossierContaining)
+    : undefined;
+  const onlyDossierId = onlyMemberPath
+    ? dossiers.find((dossier) => dossier.members.some((artifact) => artifact.path === onlyMemberPath))?.id
+    : undefined;
 
   await mkdir(outDir, { recursive: true });
 
@@ -70,7 +79,8 @@ export async function buildDossierCover(
     assertFilesystemSafeDossierId(dossier.id);
     const memberPaths = new Set(dossier.members.map((artifact) => artifact.path));
     const dossierEdges = edges.filter((edge) => memberPaths.has(edge.from) && memberPaths.has(edge.to));
-    const renderedDocuments = input.singleFile
+    const shouldWriteDossier = !hasOnlyFilter || dossier.id === onlyDossierId;
+    const renderedDocuments = input.singleFile && shouldWriteDossier
       ? await renderArtifactDocuments(dossier.members)
       : undefined;
     const view = buildDossierView({
@@ -86,16 +96,20 @@ export async function buildDossierCover(
     const html = renderCoverHtml(view, { workspaceRoot, hrefPrefix: "../../../" });
     const dossierOutDir = join(outDir, dossier.id);
     const outPath = join(dossierOutDir, "index.html");
-    await mkdir(dossierOutDir, { recursive: true });
-    await writeFile(outPath, html, "utf8");
-    covers.push({ dossierId: dossier.id, outPath, view });
+    indexCovers.push({ dossierId: dossier.id, outPath, view });
+
+    if (shouldWriteDossier) {
+      await mkdir(dossierOutDir, { recursive: true });
+      await writeFile(outPath, html, "utf8");
+      covers.push({ dossierId: dossier.id, outPath, view });
+    }
   }
 
   const indexHtml = renderProjectIndexHtml({
     workspaceRoot,
     builtAt: manifest.built_at,
     artifacts,
-    covers,
+    covers: indexCovers,
     orphans,
   });
   await writeFile(indexPath, indexHtml, "utf8");
@@ -109,6 +123,15 @@ export async function buildDossierCover(
   await writeBuildManifest(workspaceRoot, manifest);
 
   return { indexPath, covers, orphans, trace };
+}
+
+function normalizeWorkspaceRelativePath(workspaceRoot: string, inputPath: string): string | undefined {
+  const absolutePath = resolve(workspaceRoot, inputPath);
+  const relativePath = relative(workspaceRoot, absolutePath);
+  if (!relativePath || relativePath === ".." || relativePath.startsWith(`..${sep}`)) {
+    return undefined;
+  }
+  return relativePath.split(sep).join("/");
 }
 
 type RenderCoverHtmlOptions = {

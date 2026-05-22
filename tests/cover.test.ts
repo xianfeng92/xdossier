@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -174,6 +174,10 @@ function syntheticView(input: {
     evidence: [],
     graph_disabled: input.graphDisabled,
   };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 describe("Cover-0 artifact scanning", () => {
@@ -606,6 +610,261 @@ updated: 2026-05-22
     expect(html).toContain('<a class="dossier-banner" href="../../.dossier/out/index.html" data-role="orphan">');
     expect(html).toContain('<span class="dossier-banner-label">unassigned ·</span>');
     expect(html).toContain('<span class="dossier-banner-title">project index</span>');
+  });
+});
+
+describe("MVP-1 Phase E incremental cover refresh", () => {
+  test("--only-dossier-containing rebuilds only the matching dossier", async () => {
+    const root = await makeWorkspace();
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const full = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(full.status, full.stderr).toBe(0);
+
+    const visionCoverPath = join(root, ".dossier/out/2026-05-17-dossier-vision/index.html");
+    const mvpCoverPath = join(root, ".dossier/out/2026-05-18-dossier-mvp-0/index.html");
+    const indexPath = join(root, ".dossier/out/index.html");
+    const membershipPath = join(root, ".dossier/out/membership.json");
+    const before = {
+      vision: (await stat(visionCoverPath)).mtimeMs,
+      mvp: (await stat(mvpCoverPath)).mtimeMs,
+      index: (await stat(indexPath)).mtimeMs,
+      membership: (await stat(membershipPath)).mtimeMs,
+    };
+
+    await sleep(50);
+    const incremental = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        cliPath,
+        "cover",
+        root,
+        "--only-dossier-containing",
+        "docs/reviews/2026-05-18-vision-review.md",
+      ],
+      { cwd, encoding: "utf8" },
+    );
+
+    expect(incremental.status, incremental.stderr).toBe(0);
+    expect((await stat(visionCoverPath)).mtimeMs).toBeGreaterThan(before.vision);
+    expect((await stat(mvpCoverPath)).mtimeMs).toBe(before.mvp);
+    expect((await stat(indexPath)).mtimeMs).toBeGreaterThan(before.index);
+    expect((await stat(membershipPath)).mtimeMs).toBeGreaterThan(before.membership);
+  });
+
+  test("--only-dossier-containing with an orphan path skips per-dossier writes", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-e-orphan-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-root-spec.md"),
+      `---
+title: Root Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Root Spec
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(root, "docs/changes/2026-05-22-unrelated-change.md"),
+      `---
+title: Unrelated Change
+status: ready
+kind: change
+updated: 2026-05-22
+---
+
+# Unrelated Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        cliPath,
+        "cover",
+        root,
+        "--only-dossier-containing",
+        join(root, "docs/changes/2026-05-22-unrelated-change.md"),
+      ],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const outDir = join(root, ".dossier/out");
+    const outEntries = await readdir(outDir, { withFileTypes: true });
+    expect(outEntries.filter((entry) => entry.isDirectory())).toHaveLength(0);
+    expect(existsSync(join(outDir, "index.html"))).toBe(true);
+    expect(existsSync(join(outDir, "membership.json"))).toBe(true);
+  });
+
+  test("xdossier render auto-refreshes the parent cover when membership is present", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-e-render-refresh-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-phase-e-spec.md"),
+      `---
+title: Phase E Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Phase E Spec
+`,
+      "utf8",
+    );
+    const changePath = join(root, "docs/changes/2026-05-22-phase-e-impl-notes.md");
+    await writeFile(
+      changePath,
+      `---
+title: Phase E Change
+status: ready
+kind: change
+updated: 2026-05-22
+implements: ["docs/specs/2026-05-22-phase-e-spec.md"]
+---
+
+# Phase E Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+    const coverPath = join(root, ".dossier/out/2026-05-22-phase-e/index.html");
+    const before = (await stat(coverPath)).mtimeMs;
+
+    await sleep(50);
+    await writeFile(
+      changePath,
+      `${await readFile(changePath, "utf8")}\n## Implementation Detail\n\nRefresh the cover after rendering.\n`,
+      "utf8",
+    );
+    const render = spawnSync(process.execPath, ["--import", "tsx", cliPath, "render", changePath], {
+      cwd,
+      encoding: "utf8",
+    });
+
+    expect(render.status, render.stderr).toBe(0);
+    const html = await readFile(changePath.replace(/\.md$/i, ".html"), "utf8");
+    expect(html).toContain('<a class="dossier-banner"');
+    expect((await stat(coverPath)).mtimeMs).toBeGreaterThan(before);
+  });
+
+  test("xdossier render --no-cover-refresh skips parent cover refresh", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-e-no-refresh-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-phase-e-spec.md"),
+      `---
+title: Phase E Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Phase E Spec
+`,
+      "utf8",
+    );
+    const changePath = join(root, "docs/changes/2026-05-22-phase-e-impl-notes.md");
+    await writeFile(
+      changePath,
+      `---
+title: Phase E Change
+status: ready
+kind: change
+updated: 2026-05-22
+implements: ["docs/specs/2026-05-22-phase-e-spec.md"]
+---
+
+# Phase E Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+    const coverPath = join(root, ".dossier/out/2026-05-22-phase-e/index.html");
+    const before = (await stat(coverPath)).mtimeMs;
+
+    await sleep(50);
+    await writeFile(
+      changePath,
+      `${await readFile(changePath, "utf8")}\n## Implementation Detail\n\nDo not refresh the cover.\n`,
+      "utf8",
+    );
+    const render = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", changePath, "--no-cover-refresh"],
+      { cwd, encoding: "utf8" },
+    );
+
+    expect(render.status, render.stderr).toBe(0);
+    expect((await stat(coverPath)).mtimeMs).toBe(before);
+  });
+
+  test("xdossier render succeeds when membership.json is malformed", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-e-malformed-membership-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-phase-e-spec.md"),
+      `---
+title: Phase E Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Phase E Spec
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+    await writeFile(join(root, ".dossier/out/membership.json"), "{not json", "utf8");
+
+    const render = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", join(root, "docs/specs/2026-05-22-phase-e-spec.md")],
+      { cwd, encoding: "utf8" },
+    );
+
+    expect(render.status, render.stderr).toBe(0);
+    expect(existsSync(join(root, "docs/specs/2026-05-22-phase-e-spec.html"))).toBe(true);
   });
 });
 

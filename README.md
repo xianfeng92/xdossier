@@ -74,6 +74,33 @@ pnpm dev render docs/specs/my-spec.md
 
 Open the generated `.html` in any browser. Click the reader-mode toggle at the top to switch tiers.
 
+## Auto-render in Claude Code
+
+1. Install `xdossier` globally:
+
+```bash
+npm install -g github:xianfeng92/xdossier
+# or, from a local checkout:
+pnpm link
+```
+
+2. Add a PostToolUse hook to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "hooks": [{ "type": "command", "command": "/Users/<you>/path/to/xdossier/hooks/post-tool-use.sh \"${tool.fileEdit.file_path}\"" }]
+    }]
+  }
+}
+```
+
+`# verify settings.json keys with your Claude Code version`
+
+3. After this, any time Claude Code writes `docs/specs|changes|reviews/*.md`, the corresponding `.html` regenerates and the parent dossier cover refreshes. No command to remember.
+
 ## Built on
 
 - [thariqs/html-effectiveness](https://thariqs.github.io/html-effectiveness/) — the philosophy that HTML > Markdown for AI output.

@@ -1,8 +1,9 @@
 // CLI entry — argv parsing, dispatch, error handling.
 // See docs/specs/2026-05-18-dossier-mvp-0-spec.md §4 for the CLI surface and §6.5 for skill dispatch.
 
+import { existsSync } from "node:fs";
 import { readFile, writeFile, access, stat } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { render } from "./render.js";
 import { parseAnnotationsJson } from "./annotations.js";
 import { createSectionSummariesWithAgent, type EnrichProvider } from "./enrich/agent-cli.js";
@@ -26,6 +27,7 @@ type Argv =
       verbose: boolean;
       reader: ReaderProfile;
       contentMode?: ContentMode;
+      coverRefresh: boolean;
     }
   | {
       command: "enrich";
@@ -43,6 +45,7 @@ type Argv =
       singleFile: boolean;
       graph: boolean;
       verbose: boolean;
+      onlyDossierContaining?: string;
     }
   | { command: "help"; topic?: string }
   | { command: "version" }
@@ -74,6 +77,7 @@ Render options:
       --reader <profile>    beginner, intermediate, or expert (default: beginner)
       --content-mode <mode> auto, tutorial, concept, reference, or course (default: auto)
       --no-toc              Disable TOC sidebar
+      --no-cover-refresh    Do not refresh a parent dossier cover after render
 
 Enrich options:
   -o, --out <path>          Output annotations JSON path (default: <input>.annotations.json)
@@ -84,6 +88,9 @@ Build options:
   -o, --out <dir>           Output directory (default: <workspace>/.dossier/out)
       --single-file         Pack cover, rendered documents, and source artifacts into one HTML file
       --since <ref>         Populate activity inbox from previous build manifest
+      --only-dossier-containing <path>
+                            Rebuild only the dossier containing this member while
+                            keeping the project index and membership lookup fresh
       --no-graph            Build cover with grouped-list fallback only
       --verbose             Print skill selection reason and timings
   -h, --help                Show help
@@ -123,6 +130,7 @@ export function parseArgv(argv: string[]): Argv {
   let verbose = false;
   let reader: ReaderProfile = "beginner";
   let contentMode: ContentMode | undefined;
+  let coverRefresh = true;
 
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i];
@@ -154,6 +162,8 @@ export function parseArgv(argv: string[]): Argv {
       }
     } else if (a === "--no-toc") {
       toc = false;
+    } else if (a === "--no-cover-refresh") {
+      coverRefresh = false;
     } else if (a === "--verbose") {
       verbose = true;
     } else if (a === "-h" || a === "--help") {
@@ -168,7 +178,7 @@ export function parseArgv(argv: string[]): Argv {
   }
 
   if (!input) return { command: "error", message: "render: missing <input.md>" };
-  return { command: "render", input, out, skill, annotations, toc, verbose, reader, contentMode };
+  return { command: "render", input, out, skill, annotations, toc, verbose, reader, contentMode, coverRefresh };
 }
 
 export function formatEnrichSummary(annotations: RenderAnnotations): string {
@@ -248,6 +258,7 @@ function parseBuildArgv(argv: string[], command: "build" | "cover"): Argv {
   let singleFile = false;
   let graph = true;
   let verbose = false;
+  let onlyDossierContaining: string | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -263,6 +274,9 @@ function parseBuildArgv(argv: string[], command: "build" | "cover"): Argv {
     } else if (a === "--since") {
       since = argv[++i];
       if (!since) return { command: "error", message: "--since requires a value" };
+    } else if (a === "--only-dossier-containing") {
+      onlyDossierContaining = argv[++i];
+      if (!onlyDossierContaining) return { command: "error", message: "--only-dossier-containing requires a value" };
     } else if (a === "-h" || a === "--help") {
       return { command: "help", topic: "build" };
     } else if (a.startsWith("-")) {
@@ -274,7 +288,7 @@ function parseBuildArgv(argv: string[], command: "build" | "cover"): Argv {
     }
   }
 
-  return { command, workspace: workspace ?? ".", outDir, since, singleFile, graph, verbose };
+  return { command, workspace: workspace ?? ".", outDir, since, singleFile, graph, verbose, onlyDossierContaining };
 }
 
 export async function main(): Promise<void> {
@@ -365,14 +379,16 @@ export async function main(): Promise<void> {
         since: parsed.since,
         singleFile: parsed.singleFile,
         graph: parsed.graph,
+        onlyDossierContaining: parsed.onlyDossierContaining,
       });
       if (parsed.verbose) {
         const artifactCount = result.covers.reduce((sum, cover) => sum + cover.view.artifacts.length, 0);
         const edgeCount = result.covers.reduce((sum, cover) => sum + cover.view.edges.length, 0);
         const newCount = result.covers.reduce((sum, cover) => sum + cover.view.activity.new_artifacts.length, 0);
         const changedCount = result.covers.reduce((sum, cover) => sum + cover.view.activity.changed_artifacts.length, 0);
+        const prefix = parsed.onlyDossierContaining ? "incremental: " : "";
         process.stderr.write(
-          `cover artifacts: ${artifactCount}, edges: ${edgeCount}, graph: ${parsed.graph ? "list-fallback" : "disabled"}, activity: ${newCount} new/${changedCount} changed\n`,
+          `${prefix}cover artifacts: ${artifactCount}, edges: ${edgeCount}, graph: ${parsed.graph ? "list-fallback" : "disabled"}, activity: ${newCount} new/${changedCount} changed\n`,
         );
       }
       for (const cover of result.covers) {
@@ -482,6 +498,57 @@ export async function main(): Promise<void> {
   }
 
   process.stdout.write(`wrote ${outAbs} (${html.length} bytes)\n`);
+  if (parsed.coverRefresh) {
+    await refreshContainingDossierCover(inputAbs, parsed.verbose);
+  }
+}
+
+async function refreshContainingDossierCover(inputAbs: string, verbose: boolean): Promise<void> {
+  try {
+    const workspaceRoot = findMembershipWorkspaceRoot(inputAbs);
+    if (!workspaceRoot) return;
+
+    const lookupRaw = await readFile(join(workspaceRoot, ".dossier/out/membership.json"), "utf8");
+    const lookup = JSON.parse(lookupRaw) as {
+      version?: unknown;
+      members?: unknown;
+    };
+    if (lookup.version !== 1 || typeof lookup.members !== "object" || lookup.members === null) return;
+
+    const memberPath = relative(workspaceRoot, inputAbs).split(sep).join("/");
+    if (!memberPath || memberPath === ".." || memberPath.startsWith("../")) return;
+
+    const entry = (lookup.members as Record<string, { dossier_id?: unknown }>)[memberPath];
+    if (!entry || typeof entry.dossier_id !== "string") return;
+
+    await buildDossierCover({
+      workspaceRoot,
+      onlyDossierContaining: memberPath,
+    });
+  } catch (e) {
+    if (verbose) {
+      process.stderr.write(`warning: cover refresh skipped: ${(e as Error).message}\n`);
+    }
+  }
+}
+
+function findMembershipWorkspaceRoot(inputPath: string): string | undefined {
+  let current = dirname(resolve(inputPath));
+
+  while (true) {
+    if (
+      existsSync(join(current, ".dossier/out/membership.json")) &&
+      (existsSync(join(current, "docs/specs")) ||
+        existsSync(join(current, "docs/changes")) ||
+        existsSync(join(current, "docs/reviews")))
+    ) {
+      return current;
+    }
+
+    const parent = dirname(current);
+    if (parent === current) return undefined;
+    current = parent;
+  }
 }
 
 // Run when invoked directly (tsx src/cli.ts ...).
