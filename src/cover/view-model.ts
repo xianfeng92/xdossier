@@ -11,6 +11,7 @@ import type {
 } from "./types.js";
 import { extractDecisions, extractOpenQuestions, generateReadingPaths } from "./extract.js";
 import { contentHash, openQuestionHash } from "./manifest.js";
+import { buildReviewLoopSummary } from "../review/extract.js";
 
 type BuildCoverViewInput = {
   workspaceRoot: string;
@@ -32,6 +33,7 @@ export function buildCoverView(input: BuildCoverViewInput): DossierCoverView {
   });
   const decisions = extractDecisions(artifacts);
   const openQuestions = extractOpenQuestions(artifacts);
+  const reviewLoop = buildReviewLoopSummary(artifacts);
   const readingPaths = generateReadingPaths(artifacts, decisions, openQuestions);
   const activity = input.baselineManifest
     ? buildActivity(artifacts, input.baselineManifest, openQuestions)
@@ -52,6 +54,7 @@ export function buildCoverView(input: BuildCoverViewInput): DossierCoverView {
     edges,
     decisions,
     open_questions: openQuestions,
+    review_loop: reviewLoop.review_count > 0 ? reviewLoop : undefined,
     reading_paths: readingPaths,
     evidence: edges.map(edgeToEvidence),
     graph_disabled: input.graphDisabled,

@@ -2,16 +2,20 @@
 // See docs/specs/2026-05-18-dossier-mvp-0-spec.md §4 for the CLI surface and §6.5 for skill dispatch.
 
 import { existsSync, readFileSync } from "node:fs";
-import { readFile, writeFile, access, stat } from "node:fs/promises";
+import { readFile, writeFile, access, mkdir, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { render } from "./render.js";
 import { parseAnnotationsJson } from "./annotations.js";
 import { createSectionSummariesWithAgent, type EnrichProvider } from "./enrich/agent-cli.js";
 import { createSectionSummaryScaffold } from "./enrich/section-summaries.js";
+import { enrichmentContractSchema, validateEnrichmentContract } from "./enrich/contract.js";
 import { parseFrontmatter } from "./parse/frontmatter.js";
 import { selectSkill } from "./skills/registry.js";
 import { buildDossierCover, FirstRunCoverError } from "./cover/render.js";
+import { buildCoverEdges } from "./cover/edges.js";
 import { renderDossierBannerForInput } from "./cover/membership.js";
+import { scanArtifacts } from "./cover/scan.js";
+import { createReviewPacket, defaultReviewPacketPath } from "./review/packet.js";
 import type { ContentMode, ReaderProfile, RenderAnnotations } from "./types.js";
 
 // Read version from package.json at runtime so npm + --version stay in sync.
@@ -47,6 +51,19 @@ type Argv =
       verbose: boolean;
     }
   | {
+      command: "review";
+      target: string;
+      out?: string;
+      verbose: boolean;
+    }
+  | {
+      command: "contract";
+      input?: string;
+      annotations?: string;
+      printSchema: boolean;
+      verbose: boolean;
+    }
+  | {
       command: "build" | "cover";
       workspace: string;
       outDir?: string;
@@ -65,6 +82,8 @@ const HELP_TEXT = `xdossier ${VERSION}
 Usage:
   xdossier render <input.md> [options]
   xdossier enrich <input.md> [options]
+  xdossier contract <input.md> --annotations <annotations.json> [options]
+  xdossier review <target.md|workspace> [options]
   xdossier cover [workspace] [options]
   xdossier build [workspace] [options]
   xdossier --help
@@ -92,6 +111,14 @@ Enrich options:
   -o, --out <path>          Output annotations JSON path (default: <input>.annotations.json)
       --provider <name>     scaffold, codex, or claude (default: scaffold)
       --model <name>        Optional model name passed to codex/claude providers
+
+Contract options:
+      --annotations <path>  Annotation JSON to validate against the source markdown
+      --print-schema        Print the v0.4 enrichment contract schema
+
+Review options:
+  -o, --out <path>          Output review packet path
+                              (default: .dossier/review-packets/<date>-<target>-review-packet.md)
 
 Build options:
   -o, --out <dir>           Output directory (default: <workspace>/.dossier/out)
@@ -127,6 +154,8 @@ export function parseArgv(argv: string[]): Argv {
   if (argv[0] === "build") return parseBuildArgv(argv.slice(1), "build");
   if (argv[0] === "cover") return parseBuildArgv(argv.slice(1), "cover");
   if (argv[0] === "enrich") return parseEnrichArgv(argv.slice(1));
+  if (argv[0] === "contract") return parseContractArgv(argv.slice(1));
+  if (argv[0] === "review") return parseReviewArgv(argv.slice(1));
   if (argv[0] !== "render") {
     return { command: "error", message: `unknown command: ${argv[0]}` };
   }
@@ -209,6 +238,13 @@ export function formatPedagogySummary(annotations: RenderAnnotations): string {
   return `prereq: ${prereqCount}, checkpoints: ${checkpointSections} sections, analogies: ${analogyCount}`;
 }
 
+function formatContractFailure(report: { errors: string[]; warnings: string[] }): string {
+  const lines = ["error: annotation contract failed"];
+  report.errors.forEach((error) => lines.push(`- ${error}`));
+  report.warnings.forEach((warning) => lines.push(`warning: ${warning}`));
+  return `${lines.join("\n")}\n`;
+}
+
 function parseEnrichArgv(argv: string[]): Argv {
   let input: string | undefined;
   let out: string | undefined;
@@ -250,6 +286,64 @@ function parseEnrichArgv(argv: string[]): Argv {
 
 function isEnrichProvider(value: string): value is EnrichProvider {
   return value === "scaffold" || value === "codex" || value === "claude";
+}
+
+function parseContractArgv(argv: string[]): Argv {
+  let input: string | undefined;
+  let annotations: string | undefined;
+  let printSchema = false;
+  let verbose = false;
+
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--annotations") {
+      annotations = argv[++i];
+      if (!annotations) return { command: "error", message: "--annotations requires a value" };
+    } else if (a === "--print-schema") {
+      printSchema = true;
+    } else if (a === "--verbose") {
+      verbose = true;
+    } else if (a === "-h" || a === "--help") {
+      return { command: "help", topic: "contract" };
+    } else if (a.startsWith("-")) {
+      return { command: "error", message: `unknown option: ${a}` };
+    } else if (!input) {
+      input = a;
+    } else {
+      return { command: "error", message: `unexpected positional argument: ${a}` };
+    }
+  }
+
+  if (!printSchema && !input) return { command: "error", message: "contract: missing <input.md>" };
+  if (!printSchema && !annotations) return { command: "error", message: "contract: --annotations requires a value" };
+  return { command: "contract", input, annotations, printSchema, verbose };
+}
+
+function parseReviewArgv(argv: string[]): Argv {
+  let target: string | undefined;
+  let out: string | undefined;
+  let verbose = false;
+
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "-o" || a === "--out") {
+      out = argv[++i];
+      if (!out) return { command: "error", message: "--out requires a value" };
+    } else if (a === "--verbose") {
+      verbose = true;
+    } else if (a === "-h" || a === "--help") {
+      return { command: "help", topic: "review" };
+    } else if (a.startsWith("-")) {
+      return { command: "error", message: `unknown option: ${a}` };
+    } else if (!target) {
+      target = a;
+    } else {
+      return { command: "error", message: `unexpected positional argument: ${a}` };
+    }
+  }
+
+  if (!target) return { command: "error", message: "review: missing <target.md|workspace>" };
+  return { command: "review", target, out, verbose };
 }
 
 function isReaderProfile(value: string): value is ReaderProfile {
@@ -315,6 +409,113 @@ export async function main(): Promise<void> {
     process.stderr.write(`error: ${parsed.message}\n\n`);
     process.stderr.write(HELP_TEXT);
     process.exit(1);
+  }
+
+  if (parsed.command === "contract") {
+    if (parsed.printSchema) {
+      process.stdout.write(`${JSON.stringify(enrichmentContractSchema(), null, 2)}\n`);
+      return;
+    }
+
+    const inputAbs = resolve(parsed.input ?? "");
+    try {
+      await access(inputAbs);
+    } catch {
+      process.stderr.write(`error: input file not found: ${parsed.input}\n`);
+      process.exit(1);
+    }
+
+    let md: string;
+    try {
+      md = await readFile(inputAbs, "utf8");
+    } catch (e) {
+      process.stderr.write(`error: cannot read ${parsed.input}: ${(e as Error).message}\n`);
+      process.exit(1);
+    }
+
+    const annotationsPath = parsed.annotations ?? "";
+    let annotationsRaw: string;
+    try {
+      annotationsRaw = await readFile(resolve(annotationsPath), "utf8");
+    } catch (e) {
+      process.stderr.write(`error: cannot read annotations ${annotationsPath}: ${(e as Error).message}\n`);
+      process.exit(1);
+    }
+
+    let annotations: RenderAnnotations;
+    try {
+      annotations = parseAnnotationsJson(annotationsRaw, annotationsPath);
+    } catch (e) {
+      process.stderr.write(`error: failed to parse annotations: ${(e as Error).message}\n`);
+      process.exit(2);
+    }
+
+    let report: ReturnType<typeof validateEnrichmentContract>;
+    try {
+      report = validateEnrichmentContract({ markdown: md, annotations, sourceLabel: annotationsPath });
+    } catch (e) {
+      process.stderr.write(`error: failed to validate contract: ${(e as Error).message}\n`);
+      process.exit(2);
+    }
+    if (!report.ok) {
+      process.stderr.write(formatContractFailure(report));
+      process.exit(2);
+    }
+    if (parsed.verbose) {
+      report.warnings.forEach((warning) => process.stderr.write(`warning: ${warning}\n`));
+      process.stderr.write(`anchors: ${report.anchor_count}\n`);
+    }
+    process.stdout.write(`contract: ok (${report.reference_count} references, ${report.warning_count} warnings)\n`);
+    return;
+  }
+
+  if (parsed.command === "review") {
+    const targetAbs = resolve(parsed.target);
+    let targetStat: Awaited<ReturnType<typeof stat>>;
+    try {
+      targetStat = await stat(targetAbs);
+    } catch {
+      process.stderr.write(`error: review target not found: ${parsed.target}\n`);
+      process.exit(1);
+    }
+
+    const workspaceRoot = targetStat.isDirectory()
+      ? findDocsWorkspaceRoot(targetAbs)
+      : findDocsWorkspaceRoot(dirname(targetAbs));
+    if (!workspaceRoot) {
+      process.stderr.write("error: review target must be inside a workspace with docs/specs, docs/changes, or docs/reviews\n");
+      process.exit(1);
+    }
+
+    const targetPath = targetStat.isDirectory()
+      ? undefined
+      : normalizeWorkspaceRelativePath(workspaceRoot, targetAbs);
+    if (!targetStat.isDirectory() && !targetPath) {
+      process.stderr.write("error: review target must be inside the detected workspace\n");
+      process.exit(1);
+    }
+
+    try {
+      const artifacts = await scanArtifacts(workspaceRoot);
+      const edges = buildCoverEdges(artifacts);
+      const packet = createReviewPacket({
+        workspaceRoot,
+        targetPath,
+        artifacts,
+        edges,
+      });
+      const outAbs = resolve(workspaceRoot, parsed.out ?? defaultReviewPacketPath(targetPath ?? ".", undefined));
+      await mkdir(dirname(outAbs), { recursive: true });
+      await writeFile(outAbs, packet.markdown, "utf8");
+      if (parsed.verbose) {
+        process.stderr.write(`suggested review doc: ${packet.suggestedReviewPath}\n`);
+      }
+      process.stdout.write(`wrote ${outAbs} (${packet.markdown.length} bytes)\n`);
+      return;
+    } catch (e) {
+      process.stderr.write(`error: failed to create review packet: ${(e as Error).message}\n`);
+      process.exit(64);
+    }
   }
 
   if (parsed.command === "enrich") {
@@ -480,6 +681,18 @@ export async function main(): Promise<void> {
       process.stderr.write(`error: failed to parse annotations: ${(e as Error).message}\n`);
       process.exit(2);
     }
+    const contractReport = validateEnrichmentContract({
+      markdown: md,
+      annotations,
+      sourceLabel: parsed.annotations,
+    });
+    if (!contractReport.ok) {
+      process.stderr.write(formatContractFailure(contractReport));
+      process.exit(2);
+    }
+    if (parsed.verbose) {
+      contractReport.warnings.forEach((warning) => process.stderr.write(`warning: ${warning}\n`));
+    }
   }
 
   let html: string;
@@ -513,6 +726,28 @@ export async function main(): Promise<void> {
   process.stdout.write(`wrote ${outAbs} (${html.length} bytes)\n`);
   if (parsed.coverRefresh) {
     await refreshContainingDossierCover(inputAbs, parsed.verbose);
+  }
+}
+
+function normalizeWorkspaceRelativePath(workspaceRoot: string, inputPath: string): string | undefined {
+  const relativePath = relative(workspaceRoot, inputPath).split(sep).join("/");
+  if (!relativePath || relativePath === ".." || relativePath.startsWith("../")) return undefined;
+  return relativePath;
+}
+
+function findDocsWorkspaceRoot(startPath: string): string | undefined {
+  let current = resolve(startPath);
+  while (true) {
+    if (
+      existsSync(join(current, "docs/specs")) ||
+      existsSync(join(current, "docs/changes")) ||
+      existsSync(join(current, "docs/reviews"))
+    ) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) return undefined;
+    current = parent;
   }
 }
 

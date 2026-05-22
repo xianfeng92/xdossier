@@ -220,7 +220,7 @@ function renderSectionBrief(
   }
 
   if (context?.isReferenceLike) {
-    return `<details class="section-brief section-brief-collapsible" data-annotation="section-brief">
+    return `<details class="section-brief section-brief-collapsible" data-annotation="section-brief" data-searchable-collapse>
   <summary>本节摘要</summary>
   ${pieces.join("\n")}
 </details>`;
@@ -250,7 +250,7 @@ function renderSubsectionSemanticTrace(traceLinks: SectionSemanticTraceLink[], l
 
 function renderExtraKeyPoints(points: string[]): string {
   const lis = points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  return `<details class="section-key-points-extra" data-annotation="section-key-points-extra">
+  return `<details class="section-key-points-extra" data-annotation="section-key-points-extra" data-searchable-collapse>
   <summary>还有 ${points.length} 条要点</summary>
   <ul>${lis}</ul>
 </details>`;
@@ -329,10 +329,23 @@ function createRenderer(): Renderer {
 
   renderer.link = function link(token: Tokens.Link): string {
     const text = this.parser.parseInline(token.tokens);
-    const href = token.href.trim();
+    const href = sanitizeHref(token.href);
     const externalClass = /^https?:\/\//i.test(href) ? ` class="external-ref"` : "";
     const title = token.title ? ` title="${escapeAttribute(token.title)}"` : "";
     return `<a href="${escapeAttribute(href)}"${externalClass}${title}>${text}</a>`;
+  };
+
+  renderer.image = function image(token: Tokens.Image): string {
+    const href = sanitizeHref(token.href);
+    if (href === BLOCKED_URL) {
+      return `<span class="blocked-image">${escapeHtml(token.text || "blocked image")}</span>`;
+    }
+    const title = token.title ? ` title="${escapeAttribute(token.title)}"` : "";
+    return `<img src="${escapeAttribute(href)}" alt="${escapeAttribute(token.text)}"${title}>`;
+  };
+
+  renderer.html = function html(token: Tokens.HTML): string {
+    return escapeHtml(token.raw);
   };
 
   return renderer;
@@ -400,6 +413,22 @@ export function escapeHtml(value: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+export const BLOCKED_URL = "#blocked-url";
+
+export function sanitizeHref(value: string): string {
+  const href = value.trim();
+  if (!href) return BLOCKED_URL;
+  if (href.startsWith("#")) return href;
+  if (href.startsWith("//")) return BLOCKED_URL;
+  if (/[\u0000-\u001f\u007f]/.test(href)) return BLOCKED_URL;
+
+  const scheme = href.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/)?.[1]?.toLowerCase();
+  if (!scheme) return href;
+  return scheme === "http" || scheme === "https" || scheme === "mailto"
+    ? href
+    : BLOCKED_URL;
 }
 
 function escapeAttribute(value: string): string {

@@ -60,6 +60,7 @@
 - **内容类型自动识别** —— tutorial / concept / reference / course，启发式判断，零 token 成本。
 - **单文件 HTML** —— 双击即开、可离线、不依赖 CDN。
 - **多文档 dossier 视图** —— 根据 frontmatter 里的 `implements:` / `reviews:` 或文件名前缀，把相关 spec / changes / reviews 聚成 dossier；输出单个 dossier cover，内含 SVG 关系图，并生成项目级索引。每个成员 HTML 顶部都会带回到所属 dossier 的链接。
+- **AI enrichment contract** —— `enrich` 产出的 annotations 带 v0.4 合同元数据；`contract` / `render --annotations` 会校验 section 引用确实来自源 markdown，避免 AI 注解漂移后悄悄进入 HTML。
 - **Spec 语义块** —— 风险登记、决策矩阵、原则栅格、scope 边界、术语表、结构图，从 markdown 自动渲染，不用手写 HTML。
 - **内联 SVG 图** —— ASCII 层级框图 → 带箭头的真 SVG。
 - **抽栏、章节封面、对照卡** —— 让 1000 行 spec 不像砖墙。
@@ -84,6 +85,14 @@ pnpm dev render docs/specs/my-spec.md
 打开生成的 `.html`，点顶部档位按钮就能切。
 
 `xdossier cover docs/` 会生成项目级索引 `docs/.dossier/out/index.html`，以及每个 dossier 的封面 `docs/.dossier/out/<dossier-id>/index.html`。
+
+AI 注解进入渲染前可以单独验合同：
+
+```bash
+xdossier enrich docs/specs/my-spec.md --out docs/specs/my-spec.annotations.json
+xdossier contract docs/specs/my-spec.md --annotations docs/specs/my-spec.annotations.json
+xdossier render docs/specs/my-spec.md --annotations docs/specs/my-spec.annotations.json
+```
 
 ## Claude Code 自动渲染
 

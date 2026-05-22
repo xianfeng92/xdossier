@@ -20,6 +20,7 @@ import type {
   CoverDecision,
   CoverEdge,
   CoverOpenQuestion,
+  ReviewLoopSummary,
   DossierCoverView,
   ReadingPath,
 } from "./types.js";
@@ -168,6 +169,13 @@ export type RenderContext = {
   hrefPrefix: string;
 };
 
+type CoverSearchEntry = {
+  type: string;
+  title: string;
+  body: string;
+  href: string;
+};
+
 function buildDossierView(input: {
   workspaceRoot: string;
   dossier: Dossier;
@@ -209,6 +217,7 @@ export function renderCoverHtml(
     hrefPrefix: options.hrefPrefix ?? "../../",
   };
   const graphSvg = renderRelationGraph(view, context);
+  const searchIndex = buildCoverSearchIndex(view, context);
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -220,6 +229,8 @@ export function renderCoverHtml(
 <body>
   <main class="cover">
     ${renderVerdictStrip(view)}
+    ${renderCoverSearch(searchIndex)}
+    ${renderReviewLoop(view.review_loop)}
     ${renderActivityInbox(view, context)}
     ${renderPrivacyWarning(view)}
     ${renderRelationGraphSection(graphSvg)}
@@ -233,6 +244,8 @@ export function renderCoverHtml(
     ${renderRenderedDocumentBundle(view)}
     ${renderSourceBundle(view)}
   </main>
+  <script type="application/json" id="dossier-search-index">${escapeJsonForHtml(searchIndex)}</script>
+  <script>${coverSearchScript()}</script>
 </body>
 </html>`;
 }
@@ -297,6 +310,103 @@ function renderPrivacyWarning(view: DossierCoverView): string {
   return `<section class="privacy-warning">
   <h2>Privacy Warning</h2>
   <p>${escapeHtml(view.privacy_warning)}</p>
+</section>`;
+}
+
+function buildCoverSearchIndex(view: DossierCoverView, context: RenderContext): CoverSearchEntry[] {
+  const artifactEntries = view.artifacts.map((artifact) => ({
+    type: artifact.kind,
+    title: artifact.title,
+    body: [
+      artifact.path,
+      artifact.status,
+      artifact.updated_at,
+      artifact.summary,
+    ].filter(Boolean).join(" · "),
+    href: sourceHref(artifact.path, context),
+  }));
+  const decisionEntries = view.decisions.map((decision) => ({
+    type: "decision",
+    title: decision.title,
+    body: [decision.source_artifact, decision.evidence].filter(Boolean).join(" · "),
+    href: rebaseHref(decision.href, context),
+  }));
+  const questionEntries = view.open_questions.map((question) => ({
+    type: "open-question",
+    title: question.title,
+    body: [question.source_artifact, question.blocks].filter(Boolean).join(" · "),
+    href: rebaseHref(question.href, context),
+  }));
+  const reviewEntries = (view.review_loop?.findings ?? []).map((finding) => ({
+    type: `review-${finding.status}`,
+    title: finding.title,
+    body: [finding.severity, finding.status, finding.review_artifact, finding.evidence].filter(Boolean).join(" · "),
+    href: rebaseHref(finding.href, context),
+  }));
+  return [...artifactEntries, ...decisionEntries, ...questionEntries, ...reviewEntries];
+}
+
+function renderCoverSearch(entries: CoverSearchEntry[]): string {
+  const sample = entries.slice(0, 4);
+  const sampleItems = sample.length
+    ? sample.map((entry) => `<li><a href="${escapeAttribute(entry.href)}"><span>${escapeHtml(entry.title)}</span><small>${escapeHtml(entry.type)}</small></a></li>`).join("\n")
+    : `<li class="empty-state">No searchable dossier items found.</li>`;
+  return `<section class="cover-search" id="cover-search">
+  <h2>Find in Dossier</h2>
+  <search role="search" aria-label="Search this dossier">
+    <input type="search" class="cover-search-input" data-cover-search placeholder="Search artifacts, decisions, questions">
+  </search>
+  <ol class="cover-search-results" data-cover-search-results hidden></ol>
+  <ol class="cover-search-sample" aria-label="Searchable highlights">
+${sampleItems}
+  </ol>
+</section>`;
+}
+
+function renderReviewLoop(summary: ReviewLoopSummary | undefined): string {
+  if (!summary || summary.review_count === 0) return "";
+  const priority = new Map([["P0", 0], ["P1", 1], ["P2", 2], ["P3", 3]]);
+  const findings = [...summary.findings]
+    .sort((a, b) => {
+      const statusCompare = (a.status === "open" ? 0 : 1) - (b.status === "open" ? 0 : 1);
+      if (statusCompare !== 0) return statusCompare;
+      return (priority.get(a.severity) ?? 9) - (priority.get(b.severity) ?? 9);
+    })
+    .slice(0, 6);
+  const findingItems = findings.length
+    ? findings.map((finding) => `<li>
+  <a href="${escapeAttribute(finding.href)}">${escapeHtml(finding.title)}</a>
+  <span class="pill">${escapeHtml(finding.severity)}</span>
+  <span class="pill review-status-${escapeAttribute(finding.status)}">${escapeHtml(finding.status)}</span>
+  <code>${escapeHtml(finding.review_artifact)}</code>
+</li>`).join("\n")
+    : `<li class="empty-state">No structured findings extracted yet.</li>`;
+  const reviewItems = summary.reviews
+    .slice(0, 5)
+    .map((review) => `<li>
+  <a href="${escapeAttribute(review.href ?? `../../${review.path}`)}">${escapeHtml(review.title)}</a>
+  <span class="pill">${escapeHtml(review.verdict)}</span>
+  <span class="pill">${review.open_count} open</span>
+  <code>${escapeHtml(review.path)}</code>
+</li>`)
+    .join("\n");
+
+  return `<section class="review-loop" id="review-loop">
+  <h2>Review Loop</h2>
+  <dl class="review-loop-stats">
+    <div><dt>Reviews</dt><dd>${summary.review_count}</dd></div>
+    <div><dt>Open findings</dt><dd>${summary.open_count}</dd></div>
+    <div><dt>Blockers</dt><dd>${summary.blocker_count}</dd></div>
+    <div><dt>Fixed/deferred</dt><dd>${summary.fixed_count}/${summary.deferred_count}</dd></div>
+  </dl>
+  <section class="review-loop-findings">
+    <h3>Findings</h3>
+    <ol>${findingItems}</ol>
+  </section>
+  <section class="review-loop-reviews">
+    <h3>Review verdicts</h3>
+    <ol>${reviewItems}</ol>
+  </section>
 </section>`;
 }
 
@@ -544,6 +654,82 @@ function renderProjectIndexHtml(input: {
 </html>`;
 }
 
+function escapeJsonForHtml(value: unknown): string {
+  return JSON.stringify(value)
+    .replaceAll("<", "\\u003c")
+    .replaceAll(">", "\\u003e")
+    .replaceAll("&", "\\u0026")
+    .replaceAll("\u2028", "\\u2028")
+    .replaceAll("\u2029", "\\u2029");
+}
+
+function coverSearchScript(): string {
+  return `(function () {
+function mountCoverSearch() {
+  const input = document.querySelector("[data-cover-search]");
+  const results = document.querySelector("[data-cover-search-results]");
+  const indexEl = document.getElementById("dossier-search-index");
+  if (!input || !results || !indexEl) return;
+  let entries = [];
+  try {
+    entries = JSON.parse(indexEl.textContent || "[]");
+  } catch (_e) {
+    entries = [];
+  }
+  const normalize = (text) => (text || "").toLowerCase().replace(/\\s+/g, " ").trim();
+  const indexed = entries.map((entry) => ({
+    ...entry,
+    haystack: normalize([entry.type, entry.title, entry.body].filter(Boolean).join(" ")),
+  }));
+  const clear = () => {
+    results.hidden = true;
+    results.replaceChildren();
+  };
+  const snippet = (entry, query) => {
+    const body = entry.body || entry.title || "";
+    const normalizedBody = normalize(body);
+    const index = normalizedBody.indexOf(query);
+    if (index < 0) return body.slice(0, 140);
+    const start = Math.max(0, index - 48);
+    const end = Math.min(body.length, index + query.length + 92);
+    return (start > 0 ? "... " : "") + body.slice(start, end) + (end < body.length ? " ..." : "");
+  };
+  const render = () => {
+    const query = normalize(input.value);
+    if (query.length < 2) {
+      clear();
+      return;
+    }
+    const matches = indexed.filter((entry) => entry.haystack.includes(query)).slice(0, 12);
+    results.replaceChildren();
+    if (matches.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "empty-state";
+      empty.textContent = "No matches found.";
+      results.append(empty);
+      results.hidden = false;
+      return;
+    }
+    matches.forEach((entry) => {
+      const li = document.createElement("li");
+      const link = document.createElement("a");
+      const title = document.createElement("span");
+      const meta = document.createElement("small");
+      link.href = entry.href || "#";
+      title.textContent = entry.title || "Untitled";
+      meta.textContent = [entry.type, snippet(entry, query)].filter(Boolean).join(" · ");
+      link.append(title, meta);
+      li.append(link);
+      results.append(li);
+    });
+    results.hidden = false;
+  };
+  input.addEventListener("input", render);
+}
+mountCoverSearch();
+})();`;
+}
+
 function coverCss(): string {
   return `
 :root {
@@ -571,14 +757,46 @@ dl { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 dt { color: #4b4b45; font-size: 12px; }
 dd { margin: 3px 0 0; font-weight: 700; }
 .next-action { grid-column: 1 / -1; margin: 0; border-top: 1px solid #e5dfd3; padding-top: 14px; }
-.artifact-map, .key-decisions, .open-questions, .reading-paths, .evidence-drawer, .activity-inbox, .privacy-warning, .relation-graph-section, .rendered-document-bundle, .source-bundle {
+.artifact-map, .key-decisions, .open-questions, .reading-paths, .evidence-drawer, .activity-inbox, .privacy-warning, .relation-graph-section, .rendered-document-bundle, .source-bundle, .cover-search, .review-loop {
   border: 1px solid #ddd6ca;
   border-radius: 8px;
   background: #fffdf8;
   padding: 18px;
 }
 .artifact-map { margin-top: 22px; }
-.activity-inbox, .privacy-warning { margin-top: 22px; }
+.activity-inbox, .privacy-warning, .cover-search, .review-loop { margin-top: 22px; }
+.cover-search search { display: block; margin-bottom: 12px; }
+.cover-search-input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cfc7b8;
+  border-radius: 6px;
+  background: #fff;
+  color: #1d1d1f;
+  padding: 9px 11px;
+  font: inherit;
+}
+.cover-search-input:focus { outline: 2px solid rgba(30, 58, 138, 0.18); border-color: #1e3a8a; }
+.cover-search-results,
+.cover-search-sample { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-left: 0; }
+.cover-search-results[hidden] { display: none; }
+.cover-search-results li,
+.cover-search-sample li { display: block; }
+.cover-search-results a,
+.cover-search-sample a { display: grid; gap: 4px; }
+.cover-search-results small,
+.cover-search-sample small { color: #4b4b45; font-weight: 400; }
+.review-loop-stats { margin-bottom: 16px; }
+.review-loop-findings,
+.review-loop-reviews { margin-top: 14px; }
+.review-loop ol { padding-left: 0; }
+.review-loop li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: start; }
+.review-loop li code { grid-column: 1 / -1; }
+.review-status-open { border-color: #d97706; background: #fff8eb; }
+.review-status-fixed,
+.review-status-accepted { border-color: #16a34a; background: #f0fdf4; }
+.review-status-deferred,
+.review-status-wontfix { border-color: #cfc7b8; background: #f3efe7; }
 .relation-graph-section { margin-top: 22px; }
 .relation-graph-section .relation-graph { width: 100%; height: auto; max-width: 100%; display: block; }
 .activity-group + .activity-group { margin-top: 14px; }

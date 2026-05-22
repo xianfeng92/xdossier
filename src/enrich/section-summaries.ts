@@ -188,6 +188,7 @@ export function createSectionSummaryScaffold(markdown: string, legacySourceLabel
   return {
     schema_version: legacySourceLabel ? 1 : 2,
     source: "dossier-enrich:section-summary-scaffold",
+    ...(legacySourceLabel ? {} : { contract: enrichmentContract("dossier-enrich:section-summary-scaffold") }),
     content_mode: contentMode,
     prerequisites: prerequisitesFromFrontmatter(frontmatter.data),
     checkpoints: [],
@@ -210,6 +211,22 @@ export function createSectionSummaryScaffold(markdown: string, legacySourceLabel
       : {}),
     section_summaries: sectionSummaries,
   };
+}
+
+export function enrichmentContract(producer: string, createdAt = localDateString()): RenderAnnotations["contract"] {
+  return {
+    name: "dossier-ai-enrichment",
+    version: "0.4",
+    producer,
+    created_at: createdAt,
+  };
+}
+
+function localDateString(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function prerequisitesFromFrontmatter(frontmatter: Record<string, unknown>): RenderAnnotations["prerequisites"] {

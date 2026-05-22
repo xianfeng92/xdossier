@@ -45,7 +45,7 @@ import type {
 } from "./types.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { escapeHtml } from "./parse/markdown.js";
+import { BLOCKED_URL, escapeHtml, sanitizeHref } from "./parse/markdown.js";
 import {
   SEMANTIC_OVERVIEW_ANCHOR_ID,
   collectSectionSemanticTrace,
@@ -1019,19 +1019,21 @@ function renderReferenceListBlock(
   const sourceLink = renderSemanticSourceLink(block.source_section_id, labels.viewSource, sourceNumbers);
   const cards = block.items.map((item, itemIndex) => {
     const description = item.description ? `<p>${escapeHtml(item.description)}</p>` : "";
-    if (isExternalHref(item.href)) {
-      return `<a id="${escapeHtml(semanticBlockItemAnchorId(id, itemIndex))}" class="reference-card external-ref" href="${escapeAttribute(item.href)}">
+    const safeHref = sanitizeHref(item.href);
+    const hrefLabel = safeHref === BLOCKED_URL ? "blocked unsafe URL" : item.href;
+    if (isExternalHref(safeHref)) {
+      return `<a id="${escapeHtml(semanticBlockItemAnchorId(id, itemIndex))}" class="reference-card external-ref" href="${escapeAttribute(safeHref)}">
       <p class="reference-label">${escapeHtml(labels.references)}</p>
       <h3>${escapeHtml(item.label)}</h3>
       ${description}
-      <span class="reference-href">${escapeHtml(externalHrefLabel(item.href))}</span>
+      <span class="reference-href">${escapeHtml(externalHrefLabel(safeHref))}</span>
     </a>`;
     }
-    return `<a id="${escapeHtml(semanticBlockItemAnchorId(id, itemIndex))}" class="reference-card" href="${escapeHtml(item.href)}">
+    return `<a id="${escapeHtml(semanticBlockItemAnchorId(id, itemIndex))}" class="reference-card" href="${escapeAttribute(safeHref)}">
       <p class="reference-label">${escapeHtml(labels.references)}</p>
       <h3>${escapeHtml(item.label)}</h3>
       ${description}
-      <span class="reference-href">${escapeHtml(item.href)}</span>
+      <span class="reference-href">${escapeHtml(hrefLabel)}</span>
     </a>`;
   });
 
@@ -1354,7 +1356,7 @@ function renderVisibleItemsWithDisclosure(items: string[], labels: RenderLabels)
   const hidden = items.slice(SEMANTIC_VISIBLE_ITEM_LIMIT).join("\n");
   if (!hidden) return visible;
   return `${visible}
-<details class="semantic-block-extra">
+<details class="semantic-block-extra" data-searchable-collapse>
   <summary>${escapeHtml(moreSemanticItemsLabel(items.length - SEMANTIC_VISIBLE_ITEM_LIMIT, labels))}</summary>
   <div class="semantic-block-extra-items">${hidden}</div>
 </details>`;
@@ -1549,7 +1551,7 @@ function renderSourceSectionRoleChips(traceLinks: SectionSemanticTraceLink[], la
   const label = labels.dossierLens === "Dossier 透镜"
     ? `${traceLinks.length} 个语义角色`
     : traceLinks.length === 1 ? "1 semantic role" : `${traceLinks.length} semantic roles`;
-  return `<details class="source-section-role-summary" aria-label="${escapeHtml(labels.semanticRolesAria)}">
+  return `<details class="source-section-role-summary" aria-label="${escapeHtml(labels.semanticRolesAria)}" data-searchable-collapse>
   <summary>${escapeHtml(label)}</summary>
   <span class="source-section-role-summary-links">${traceLinks.map((link) => renderSourceSectionRoleLink(link, labels)).join("")}</span>
 </details>`;
@@ -1654,7 +1656,7 @@ function extractTopDocumentNotes(contentHtml: string): {
 
   const remainingLeadHtml = extracted.html.trim();
   const summary = `${callouts.length} 条文档提示`;
-  const documentNotesHtml = `<details class="document-notes">
+  const documentNotesHtml = `<details class="document-notes" data-searchable-collapse>
   <summary>${escapeHtml(summary)}</summary>
   <div class="document-notes-body">${callouts.join("\n")}</div>
 </details>`;
@@ -1805,7 +1807,7 @@ function renderRelationDetails(frontmatter: Record<string, unknown>, labels: Ren
   if (implementsList.length > 0) blocks.push(renderRelationBlock(labels.frontmatterImplements, implementsList));
   if (reviewsList.length > 0) blocks.push(renderRelationBlock(labels.frontmatterReviews, reviewsList));
 
-  return `<details class="frontmatter-details${compact ? " compact-relations" : ""}">
+  return `<details class="frontmatter-details${compact ? " compact-relations" : ""}" data-searchable-collapse>
   <summary>${escapeHtml(counts.join(" · "))}</summary>
   ${blocks.join("\n")}
 </details>`;
@@ -1842,6 +1844,11 @@ function renderToc(
   const lensGroup = hasSemanticLens ? renderLensTocGroup(annotations, hasSectionMap(toc, annotations), renderLabels) : "";
   const items = toc.map((entry, index) => renderTocEntry(entry, index + 1)).join("\n");
   return `<aside class="toc" data-progressive-toc>
+  <search class="doc-search" role="search" aria-label="Search this document">
+    <label class="doc-search-label" for="doc-search-input">Search</label>
+    <input type="search" class="doc-search-input" id="doc-search-input" data-doc-search placeholder="Search sections">
+    <ol class="doc-search-results" data-doc-search-results hidden></ol>
+  </search>
   <p class="toc-header">${escapeHtml(renderLabels.tocHeader(count))}</p>
 ${lensGroup}
   <ol>

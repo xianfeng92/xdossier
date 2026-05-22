@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import type { RenderAnnotations } from "../types.js";
 import { parseAnnotationsJson } from "../annotations.js";
 import { createSectionSummaryScaffold } from "./section-summaries.js";
+import { enrichmentContract } from "./section-summaries.js";
 
 export type EnrichProvider = "scaffold" | "codex" | "claude";
 
@@ -45,11 +46,16 @@ export async function createSectionSummariesWithAgent(
     timeoutMs: options.timeoutMs,
   });
   const annotations = parseAgentAnnotationsOutput(result.stdout, options.provider, markdown, options.onWarning);
+  const source = annotations.source?.endsWith(":fallback")
+    ? annotations.source
+    : `dossier-enrich:${options.provider}`;
+  const contract = !annotations.contract || annotations.contract.producer === "dossier-enrich:agent"
+    ? enrichmentContract(source)
+    : annotations.contract;
   return {
     ...annotations,
-    source: annotations.source?.endsWith(":fallback")
-      ? annotations.source
-      : `dossier-enrich:${options.provider}`,
+    source,
+    contract,
   };
 }
 
@@ -63,6 +69,12 @@ Use this exact schema:
 {
   "schema_version": 2,
   "source": "dossier-enrich:agent",
+  "contract": {
+    "name": "dossier-ai-enrichment",
+    "version": "0.4",
+    "producer": "dossier-enrich:agent",
+    "created_at": "YYYY-MM-DD"
+  },
   "content_mode": "concept",
   "document_overview": {
     "summary": "One sentence describing the document's core decision or purpose.",
@@ -328,6 +340,7 @@ CHECKPOINT selectivity self-check:
 - Preserve the document language.
 - Do not invent facts outside the markdown.
 - Do not include HTML or markdown in any field.
+- Always include the contract block with name dossier-ai-enrichment and version 0.4. Use producer dossier-enrich:agent unless a more specific provider name is known.
 
 Section id scaffold:
 ${JSON.stringify(scaffold, null, 2)}
@@ -363,6 +376,7 @@ function withAgentPedagogyDefaults(annotations: RenderAnnotations): RenderAnnota
   return {
     ...annotations,
     schema_version: 2,
+    contract: annotations.contract ?? enrichmentContract(annotations.source ?? "dossier-enrich:agent"),
     prerequisites: annotations.prerequisites ?? [],
     checkpoints: annotations.checkpoints ?? [],
     analogies: annotations.analogies ?? [],

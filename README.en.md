@@ -60,6 +60,7 @@ You and your AI agent generate dozens of markdown files: specs, ADRs, design doc
 - **Auto content-mode detection** — tutorial / concept / reference / course (heuristic, 0 token).
 - **Single-file HTML** — share by double-click; works offline; no CDN.
 - **Multi-doc dossier view** — clusters related specs/changes/reviews by `implements:` / `reviews:` frontmatter or filename stem; emits a per-dossier cover with an inline SVG relation graph plus a project-wide index. Each member's rendered HTML carries a back-link to its dossier.
+- **AI enrichment contract** — annotations emitted by `enrich` carry v0.4 contract metadata; `contract` and `render --annotations` validate that section references still exist in the source markdown before HTML is written.
 - **Spec semantic blocks** — risk register, decision grid, principle grid, scope boundary, concept glossary, structure map — auto-rendered from markdown without authoring HTML.
 - **Inline SVG diagrams** — ASCII layered-box art → real SVG with arrows.
 - **Pull quotes, section covers, comparison cards** — visual rhythm so 1000-line specs don't read as a wall.
@@ -84,6 +85,14 @@ pnpm dev render docs/specs/my-spec.md
 Open the generated `.html` in any browser. Click the reader-mode toggle at the top to switch tiers.
 
 `xdossier cover docs/` opens a project index at `docs/.dossier/out/index.html` and a per-dossier cover at `docs/.dossier/out/<dossier-id>/index.html`.
+
+Validate AI annotations before rendering them:
+
+```bash
+xdossier enrich docs/specs/my-spec.md --out docs/specs/my-spec.annotations.json
+xdossier contract docs/specs/my-spec.md --annotations docs/specs/my-spec.annotations.json
+xdossier render docs/specs/my-spec.md --annotations docs/specs/my-spec.annotations.json
+```
 
 ## Auto-render in Claude Code
 

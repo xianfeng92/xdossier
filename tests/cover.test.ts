@@ -13,6 +13,11 @@ import { extractOpenQuestions } from "../src/cover/extract.js";
 import { parseFrontmatter } from "../src/parse/frontmatter.js";
 import type { CoverArtifact, CoverEdge, DossierCoverView } from "../src/cover/types.js";
 
+function duplicateIds(html: string): string[] {
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+  return ids.filter((id, index) => ids.indexOf(id) !== index);
+}
+
 async function makeWorkspace(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "dossier-cover-"));
   await writeFile(join(root, "README.md"), "# Fixture\n", "utf8");
@@ -1036,6 +1041,80 @@ describe("Cover-1 rendering", () => {
     expect(html).toMatch(/<summary>Evidence/);
     expect(html).not.toMatch(/<script src=|<link[^>]+href="http|@import|url\(http/);
   });
+
+  test("renders a local search index for artifacts, decisions, and open questions", async () => {
+    const root = await makeWorkspace();
+    const artifacts = await scanArtifacts(root);
+    const edges = buildCoverEdges(artifacts);
+    const view = buildCoverView({ workspaceRoot: root, artifacts, edges });
+
+    const html = renderCoverHtml(view);
+
+    expect(html).toMatch(/<section class="cover-search" id="cover-search">/);
+    expect(html).toMatch(/<input type="search" class="cover-search-input" data-cover-search/);
+    expect(html).toMatch(/<script type="application\/json" id="dossier-search-index">/);
+    expect(html).toContain("MVP-0 Spec");
+    expect(html).toContain("Decision: Use Node.js &gt;=20");
+    expect(html).toContain("Decide whether share mode should warn");
+    expect(html).toMatch(/data-cover-search-results/);
+    expect(html).toMatch(/function mountCoverSearch/);
+  });
+
+  test("cover output keeps local-only scripts and accessible search landmarks", async () => {
+    const root = await makeWorkspace();
+    const artifacts = await scanArtifacts(root);
+    const edges = buildCoverEdges(artifacts);
+    const view = buildCoverView({ workspaceRoot: root, artifacts, edges });
+
+    const html = renderCoverHtml(view);
+
+    expect(html.length).toBeLessThan(120_000);
+    expect(duplicateIds(html)).toEqual([]);
+    expect(html).toMatch(/<search role="search" aria-label="Search this dossier">/);
+    expect(html).toMatch(/<script type="application\/json" id="dossier-search-index">/);
+    expect(html).toMatch(/<script>\(function \(\) \{/);
+    expect(html).not.toMatch(/<script src=|<link[^>]+href="http|@import|url\(http/);
+  });
+
+  test("renders Review Loop status from scanned review documents", async () => {
+    const root = await makeWorkspace();
+    await writeFile(
+      join(root, "docs/reviews/2026-05-22-review-loop-followup.md"),
+      `---
+title: Review Loop Followup
+kind: review
+status: needs-rework
+reviews_target:
+  - docs/specs/2026-05-18-dossier-mvp-0-spec.md
+verdict: NEEDS_REWORK
+---
+
+# Review Loop Followup
+
+## Findings
+
+| ID | Severity | One-line | Status |
+|---|---|---|---|
+| F1 | P1 | Cover must surface review blockers. | open |
+| F2 | P2 | Packet copy should mention verification. | fixed |
+`,
+      "utf8",
+    );
+    const artifacts = await scanArtifacts(root);
+    const edges = buildCoverEdges(artifacts);
+    const view = buildCoverView({ workspaceRoot: root, artifacts, edges });
+
+    const html = renderCoverHtml(view);
+
+    expect(html).toMatch(/<section class="review-loop" id="review-loop">/);
+    expect(html).toContain("Review Loop");
+    expect(html).toContain("Open findings");
+    expect(html).toContain("Blockers");
+    expect(html).toContain("Cover must surface review blockers.");
+    expect(html).toContain("NEEDS_REWORK");
+    expect(html).toContain("Packet copy should mention verification.");
+    expect(html).not.toMatch(/<script src=|<link[^>]+href="http|@import|url\(http/);
+  });
 });
 
 describe("Cover-1 relation graph", () => {
@@ -1464,7 +1543,7 @@ implements: ["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]
     expect(renderedMvp).toMatch(/<span class="badge ok">implemented<\/span>/);
     expect(renderedMvp).toMatch(/<span class="stat-label">Updated<\/span><span class="stat-value">2026-05-18<\/span>/);
     expect(renderedMvp).toMatch(/<span class="stat-label">Implements<\/span><span class="stat-value">1<\/span>/);
-    expect(renderedMvp).toMatch(/<details class="frontmatter-details compact-relations">/);
+    expect(renderedMvp).toMatch(/<details class="frontmatter-details compact-relations"[^>]*>/);
     expect(renderedMvp).toMatch(/<div id="lens-overview" class="semantic-overview" data-annotation="document-overview">/);
     expect(renderedMvp).toMatch(/<div id="lens-structure-map-1" class="semantic-block structure-map-lens" data-annotation="semantic-structure-map">/);
     expect(renderedMvp).toMatch(/<nav id="source-section-map" class="source-section-map"/);

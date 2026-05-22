@@ -272,6 +272,13 @@ export type AnalogyAnnotation = {
   analogy: string;
 };
 
+export type EnrichmentContractAnnotation = {
+  name: "dossier-ai-enrichment";
+  version: "0.4";
+  producer: string;
+  created_at?: string;
+};
+
 export type RelationshipMapItemAnnotation = {
   from: string;
   relation: string;
@@ -340,6 +347,7 @@ export type SemanticBlockAnnotation =
 export type RenderAnnotations = {
   schema_version: 1 | 2;
   source?: string;
+  contract?: EnrichmentContractAnnotation;
   document_overview?: DocumentOverviewAnnotation;
   reading_path?: ReadingPathAnnotation[];
   semantic_blocks?: SemanticBlockAnnotation[];

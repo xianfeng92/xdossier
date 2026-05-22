@@ -97,6 +97,7 @@ export function parseAnnotationsJson(
   });
 
   const documentOverview = parseDocumentOverview(parsed, sourceLabel);
+  const contract = parseEnrichmentContract(parsed, sourceLabel);
   const readingPath = parseReadingPath(parsed, sourceLabel);
   const semanticBlocks = parseSemanticBlocks(parsed, sourceLabel);
   const contentMode = parseContentMode(parsed, sourceLabel);
@@ -107,6 +108,7 @@ export function parseAnnotationsJson(
   return {
     schema_version: schemaVersion,
     source: stringField(parsed, "source") || undefined,
+    ...(contract ? { contract } : {}),
     ...(documentOverview ? { document_overview: documentOverview } : {}),
     ...(readingPath ? { reading_path: readingPath } : {}),
     ...(semanticBlocks ? { semantic_blocks: semanticBlocks } : {}),
@@ -115,6 +117,37 @@ export function parseAnnotationsJson(
     ...(prerequisites ? { prerequisites } : {}),
     ...(checkpoints ? { checkpoints } : {}),
     ...(analogies ? { analogies } : {}),
+  };
+}
+
+function parseEnrichmentContract(
+  parsed: Record<string, unknown>,
+  sourceLabel: string,
+): RenderAnnotations["contract"] | undefined {
+  const raw = parsed.contract;
+  if (raw === undefined) return undefined;
+  if (!isRecord(raw)) throw new Error(`${sourceLabel}: contract must be an object`);
+  const name = stringField(raw, "name").trim();
+  const version = stringField(raw, "version").trim();
+  const producer = stringField(raw, "producer").trim();
+  const createdAt = stringField(raw, "created_at").trim();
+  if (name !== "dossier-ai-enrichment") {
+    throw new Error(`${sourceLabel}: contract.name must be dossier-ai-enrichment`);
+  }
+  if (version !== "0.4") {
+    throw new Error(`${sourceLabel}: contract.version must be 0.4`);
+  }
+  if (!producer) {
+    throw new Error(`${sourceLabel}: contract.producer must be a non-empty string`);
+  }
+  if (createdAt && !/^\d{4}-\d{2}-\d{2}$/.test(createdAt)) {
+    throw new Error(`${sourceLabel}: contract.created_at must be YYYY-MM-DD`);
+  }
+  return {
+    name: "dossier-ai-enrichment",
+    version: "0.4",
+    producer,
+    ...(createdAt ? { created_at: createdAt } : {}),
   };
 }
 

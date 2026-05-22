@@ -25,6 +25,23 @@ describe("enrich command", () => {
     });
   });
 
+  test("CLI parses v0.4 contract validation options", () => {
+    expect(parseArgv(["contract", "doc.md", "--annotations", "doc.annotations.json"])).toMatchObject({
+      command: "contract",
+      input: "doc.md",
+      annotations: "doc.annotations.json",
+      printSchema: false,
+    });
+    expect(parseArgv(["contract", "--print-schema"])).toMatchObject({
+      command: "contract",
+      printSchema: true,
+    });
+    expect(parseArgv(["contract", "doc.md"])).toMatchObject({
+      command: "error",
+      message: "contract: --annotations requires a value",
+    });
+  });
+
   test("CLI enrich summary reports semantic lens fields, not only section summaries", () => {
     expect(formatEnrichSummary({
       schema_version: 1,
@@ -219,6 +236,38 @@ This section explains the key reader promise. It has a second sentence.
         },
       ],
     });
+  });
+
+  test("parseAnnotationsJson accepts v0.4 enrichment contract metadata", () => {
+    const annotations = parseAnnotationsJson(JSON.stringify({
+      schema_version: 2,
+      contract: {
+        name: "dossier-ai-enrichment",
+        version: "0.4",
+        producer: "dossier-enrich:codex",
+        created_at: "2026-05-23",
+      },
+      section_summaries: [],
+    }));
+
+    expect(annotations.contract).toEqual({
+      name: "dossier-ai-enrichment",
+      version: "0.4",
+      producer: "dossier-enrich:codex",
+      created_at: "2026-05-23",
+    });
+  });
+
+  test("scaffold emits v0.4 enrichment contract metadata", async () => {
+    const { createSectionSummaryScaffold } = await import("../src/enrich/section-summaries.js");
+    const annotations = createSectionSummaryScaffold("# Contract\n\n## Context\n\nBody.");
+
+    expect(annotations.contract).toMatchObject({
+      name: "dossier-ai-enrichment",
+      version: "0.4",
+      producer: "dossier-enrich:section-summary-scaffold",
+    });
+    expect(annotations.contract?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   test("deterministic scaffold produces a semantic lens without a local agent", async () => {
@@ -892,6 +941,44 @@ This document explains why the references matter.
     expect(html).toMatch(/<div id="lens-reference-list-2" class="semantic-block reference-list" data-annotation="semantic-reference-list">/);
     expect(html).toMatch(/<a id="lens-reference-list-2-item-1" class="reference-card external-ref" href="https:\/\/example\.com\/gemma">[\s\S]*?<h3>Google Gemma<\/h3>[\s\S]*?<span class="reference-href">example\.com<\/span>/);
     expect(html).toMatch(/<section id="s2">[\s\S]*?<a class="section-semantic-chip section-semantic-reference" href="#lens-reference-list-2">References<\/a>/);
+  });
+
+  test("rendering blocks unsafe annotation reference hrefs", async () => {
+    const { render } = await import("../src/render.js");
+    const md = `# Unsafe Annotation Links
+
+## References
+
+Reference text.
+`;
+
+    const html = await render({
+      markdown: md,
+      skillId: "render-spec",
+      withToc: true,
+      annotations: {
+        schema_version: 2,
+        section_summaries: [],
+        semantic_blocks: [
+          {
+            type: "reference_list",
+            title: "References",
+            source_section_id: "s1",
+            items: [
+              {
+                label: "Unsafe",
+                href: "javascript:alert(1)",
+                description: "Should not become an active script URL.",
+              },
+            ],
+          },
+        ],
+      } as any,
+    });
+
+    expect(html).not.toMatch(/href="javascript:/i);
+    expect(html).toMatch(/<a id="lens-reference-list-1-item-1" class="reference-card" href="#blocked-url">/);
+    expect(html).toContain('<span class="reference-href">blocked unsafe URL</span>');
   });
 
   test("deterministic scaffold creates a reference list from opportunity links with lessons", async () => {
@@ -2424,6 +2511,8 @@ Use \`~/.claude/projects/<encoded>/*.jsonl\` to locate session traces.
         expect(command).toBe("claude");
         expect(args).toContain("-p");
         expect(options.input).toContain('"document_overview"');
+        expect(options.input).toContain('"contract"');
+        expect(options.input).toContain('"version": "0.4"');
         expect(options.input).toContain('"semantic_blocks"');
         expect(options.input).toContain('"structure_map"');
         expect(options.input).toContain('"evidence_grid"');
@@ -2447,6 +2536,11 @@ Use \`~/.claude/projects/<encoded>/*.jsonl\` to locate session traces.
     expect(annotations).toEqual({
       schema_version: 2,
       source: "dossier-enrich:claude",
+      contract: expect.objectContaining({
+        name: "dossier-ai-enrichment",
+        version: "0.4",
+        producer: "dossier-enrich:claude",
+      }),
       document_overview: {
         summary: "The document explains the first section.",
         reader_goal: "Know where to start.",
@@ -2573,6 +2667,7 @@ Use \`~/.claude/projects/<encoded>/*.jsonl\` to locate session traces.
         expect(command).toBe("codex");
         expect(args).toContain("exec");
         expect(options.input).toContain('"schema_version": 2');
+        expect(options.input).toContain('"contract"');
         expect(options.input).toContain('"prerequisites"');
         expect(options.input).toContain('"checkpoints"');
         expect(options.input).toContain('"analogies"');

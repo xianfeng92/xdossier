@@ -13,6 +13,11 @@ const visionSpecPath = resolve(
   "../docs/specs/2026-05-17-dossier-vision-spec.md",
 );
 
+function duplicateIds(html: string): string[] {
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+  return ids.filter((id, index) => ids.indexOf(id) !== index);
+}
+
 describe("MVP-0 end-to-end: vision spec → HTML", () => {
   test("renders structurally correct semantic HTML within bounded size", async () => {
     const md = await readFile(visionSpecPath, "utf8");
@@ -56,7 +61,7 @@ describe("MVP-0 end-to-end: vision spec → HTML", () => {
     expect(html).toMatch(/<span class="stat-label">负责人<\/span><span class="stat-value">claude<\/span>/);
     expect(html).toMatch(/<span class="stat-label">创建<\/span><span class="stat-value">2026-05-17<\/span>/);
     expect(html).toMatch(/<span class="stat-label">评审<\/span><span class="stat-value">1<\/span>/);
-    expect(html).toMatch(/<details class="frontmatter-details compact-relations">\s*<summary>1 个评审<\/summary>/);
+    expect(html).toMatch(/<details class="frontmatter-details compact-relations"[^>]*>\s*<summary>1 个评审<\/summary>/);
     expect(html).toMatch(/<button class="toc-toggle" type="button" aria-label="打开或关闭目录"/);
     expect(html).toMatch(/<p class="toc-header">文档 · 18 节<\/p>/);
     expect(html).toMatch(/btn\.setAttribute\("aria-label", "复制代码"\)/);
@@ -131,6 +136,42 @@ describe("MVP-0 end-to-end: vision spec → HTML", () => {
     expect(html).not.toMatch(/<script src=/);
     expect(html).not.toMatch(/<link rel="stylesheet" href=/);
     expect(html).not.toMatch(/<img src="http/);
+  });
+
+  test("escapes raw HTML blocks instead of passing active markup through", async () => {
+    const md = `# Unsafe HTML
+
+## Payloads
+
+<script>alert("xss")</script>
+<iframe src="https://example.com"></iframe>
+<svg onload="alert(1)"><circle /></svg>
+`;
+
+    const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
+
+    expect(html).not.toMatch(/<script>alert|<iframe\b|<svg\s+onload|<[^>]+\sonload=/i);
+    expect(html).toContain("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
+    expect(html).toContain("&lt;iframe src=&quot;https://example.com&quot;&gt;&lt;/iframe&gt;");
+    expect(html).toContain("&lt;svg onload=&quot;alert(1)&quot;&gt;&lt;circle /&gt;&lt;/svg&gt;");
+  });
+
+  test("blocks unsafe markdown link protocols while preserving safe links", async () => {
+    const md = `# Link Safety
+
+## Links
+
+[safe](https://example.com) [relative](docs/spec.md) [anchor](#s1)
+[js](javascript:alert(1)) [data](data:text/html,<script>alert(1)</script>)
+`;
+
+    const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
+
+    expect(html).toContain('<a href="https://example.com" class="external-ref">safe</a>');
+    expect(html).toContain('<a href="docs/spec.md">relative</a>');
+    expect(html).toContain('<a href="#s1">anchor</a>');
+    expect(html).not.toMatch(/href="javascript:|href="data:/i);
+    expect((html.match(/href="#blocked-url"/g) ?? []).length).toBe(2);
   });
 
   test("renders the reader toggle and default pedagogy data attributes", async () => {
@@ -533,7 +574,7 @@ Body.
 `;
     const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
 
-    expect(html).toMatch(/<details class="frontmatter-details compact-relations">\s*<summary>1 reviews<\/summary>/);
+    expect(html).toMatch(/<details class="frontmatter-details compact-relations"[^>]*>\s*<summary>1 reviews<\/summary>/);
     expect(html).not.toMatch(/Frontmatter relations|Explicit artifact relationships declared in frontmatter/);
     expect(html).not.toMatch(/data-annotation="semantic-relationship-map"[\s\S]*?docs\/reviews\/one-review\.md/);
   });
@@ -566,7 +607,7 @@ The design chooses deterministic rendering with optional annotations.
     expect(sourceMapHtml).not.toMatch(/source-section-lane-route|Reading route/);
     expect(sourceMapHtml).toMatch(/source-section-lane-model/);
     expect(sourceMapHtml).toMatch(/source-section-lane-judgment/);
-    expect(sourceMapHtml).toMatch(/<details class="source-section-role-summary" aria-label="Semantic roles">[\s\S]*?<summary>2 semantic roles<\/summary>[\s\S]*?Path: Context[\s\S]*?Model: Context/);
+    expect(sourceMapHtml).toMatch(/<details class="source-section-role-summary" aria-label="Semantic roles"[^>]*>[\s\S]*?<summary>2 semantic roles<\/summary>[\s\S]*?Path: Context[\s\S]*?Model: Context/);
     expect(sourceMapHtml).not.toMatch(/<span class="source-section-semantic-roles"/);
   });
 
@@ -604,7 +645,7 @@ Body.
 
     expect(html).toMatch(/<div id="lens-decision-grid-1" class="semantic-block decision-grid" data-annotation="semantic-decision-grid">/);
     expect(html).toMatch(/<div class="decision-grid-cards">[\s\S]*?lens-decision-grid-1-item-1[\s\S]*?lens-decision-grid-1-item-2[\s\S]*?lens-decision-grid-1-item-3/);
-    expect(html).toMatch(/<details class="semantic-block-extra">[\s\S]*?<summary>Show 1 more item<\/summary>[\s\S]*?lens-decision-grid-1-item-4/);
+    expect(html).toMatch(/<details class="semantic-block-extra"[^>]*>[\s\S]*?<summary>Show 1 more item<\/summary>[\s\S]*?lens-decision-grid-1-item-4/);
   });
 
   test("explicit annotations replace the default scaffold lens", async () => {
@@ -756,14 +797,14 @@ Body text.
     expect(html).toMatch(
       /<div class="executive-brief" aria-label="文档摘要">[\s\S]*?<p class="executive-brief-label">摘要<\/p>[\s\S]*?Turn AI output into a readable dossier\.[\s\S]*?<\/div>/,
     );
-    expect(html).toMatch(/<details class="document-notes">\s*<summary>2 条文档提示<\/summary>/);
+    expect(html).toMatch(/<details class="document-notes"[^>]*>\s*<summary>2 条文档提示<\/summary>/);
     expect(html).toMatch(/<div class="document-notes-body">[\s\S]*?constitution-level note[\s\S]*?changed after review/);
     expect(html).not.toMatch(/<div class="tagline">/);
     expect(html).toMatch(/<section id="s1">[\s\S]*Supporting sentence stays in the body\./);
 
     const briefIndex = html.indexOf('<div class="executive-brief" aria-label="文档摘要">');
     const statIndex = html.indexOf('<div class="stat-row">');
-    const notesIndex = html.indexOf('<details class="document-notes">');
+    const notesIndex = html.indexOf('<details class="document-notes"');
     const firstSectionIndex = html.indexOf("<section id=\"s1\"");
     expect(briefIndex).toBeGreaterThan(0);
     expect(statIndex).toBeGreaterThan(0);
@@ -829,7 +870,7 @@ reviews:
     expect(html).toMatch(/<span class="stat-label">Reviews<\/span><span class="stat-value">1<\/span>/);
 
     // relation details: collapsed by default, summary describes counts
-    expect(html).toMatch(/<details class="frontmatter-details">\s*<summary>3 implements · 1 reviews<\/summary>/);
+    expect(html).toMatch(/<details class="frontmatter-details"[^>]*>\s*<summary>3 implements · 1 reviews<\/summary>/);
 
     // every path is rendered as <code> inside the relation list
     expect(html).toMatch(/<ul class="relation-list">.*<li><code>docs\/changes\/a-impl-notes\.md<\/code><\/li>/);
@@ -860,7 +901,7 @@ Body.
 `;
     const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
 
-    expect(html).toMatch(/<details class="frontmatter-details compact-relations">\s*<summary>1 implements · 1 reviews<\/summary>/);
+    expect(html).toMatch(/<details class="frontmatter-details compact-relations"[^>]*>\s*<summary>1 implements · 1 reviews<\/summary>/);
     expect(html).toMatch(/<div id="lens-structure-map-1" class="semantic-block structure-map-lens" data-annotation="semantic-structure-map">/);
     expect(html).toMatch(/<div id="lens-relationship-map-2" class="semantic-block relationship-map-lens" data-annotation="semantic-relationship-map">/);
     expect(html).toMatch(/<p class="semantic-label">Relationship Map<\/p>[\s\S]*?<h2>Frontmatter relations<\/h2>/);
@@ -895,7 +936,7 @@ updated: 2026-05-19
     expect(html).not.toMatch(/<p class="eyebrow">/);
 
     // no relation details when no implements/reviews
-    expect(html).not.toMatch(/<details class="frontmatter-details">/);
+    expect(html).not.toMatch(/<details class="frontmatter-details"[^>]*>/);
   });
 });
 
@@ -1108,7 +1149,7 @@ Data work.
       /<section class="source-section-lane source-section-lane-judgment">[\s\S]*?<p class="source-section-lane-title">Judgment and checks<\/p>[\s\S]*?<a class="source-section-lane-link" href="#s1">[\s\S]*?<span class="source-section-lane-role">Scope<\/span>[\s\S]*?<a class="source-section-lane-link" href="#s2">[\s\S]*?<span class="source-section-lane-role">Decisions<\/span>/,
     );
     expect(sourceMapHtml).toMatch(
-      /<article class="source-section-map-card">[\s\S]*?<a class="source-section-map-main" href="#s2">[\s\S]*?<\/a>[\s\S]*?<details class="source-section-role-summary" aria-label="Semantic roles">[\s\S]*?<summary>7 semantic roles<\/summary>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">Path: Main path<\/a>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-roadmap" href="#lens-roadmap-1">Roadmap<\/a>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-2">Decisions<\/a>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-2-item-1">Decision: Default base<\/a>/,
+      /<article class="source-section-map-card">[\s\S]*?<a class="source-section-map-main" href="#s2">[\s\S]*?<\/a>[\s\S]*?<details class="source-section-role-summary" aria-label="Semantic roles"[^>]*>[\s\S]*?<summary>7 semantic roles<\/summary>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-path" href="#lens-overview">Path: Main path<\/a>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-roadmap" href="#lens-roadmap-1">Roadmap<\/a>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-2">Decisions<\/a>[\s\S]*?<a class="source-section-role-chip section-semantic-chip section-semantic-decision" href="#lens-decision-grid-2-item-1">Decision: Default base<\/a>/,
     );
     expect(sourceMapHtml).not.toMatch(/source-section-semantic-roles|source-section-role-extra/);
     expect(sourceMapHtml).not.toMatch(/data-semantic-href/);
@@ -1193,7 +1234,7 @@ The source prose starts here.
     expect(html).toMatch(/<header class="frontmatter artifact-header" data-semantic-lens="present">/);
     expect(html).toMatch(/<div class="artifact-title-row">[\s\S]*?<h1>Gemma Roadmap<\/h1>[\s\S]*?<div class="artifact-meta-rail">/);
     expect(html).toMatch(/<span class="badge ok">implemented<\/span>/);
-    expect(html).toMatch(/<details class="frontmatter-details compact-relations">/);
+    expect(html).toMatch(/<details class="frontmatter-details compact-relations"[^>]*>/);
 
     const headerEnd = html.indexOf("</header>");
     const overviewIndex = html.indexOf('<div id="lens-overview" class="semantic-overview" data-annotation="document-overview">');
@@ -1821,7 +1862,7 @@ More body text.
     expect((visibleKeyPoints.match(/<li>/g) ?? []).length).toBe(2);
     expect(html).toMatch(/<li>What changes &lt;next&gt;<\/li>/);
     expect(html).toMatch(
-      /<details class="section-key-points-extra" data-annotation="section-key-points-extra">\s*<summary>还有 1 条要点<\/summary>[\s\S]*?<li>Too much detail<\/li>[\s\S]*?<\/details>/,
+      /<details class="section-key-points-extra" data-annotation="section-key-points-extra"[^>]*>\s*<summary>还有 1 条要点<\/summary>[\s\S]*?<li>Too much detail<\/li>[\s\S]*?<\/details>/,
     );
     expect(html).toMatch(
       /<p class="section-reader-hint section-reader-chip" data-annotation="section-reader-hint" aria-label="Read: Skim this before implementation\."><span class="section-reader-hint-label" aria-hidden="true">READ<\/span><span>Skim this before implementation\.<\/span><\/p>/,
@@ -1917,7 +1958,7 @@ More body text.
     });
 
     expect(html).toMatch(
-      /<details class="section-brief section-brief-collapsible" data-annotation="section-brief">\s*<summary>本节摘要<\/summary>[\s\S]*?Reference readers can expand this when needed\.[\s\S]*?<\/details>/,
+      /<details class="section-brief section-brief-collapsible" data-annotation="section-brief"[^>]*>\s*<summary>本节摘要<\/summary>[\s\S]*?Reference readers can expand this when needed\.[\s\S]*?<\/details>/,
     );
   });
 });
@@ -2011,6 +2052,68 @@ describe("page-level HTML interactions", () => {
     // Code copy injection
     expect(html).toMatch(/code-copy/);
     expect(html).toMatch(/navigator\.clipboard/);
+  });
+
+  test("single-document output includes local search and opens folded hash targets", async () => {
+    const md = `---
+title: Findability
+---
+
+# Findability
+
+## Appendix
+
+Details can be folded.
+`;
+    const html = await render({
+      markdown: md,
+      skillId: "render-spec",
+      withToc: true,
+      annotations: {
+        schema_version: 2,
+        section_summaries: [
+          {
+            section_id: "s1",
+            summary: "Appendix details.",
+            key_points: ["first", "second", "hidden searchable point"],
+          },
+        ],
+      },
+    });
+
+    expect(html).toMatch(/<search class="doc-search" role="search"/);
+    expect(html).toMatch(/<input type="search" class="doc-search-input"/);
+    expect(html).toMatch(/data-doc-search-results/);
+    expect(html).toMatch(/data-searchable-collapse/);
+    expect(html).toMatch(/beforematch/);
+    expect(html).toMatch(/openAncestorDetails/);
+    expect(html).toMatch(/closest\("details"\)/);
+  });
+
+  test("single-document output keeps a lightweight accessibility and performance snapshot", async () => {
+    const md = `---
+title: Snapshot
+---
+
+# Snapshot
+
+## Trust
+
+[safe](https://example.com) and [unsafe](javascript:alert(1)).
+
+<iframe src="https://example.com"></iframe>
+`;
+    const html = await render({ markdown: md, skillId: "render-spec", withToc: true });
+
+    expect(html.length).toBeLessThan(90_000);
+    expect(duplicateIds(html)).toEqual([]);
+    expect(html).toMatch(/<search class="doc-search" role="search" aria-label="Search this document">/);
+    expect(html).toMatch(/<div class="reading-progress" aria-hidden="true">/);
+    expect(html).toMatch(/<button class="toc-toggle" type="button" aria-label="Toggle table of contents"/);
+    expect(html).not.toMatch(/<script src=|<link[^>]+href="http|@import|url\(http/);
+    expect(html).not.toMatch(/href="javascript:|<iframe\b/);
+    expect(html).toMatch(/href="#blocked-url"/);
+    expect(html).toMatch(/&lt;iframe src=&quot;https:\/\/example\.com&quot;&gt;&lt;\/iframe&gt;/);
   });
 
   test("keeps artifact header metadata below the title so long titles are not squeezed", async () => {

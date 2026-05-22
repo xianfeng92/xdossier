@@ -94,6 +94,14 @@ export type ReadingPath = {
   steps: ArtifactRef[];
 };
 
+export type {
+  ReviewDocumentSummary,
+  ReviewFinding,
+  ReviewFindingSeverity,
+  ReviewFindingStatus,
+  ReviewLoopSummary,
+} from "../review/types.js";
+
 export type DossierCoverView = {
   dossier: {
     id: string;
@@ -113,6 +121,7 @@ export type DossierCoverView = {
   edges: CoverEdge[];
   decisions: CoverDecision[];
   open_questions: CoverOpenQuestion[];
+  review_loop?: import("../review/types.js").ReviewLoopSummary;
   reading_paths: ReadingPath[];
   evidence: CoverEvidence[];
   graph_disabled?: boolean;

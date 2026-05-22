@@ -46,16 +46,31 @@
     }
   };
 
+  const openAncestorDetails = (target) => {
+    if (!target || typeof target.closest !== "function") return;
+    let details = target.closest("details");
+    while (details) {
+      details.open = true;
+      const parent = details.parentElement;
+      details = parent && typeof parent.closest === "function" ? parent.closest("details") : null;
+    }
+  };
+
   const syncHashTarget = () => {
     const target = targetFromHash();
     if (!target) return;
     isSyncingHashTarget = true;
+    openAncestorDetails(target);
     target.scrollIntoView({ block: "start", inline: "nearest" });
     requestAnimationFrame(() => {
       isSyncingHashTarget = false;
       onScroll();
     });
   };
+
+  document.addEventListener("beforematch", (e) => {
+    openAncestorDetails(e.target);
+  });
 
   const onScroll = () => {
     let activeId = sectionEls[0]?.id ?? "";
@@ -138,6 +153,81 @@
   tocAside?.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeToc));
   window.addEventListener("resize", syncTocAccessibility, { passive: true });
   syncTocAccessibility();
+
+  // Local section search
+  const docSearchInput = document.querySelector("[data-doc-search]");
+  const docSearchResults = document.querySelector("[data-doc-search-results]");
+  const normalizeSearchText = (text) => (text || "").toLowerCase().replace(/\s+/g, " ").trim();
+  const searchSourceEls = headings.filter((el, index, list) => el.id && list.findIndex((candidate) => candidate.id === el.id) === index);
+  const searchItems = searchSourceEls.map((el) => {
+    const titleEl = el.matches("h1,h2,h3") ? el : el.querySelector("h1,h2,h3");
+    const title = (titleEl?.textContent || el.getAttribute("aria-label") || el.id).replace(/\s+/g, " ").trim();
+    const text = (el.textContent || title).replace(/\s+/g, " ").trim();
+    return {
+      id: el.id,
+      title,
+      text,
+      haystack: normalizeSearchText(`${title} ${text}`),
+    };
+  }).filter((item) => item.id && item.title);
+
+  const clearDocSearch = () => {
+    if (!docSearchResults) return;
+    docSearchResults.hidden = true;
+    docSearchResults.replaceChildren();
+  };
+
+  const searchSnippet = (item, normalizedQuery) => {
+    const normalizedText = normalizeSearchText(item.text);
+    const hitIndex = normalizedText.indexOf(normalizedQuery);
+    if (hitIndex < 0) return item.text.slice(0, 120);
+    const start = Math.max(0, hitIndex - 42);
+    const end = Math.min(item.text.length, hitIndex + normalizedQuery.length + 78);
+    return `${start > 0 ? "... " : ""}${item.text.slice(start, end)}${end < item.text.length ? " ..." : ""}`;
+  };
+
+  const renderDocSearch = () => {
+    if (!docSearchInput || !docSearchResults) return;
+    const query = docSearchInput.value.trim();
+    const normalizedQuery = normalizeSearchText(query);
+    if (normalizedQuery.length < 2) {
+      clearDocSearch();
+      return;
+    }
+    const matches = searchItems
+      .filter((item) => item.haystack.includes(normalizedQuery))
+      .slice(0, 8);
+    docSearchResults.replaceChildren();
+    if (matches.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "doc-search-empty";
+      empty.textContent = "No matches";
+      docSearchResults.append(empty);
+      docSearchResults.hidden = false;
+      return;
+    }
+    matches.forEach((item) => {
+      const li = document.createElement("li");
+      const link = document.createElement("a");
+      const title = document.createElement("span");
+      const snippet = document.createElement("small");
+      link.className = "doc-search-result";
+      link.href = `#${encodeURIComponent(item.id)}`;
+      title.textContent = item.title;
+      snippet.textContent = searchSnippet(item, normalizedQuery);
+      link.append(title, snippet);
+      link.addEventListener("click", () => {
+        const target = document.getElementById(item.id);
+        if (target) openAncestorDetails(target);
+        closeToc();
+      });
+      li.append(link);
+      docSearchResults.append(li);
+    });
+    docSearchResults.hidden = false;
+  };
+
+  docSearchInput?.addEventListener("input", renderDocSearch);
 
   // Code copy buttons
   const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';

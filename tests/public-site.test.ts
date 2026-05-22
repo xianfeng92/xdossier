@@ -17,6 +17,14 @@ describe("public xdossier site", () => {
     expect(packageJson.scripts.prepare).toBe("npm run build");
   });
 
+  test("pnpm build-script approval config is concrete for non-interactive verification", async () => {
+    const workspace = await readFile(resolve(repoRoot, "pnpm-workspace.yaml"), "utf8");
+
+    expect(workspace).toContain("allowBuilds:");
+    expect(workspace).toContain("esbuild: true");
+    expect(workspace).not.toContain("set this to true or false");
+  });
+
   test("mobile landing content can wrap instead of forcing horizontal scroll", async () => {
     const html = await readFile(resolve(repoRoot, "docs/index.html"), "utf8");
 
