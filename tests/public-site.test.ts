@@ -5,15 +5,15 @@ import { resolve } from "node:path";
 const repoRoot = resolve(import.meta.dirname, "..");
 
 describe("public xdossier site", () => {
-  test("does not advertise npm install commands before the package is published", async () => {
+  test("advertises npm install commands now that the package is published", async () => {
     const html = await readFile(resolve(repoRoot, "docs/index.html"), "utf8");
     const readme = await readFile(resolve(repoRoot, "README.md"), "utf8");
     const packageJson = JSON.parse(await readFile(resolve(repoRoot, "package.json"), "utf8"));
 
-    expect(html).not.toMatch(/\bnpx\s+xdossier\b|\bnpm\s+i\s+-g\s+xdossier\b/);
-    expect(readme).not.toMatch(/\bnpx\s+xdossier(?:@latest)?\b|\bnpm\s+i\s+-g\s+xdossier\b/);
-    expect(html).toContain("npx github:xianfeng92/xdossier");
-    expect(readme).toContain("npx github:xianfeng92/xdossier render docs/specs/my-spec.md");
+    expect(html).toMatch(/npm\s+(?:install|i)\s+-g\s+xdossier/);
+    expect(readme).toMatch(/npm\s+install\s+-g\s+xdossier/);
+    expect(html).not.toMatch(/github:xianfeng92\/xdossier/);
+    expect(readme).not.toMatch(/npx\s+github:xianfeng92\/xdossier/);
     expect(packageJson.scripts.prepare).toBe("npm run build");
   });
 
