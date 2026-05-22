@@ -178,6 +178,12 @@ function syntheticView(input: {
   };
 }
 
+function viewBoxWidth(svg: string): number {
+  const match = svg.match(/viewBox="0 0 ([0-9.]+) [0-9.]+"/);
+  if (!match) throw new Error(`missing SVG viewBox in ${svg.slice(0, 120)}`);
+  return Number(match[1]);
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -489,6 +495,39 @@ updated: 2026-05-20
     expect(html).toMatch(/No spec roots detected/);
     expect(html).toMatch(/Orphans/);
     expect(html).toMatch(/Orphan Change/);
+  });
+
+  test("xdossier cover exits 64 with a first-run hint when docs scan dirs are missing", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-first-run-missing-docs-"));
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", root],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(64);
+    expect(result.stderr).toContain("expects markdown under docs/specs");
+    expect(result.stderr).toContain(`Found none under: ${root}`);
+    expect(result.stderr).toContain("xdossier cover <path-to-your-docs-root>");
+    expect(existsSync(join(root, ".dossier/out/index.html"))).toBe(false);
+  });
+
+  test("xdossier cover writes an empty-state project index when docs scan dirs exist but contain no markdown", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-first-run-empty-docs-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", root],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const html = await readFile(join(root, ".dossier/out/index.html"), "utf8");
+    expect(html).toContain("No documents found under docs/specs|changes|reviews. Create a spec and re-run.");
   });
 });
 
@@ -868,6 +907,111 @@ updated: 2026-05-22
     expect(render.status, render.stderr).toBe(0);
     expect(existsSync(join(root, "docs/specs/2026-05-22-phase-e-spec.html"))).toBe(true);
   });
+
+  test("xdossier render --verbose warns when auto-cover-refresh fails", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-e-refresh-warning-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-phase-e-spec.md"),
+      `---
+title: Phase E Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Phase E Spec
+`,
+      "utf8",
+    );
+    const changePath = join(root, "docs/changes/2026-05-22-phase-e-impl-notes.md");
+    await writeFile(
+      changePath,
+      `---
+title: Phase E Change
+status: ready
+kind: change
+updated: 2026-05-22
+implements: ["docs/specs/2026-05-22-phase-e-spec.md"]
+---
+
+# Phase E Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+    await writeFile(join(root, ".dossier/out/membership.json"), "{not json", "utf8");
+
+    const verboseRender = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", changePath, "--verbose"],
+      { cwd, encoding: "utf8" },
+    );
+
+    expect(verboseRender.status, verboseRender.stderr).toBe(0);
+    expect(verboseRender.stderr).toContain("warn: dossier cover refresh failed silently");
+    expect(verboseRender.stderr).toContain("use --no-cover-refresh to skip on purpose");
+  });
+
+  test("xdossier render stays quiet when auto-cover-refresh fails without --verbose", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-e-refresh-quiet-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-phase-e-spec.md"),
+      `---
+title: Phase E Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Phase E Spec
+`,
+      "utf8",
+    );
+    const changePath = join(root, "docs/changes/2026-05-22-phase-e-impl-notes.md");
+    await writeFile(
+      changePath,
+      `---
+title: Phase E Change
+status: ready
+kind: change
+updated: 2026-05-22
+implements: ["docs/specs/2026-05-22-phase-e-spec.md"]
+---
+
+# Phase E Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+    await writeFile(join(root, ".dossier/out/membership.json"), "{not json", "utf8");
+
+    const render = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", changePath],
+      { cwd, encoding: "utf8" },
+    );
+
+    expect(render.status, render.stderr).toBe(0);
+    expect(render.stderr).toBe("");
+  });
 });
 
 describe("Cover-1 rendering", () => {
@@ -969,7 +1113,7 @@ describe("Cover-1 relation graph", () => {
     expect(renderRelationGraph(syntheticView({ artifacts, graphDisabled: true }), { hrefPrefix: "../../" })).toBe("");
   });
 
-  test("renders a single root node with no edges", () => {
+  test("renders a single root node with no edges and a first-run graph caption", () => {
     const artifacts = [
       syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" }),
     ];
@@ -979,10 +1123,45 @@ describe("Cover-1 relation graph", () => {
     expect(svg).toMatch(/<svg class="relation-graph"/);
     expect(svg.match(/<a /g)).toHaveLength(1);
     expect(svg.match(/<path d=/g) ?? []).toHaveLength(0);
-    expect(svg).toContain('viewBox="0 0 236 372"');
+    expect(viewBoxWidth(svg)).toBeGreaterThanOrEqual(500);
+    expect(viewBoxWidth(svg)).toBeLessThanOrEqual(800);
+    expect(svg).toContain("Dossier root");
+    expect(svg).toContain("add `implements:`");
   });
 
-  test("renderCoverHtml places the relation graph full-width before the artifact-map edge list", () => {
+  test("stretches two-column small dossier graphs into the readable 500-800px range", () => {
+    const artifacts = [
+      syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" }),
+      ...[1, 2].map((index) => syntheticArtifact({
+        path: `docs/changes/phase-d-change-${index}.md`,
+        title: `Phase D Change ${index}`,
+        kind: "change",
+      })),
+    ];
+
+    const svg = renderRelationGraph(syntheticView({ artifacts }), { hrefPrefix: "../../" });
+
+    expect(viewBoxWidth(svg)).toBeGreaterThanOrEqual(500);
+    expect(viewBoxWidth(svg)).toBeLessThanOrEqual(800);
+  });
+
+  test("keeps three-column small dossier graphs in the readable 500-800px range", () => {
+    const artifacts = [
+      syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" }),
+      ...[1, 2, 3].map((index) => syntheticArtifact({
+        path: `docs/changes/phase-d-change-${index}.md`,
+        title: `Phase D Change ${index}`,
+        kind: "change",
+      })),
+    ];
+
+    const svg = renderRelationGraph(syntheticView({ artifacts }), { hrefPrefix: "../../" });
+
+    expect(viewBoxWidth(svg)).toBeGreaterThanOrEqual(500);
+    expect(viewBoxWidth(svg)).toBeLessThanOrEqual(800);
+  });
+
+  test("renderCoverHtml suppresses the artifact-map edge-list when the SVG graph renders", () => {
     const spec = syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" });
     const changes = [1, 2].map((index) => syntheticArtifact({
       path: `docs/changes/phase-d-change-${index}.md`,
@@ -1020,10 +1199,61 @@ describe("Cover-1 relation graph", () => {
     expect(html.indexOf('<section class="privacy-warning"')).toBeLessThan(html.indexOf('<section class="relation-graph-section"'));
     expect(html.indexOf('<section class="relation-graph-section"')).toBeLessThan(html.indexOf('<section class="cover-grid"'));
     expect(graphSection).toContain('<svg class="relation-graph"');
-    expect(artifactMap).toContain('<div class="edge-list">');
-    expect(artifactMap).toContain("Phase D Spec implements Phase D Change 1");
-    expect(artifactMap).toContain("Review checks spec");
+    expect(artifactMap).not.toContain('<div class="edge-list">');
+    expect(artifactMap).not.toContain("Phase D Spec implements Phase D Change 1");
+    expect(artifactMap).not.toContain("Review checks spec");
     expect(artifactMap).not.toContain('<svg class="relation-graph"');
+    expect(artifactMap).toContain('<section class="artifact-list">');
+  });
+
+  test("renderCoverHtml keeps the legacy list view without graph or edge-list when graph is disabled", () => {
+    const spec = syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" });
+    const change = syntheticArtifact({ path: "docs/changes/phase-d-change.md", title: "Phase D Change", kind: "change" });
+    const edges: CoverEdge[] = [{
+      from: spec.path,
+      to: change.path,
+      relation: "implements",
+      source: "frontmatter",
+      confidence: "high",
+      label: "Phase D Spec implements Phase D Change",
+    }];
+
+    const html = renderCoverHtml(syntheticView({
+      artifacts: [spec, change],
+      edges,
+      graphDisabled: true,
+    }));
+
+    expect(html).not.toContain('<svg class="relation-graph"');
+    expect(html).not.toContain('<div class="edge-list"');
+    expect(html).toContain("Graph disabled; showing list fallback.");
+    expect(html).toContain('<section class="artifact-list">');
+  });
+
+  test("renderCoverHtml keeps the edge-list fallback when graph rendering degrades", () => {
+    const spec = syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" });
+    const changes = Array.from({ length: 13 }, (_, index) => syntheticArtifact({
+      path: `docs/changes/phase-d-change-${index + 1}.md`,
+      title: `Phase D Change ${index + 1}`,
+      kind: "change",
+    }));
+    const edges: CoverEdge[] = changes.slice(0, 1).map((change) => ({
+      from: spec.path,
+      to: change.path,
+      relation: "implements" as const,
+      source: "frontmatter" as const,
+      confidence: "high" as const,
+      label: "Phase D Spec implements Phase D Change 1",
+    }));
+
+    const html = renderCoverHtml(syntheticView({
+      artifacts: [spec, ...changes],
+      edges,
+    }));
+
+    expect(html).not.toContain('<svg class="relation-graph"');
+    expect(html).toContain('<div class="edge-list">');
+    expect(html).toContain("Phase D Spec implements Phase D Change 1");
   });
 });
 

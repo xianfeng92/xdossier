@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-05-22
+
+### Fixed
+
+- Small dossier relation graphs now stretch into a readable 500-800px viewBox, with a single-root caption for dossiers that have not grown edges yet.
+- Cover pages suppress the duplicate textual edge-list when the SVG relation graph renders, while keeping it as the degraded-graph fallback.
+- `xdossier cover` now exits 64 with a first-run setup hint when no expected docs directories exist, and renders an empty-state index when they exist but contain no markdown.
+- `xdossier render --verbose` now warns when automatic cover refresh fails; default non-verbose behavior remains silent.
+
 ## [0.2.1] - 2026-05-22
 
 ### Fixed

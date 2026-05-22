@@ -10,7 +10,7 @@ import { createSectionSummariesWithAgent, type EnrichProvider } from "./enrich/a
 import { createSectionSummaryScaffold } from "./enrich/section-summaries.js";
 import { parseFrontmatter } from "./parse/frontmatter.js";
 import { selectSkill } from "./skills/registry.js";
-import { buildDossierCover } from "./cover/render.js";
+import { buildDossierCover, FirstRunCoverError } from "./cover/render.js";
 import { renderDossierBannerForInput } from "./cover/membership.js";
 import type { ContentMode, ReaderProfile, RenderAnnotations } from "./types.js";
 
@@ -406,6 +406,10 @@ export async function main(): Promise<void> {
       process.stdout.write(`wrote ${result.indexPath} (${(await stat(result.indexPath)).size} bytes)\n`);
       return;
     } catch (e) {
+      if (e instanceof FirstRunCoverError) {
+        process.stderr.write(e.message);
+        process.exit(64);
+      }
       process.stderr.write(`error: build failed: ${(e as Error).message}\n`);
       process.exit(64);
     }
@@ -536,7 +540,7 @@ async function refreshContainingDossierCover(inputAbs: string, verbose: boolean)
     });
   } catch (e) {
     if (verbose) {
-      process.stderr.write(`warning: cover refresh skipped: ${(e as Error).message}\n`);
+      process.stderr.write(`warn: dossier cover refresh failed silently (use --no-cover-refresh to skip on purpose): ${(e as Error).message}\n`);
     }
   }
 }

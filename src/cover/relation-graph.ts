@@ -11,6 +11,8 @@ const VERTICAL_GAP = 80;
 const CELL_WIDTH = NODE_WIDTH + HORIZONTAL_GAP;
 const LAYER_HEIGHT = NODE_HEIGHT + VERTICAL_GAP;
 const PADDING = 16;
+const MIN_SMALL_GRAPH_WIDTH = 600;
+const MAX_SMALL_GRAPH_WIDTH = 800;
 
 const ROOT_KINDS = new Set(["vision-spec", "mvp-spec", "design", "spec"]);
 const REVIEW_RELATIONS = new Set(["reviews", "reviews_target", "answers"]);
@@ -44,11 +46,14 @@ export function renderRelationGraph(view: DossierCoverView, context: RenderConte
   const cols = Math.max(layers.root.length, layers.change.length, layers.review.length);
   if (cols > 6) return "";
 
-  const width = cols * CELL_WIDTH + PADDING * 2;
+  const width = graphWidth(cols);
   const height = 3 * LAYER_HEIGHT - VERTICAL_GAP + PADDING * 2;
-  const positioned = positionLayers(layers, cols, context);
+  const positioned = positionLayers(layers, cols, width, context);
   const byPath = new Map(positioned.map((node) => [node.artifact.path, node]));
   const edges = view.edges.filter((edge) => byPath.has(edge.from) && byPath.has(edge.to));
+  const emptyCaption = positioned.length === 1 && edges.length === 0
+    ? `  <text class="rg-empty" x="${width / 2}" y="${height - PADDING}" text-anchor="middle">Dossier root — add \`implements:\` to impl-notes to grow this graph.</text>\n`
+    : "";
 
   return `<svg class="relation-graph" viewBox="0 0 ${width} ${height}" role="img" aria-label="Artifact relation graph" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <style>
@@ -59,6 +64,7 @@ export function renderRelationGraph(view: DossierCoverView, context: RenderConte
 .rg-node:hover rect { stroke: var(--rg-node-hover); stroke-width: 2; }
 .rg-node-kind { fill: #8a6b36; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 .rg-node-title { fill: #1f1d18; font-size: 13px; font-weight: 700; }
+.rg-empty { fill: #6f6a60; font-size: 13px; }
   </style>
   <defs>
     <marker id="rg-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -71,6 +77,7 @@ ${edges.map((edge) => renderEdge(edge, byPath)).join("\n")}
   <g class="rg-nodes">
 ${positioned.map(renderNode).join("\n")}
   </g>
+${emptyCaption}
 </svg>`;
 }
 
@@ -102,20 +109,38 @@ function isRootArtifact(artifact: CoverArtifact): boolean {
 function positionLayers(
   layers: Record<LayerName, CoverArtifact[]>,
   cols: number,
+  width: number,
   context: RenderContext,
 ): PositionedArtifact[] {
+  const gap = cols > 1
+    ? (width - PADDING * 2 - cols * NODE_WIDTH) / (cols - 1)
+    : 0;
+  const columnWidth = NODE_WIDTH + gap;
+
   return (["root", "change", "review"] as const).flatMap((layer, layerIndex) => {
     const row = layers[layer];
-    const rowOffset = ((cols - row.length) * CELL_WIDTH) / 2;
+    const rowWidth = row.length > 0
+      ? row.length * NODE_WIDTH + Math.max(0, row.length - 1) * gap
+      : 0;
+    const rowOffset = (width - PADDING * 2 - rowWidth) / 2;
     return row.map((artifact, index) => ({
       artifact,
       id: pathId(artifact.path),
       href: memberHref(artifact.path, context.workspaceRoot, context.hrefPrefix),
       layer,
-      x: PADDING + rowOffset + index * CELL_WIDTH,
+      x: PADDING + rowOffset + index * columnWidth,
       y: PADDING + layerIndex * LAYER_HEIGHT,
     }));
   });
+}
+
+function graphWidth(cols: number): number {
+  const naturalWidth = cols * CELL_WIDTH + PADDING * 2;
+  if (naturalWidth >= MIN_SMALL_GRAPH_WIDTH) return naturalWidth;
+  return Math.max(
+    MIN_SMALL_GRAPH_WIDTH,
+    Math.min(MAX_SMALL_GRAPH_WIDTH, cols * 280 + PADDING * 2),
+  );
 }
 
 function renderNode(node: PositionedArtifact): string {

@@ -41,6 +41,26 @@ export type BuildDossierCoverResult = {
   trace: ClusterResult["trace"];
 };
 
+export class FirstRunCoverError extends Error {
+  constructor(workspaceRoot: string) {
+    super(`error: xdossier cover expects markdown under docs/specs/, docs/changes/,
+       or docs/reviews/.
+
+Found none under: ${workspaceRoot}
+
+Either:
+  • Point xdossier at the right directory:
+      xdossier cover <path-to-your-docs-root>
+  • Or initialize the expected layout in this project:
+      mkdir -p docs/specs docs/changes docs/reviews
+      # Add a .md file with YAML frontmatter (see README)
+
+See https://github.com/xianfeng92/xdossier#quickstart for examples.
+`);
+    this.name = "FirstRunCoverError";
+  }
+}
+
 const KIND_ORDER = [
   "vision-spec",
   "mvp-spec",
@@ -57,6 +77,10 @@ export async function buildDossierCover(
 ): Promise<BuildDossierCoverResult> {
   const workspaceRoot = resolve(input.workspaceRoot);
   const artifacts = await scanArtifacts(workspaceRoot);
+  if (artifacts.length === 0 && !hasAnyDocsScanDir(workspaceRoot)) {
+    throw new FirstRunCoverError(workspaceRoot);
+  }
+
   const edges = buildCoverEdges(artifacts);
   const { dossiers, orphans, trace } = clusterArtifacts(artifacts);
   const baselineManifest = await readBaselineManifest(workspaceRoot, input.since);
@@ -184,6 +208,7 @@ export function renderCoverHtml(
     workspaceRoot: options.workspaceRoot,
     hrefPrefix: options.hrefPrefix ?? "../../",
   };
+  const graphSvg = renderRelationGraph(view, context);
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -197,9 +222,9 @@ export function renderCoverHtml(
     ${renderVerdictStrip(view)}
     ${renderActivityInbox(view, context)}
     ${renderPrivacyWarning(view)}
-    ${renderRelationGraphSection(view, context)}
+    ${renderRelationGraphSection(graphSvg)}
     <section class="cover-grid">
-      ${renderArtifactMap(view, context)}
+      ${renderArtifactMap(view, context, graphSvg)}
       <div class="judgment-stack">
         ${renderKeyDecisions(view.decisions, context)}
         ${renderOpenQuestions(view.open_questions, context)}
@@ -277,8 +302,7 @@ function renderPrivacyWarning(view: DossierCoverView): string {
 </section>`;
 }
 
-function renderRelationGraphSection(view: DossierCoverView, context: RenderContext): string {
-  const graphSvg = renderRelationGraph(view, context);
+function renderRelationGraphSection(graphSvg: string): string {
   if (!graphSvg) return "";
   return `<section class="relation-graph-section" id="relation-graph">
   <h2>Relation Graph</h2>
@@ -286,8 +310,9 @@ function renderRelationGraphSection(view: DossierCoverView, context: RenderConte
 </section>`;
 }
 
-function renderArtifactMap(view: DossierCoverView, context: RenderContext): string {
+function renderArtifactMap(view: DossierCoverView, context: RenderContext, graphSvg: string): string {
   const visibleEdges = view.edges.filter((edge) => edge.confidence === "high" || edge.confidence === "medium");
+  const showEdgeList = view.graph_disabled !== true && graphSvg === "";
   const edgeRows = visibleEdges.length > 0
     ? visibleEdges.map((edge) => renderEdgeRow(edge, view.artifacts, context)).join("\n")
     : `<p class="empty-state">No high or medium confidence edges found.</p>`;
@@ -298,9 +323,9 @@ function renderArtifactMap(view: DossierCoverView, context: RenderContext): stri
   return `<section class="artifact-map" id="artifact-map">
   <h2>Artifact Map</h2>
   ${graphMode}
-  <div class="edge-list">
+  ${showEdgeList ? `<div class="edge-list">
     ${edgeRows}
-  </div>
+  </div>` : ""}
   ${renderArtifactList(view.artifacts, context)}
 </section>`;
 }
@@ -472,7 +497,9 @@ function renderProjectIndexHtml(input: {
     <thead><tr><th>Dossier</th><th>Members</th><th>Status</th><th>Last updated</th></tr></thead>
     <tbody>${dossierRows}</tbody>
   </table>`
-    : `<p class="empty-state">No spec roots detected.</p>`;
+    : input.artifacts.length === 0
+      ? `<div class="empty-docs-callout"><p class="empty-state">No documents found under docs/specs|changes|reviews. Create a spec and re-run.</p></div>`
+      : `<p class="empty-state">No spec roots detected.</p>`;
   const orphans = input.orphans.length > 0
     ? `<section class="project-orphans">
   <h2>Orphans</h2>
@@ -490,6 +517,8 @@ function renderProjectIndexHtml(input: {
 .project-summary { margin-bottom: 22px; }
 .project-dossiers, .project-orphans { margin-top: 22px; border: 1px solid #ddd6ca; border-radius: 8px; background: #fffdf8; padding: 18px; }
 .project-dossiers table code { display: block; margin-top: 4px; }
+.empty-docs-callout { border-left: 3px solid #d97706; background: #fff8eb; padding: 12px 14px; }
+.empty-docs-callout p { margin: 0; }
   </style>
 </head>
 <body>
@@ -616,6 +645,14 @@ function assertFilesystemSafeDossierId(dossierId: string): void {
   if (!dossierId || dossierId === "." || dossierId === ".." || /[/\\\0]/.test(dossierId)) {
     throw new Error(`unsafe dossier id: ${dossierId}`);
   }
+}
+
+function hasAnyDocsScanDir(workspaceRoot: string): boolean {
+  return [
+    "docs/specs",
+    "docs/changes",
+    "docs/reviews",
+  ].some((scanDir) => existsSync(join(workspaceRoot, scanDir)));
 }
 
 function privacyWarning(workspaceRoot: string): string | undefined {
