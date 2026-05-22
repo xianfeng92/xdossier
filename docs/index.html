@@ -207,6 +207,31 @@
   }
   .preview-research .preview-cardlet { background: rgba(146, 64, 14, 0.13); border-color: rgba(146, 64, 14, 0.14); }
   .preview-pedagogy .preview-cardlet { background: rgba(20, 83, 45, 0.11); border-color: rgba(20, 83, 45, 0.12); }
+  .preview-dossier .preview-cardlet { background: rgba(184, 92, 61, 0.16); border-color: rgba(184, 92, 61, 0.22); }
+  /* Dossier preview: rough sketch of a 3-layer relation graph */
+  .preview-dossier .preview-graph {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0;
+  }
+  .preview-dossier .preview-graph-row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+  }
+  .preview-dossier .preview-graph-node {
+    width: 22px;
+    height: 10px;
+    background: rgba(184, 92, 61, 0.18);
+    border: 1px solid rgba(184, 92, 61, 0.28);
+    border-radius: 2px;
+  }
+  .preview-dossier .preview-graph-node--root {
+    background: rgba(184, 92, 61, 0.32);
+    border-color: rgba(184, 92, 61, 0.42);
+    width: 28px;
+  }
   .demo-card-body {
     padding: 22px 24px 24px;
     display: flex;
@@ -319,10 +344,47 @@
 
   <h2 class="section-head" id="demos">Live demos</h2>
   <p style="color: var(--muted); margin-top: -16px; margin-bottom: 24px;">
-    Real specs rendered by xdossier. Click the <strong>零基础 / 系统化 / 速查</strong> toggle at the top of each demo to see the same content adapt to reader skill level.
+    Real specs rendered by xdossier. Toggle <strong>零基础 / 系统化 / 速查</strong> at the top of any single-doc demo, or open the multi-doc dossier to see relation-graph clustering in action.
   </p>
 
   <div class="demo-grid">
+    <a class="demo-card" href="demo/dossier.html">
+      <div class="demo-card-preview preview-dossier" role="img" aria-label="Preview of MVP-0 dossier with relation graph">
+        <div class="preview-window" aria-hidden="true">
+          <div class="preview-chrome"><span></span><span></span><span></span></div>
+          <div class="preview-page">
+            <span class="preview-main" style="grid-column: 1 / -1;">
+              <span class="preview-line title"></span>
+              <span class="preview-line accent"></span>
+              <div class="preview-graph">
+                <div class="preview-graph-row"><span class="preview-graph-node preview-graph-node--root"></span></div>
+                <div class="preview-graph-row">
+                  <span class="preview-graph-node"></span>
+                  <span class="preview-graph-node"></span>
+                  <span class="preview-graph-node"></span>
+                  <span class="preview-graph-node"></span>
+                  <span class="preview-graph-node"></span>
+                </div>
+                <div class="preview-graph-row">
+                  <span class="preview-graph-node"></span>
+                  <span class="preview-graph-node"></span>
+                  <span class="preview-graph-node"></span>
+                </div>
+              </div>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="demo-card-body">
+        <div class="demo-card-mode">★ NEW — multi-doc view (v0.2.0)</div>
+        <h3>MVP-0 Dossier</h3>
+        <p>
+          xdossier organizing xdossier: the MVP-0 spec, 8 implementation notes, and 3 reviews — clustered automatically by frontmatter and filename stems, rendered as one navigable HTML with an inline SVG relation graph. Self-documenting.
+        </p>
+        <span class="demo-card-tag">Open →</span>
+      </div>
+    </a>
+
     <a class="demo-card" href="demo/pedagogy.html">
       <div class="demo-card-preview preview-pedagogy" role="img" aria-label="Preview of Pedagogy Layer Spec">
         <div class="preview-window" aria-hidden="true">
