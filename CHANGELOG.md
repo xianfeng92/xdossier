@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-doc dossier view (MVP-1)**: `xdossier cover <workspace>` clusters related specs, changes, and reviews into topic-rooted dossiers, emits a per-dossier HTML cover with an inline SVG relation graph, and writes a workspace-level project index.
+- Per-dossier covers link to each member's rendered HTML (sibling `.html` preferred over `.md`).
+- Member HTML now carries a `↩ in dossier: <title>` banner pointing back to its cover, driven by `.dossier/out/membership.json`.
+- `--only-dossier-containing <path>` flag for incremental cover rebuilds.
+- `xdossier render` auto-refreshes the parent dossier cover when membership data is available (opt out with `--no-cover-refresh`).
+- Example Claude Code PostToolUse hook at `hooks/post-tool-use.sh` and a new "Auto-render in Claude Code" section in the README.
+
+### Changed
+
+- `xdossier build` is now an alias for the recommended `xdossier cover`; both produce identical output.
+- The relation graph is rendered as a full-width SVG section (was squeezed inside the artifact-map column).
+
 ## [0.1.0] - 2026-05-21
 
 ### Added

@@ -36,6 +36,12 @@
   <em>Same single-file HTML — three reader profiles. Click to try the live demo.</em>
 </p>
 
+<p align="center">
+  <img src="docs/assets/dossier-cover-hero.png" alt="xdossier multi-doc dossier cover with relation graph and project index" width="720">
+  <br>
+  <em>Multi-doc view: an inline SVG relation graph plus a project-wide index linking every related spec, change, and review.</em>
+</p>
+
 ## Why this exists
 
 You and your AI agent generate dozens of markdown files: specs, ADRs, design docs, change notes. Each one is **800+ lines of dense text** that:
@@ -53,11 +59,10 @@ You and your AI agent generate dozens of markdown files: specs, ADRs, design doc
 - **3-tier reader mode** (beginner / systematic / reference) — toggle in HTML, no rerender, no rebuild. Term popovers, prerequisite cards, learning checkpoints, analogies — all appear/hide based on reader profile.
 - **Auto content-mode detection** — tutorial / concept / reference / course (heuristic, 0 token).
 - **Single-file HTML** — share by double-click; works offline; no CDN.
+- **Multi-doc dossier view** — clusters related specs/changes/reviews by `implements:` / `reviews:` frontmatter or filename stem; emits a per-dossier cover with an inline SVG relation graph plus a project-wide index. Each member's rendered HTML carries a back-link to its dossier.
 - **Spec semantic blocks** — risk register, decision grid, principle grid, scope boundary, concept glossary, structure map — auto-rendered from markdown without authoring HTML.
 - **Inline SVG diagrams** — ASCII layered-box art → real SVG with arrows.
 - **Pull quotes, section covers, comparison cards** — visual rhythm so 1000-line specs don't read as a wall.
-
-🛠 **Coming (MVP-1)**: Multi-document **dossier view** — automatically link related specs (`implements:` / `reviews:` frontmatter), render a relationship graph as a navigable archive cover.
 
 ## Quickstart
 
@@ -70,9 +75,14 @@ git clone https://github.com/xianfeng92/xdossier.git
 cd xdossier
 pnpm install
 pnpm dev render docs/specs/my-spec.md
+
+# Or build a dossier cover linking all related specs, changes, and reviews:
+pnpm dev cover docs/
 ```
 
 Open the generated `.html` in any browser. Click the reader-mode toggle at the top to switch tiers.
+
+`pnpm dev cover docs/` opens a project index at `docs/.dossier/out/index.html` and a per-dossier cover at `docs/.dossier/out/<dossier-id>/index.html`.
 
 ## Auto-render in Claude Code
 
@@ -114,7 +124,7 @@ pnpm link
 |---|---|---|---|---|
 | Tiered reader modes | ✅ | ❌ | ❌ | ❌ |
 | Term popovers / glossary | ✅ | ❌ | ❌ | ❌ |
-| Multi-doc relationship graph | ⏳ MVP-1 | ❌ | ❌ | ❌ |
+| Multi-doc relationship graph | ✅ | ❌ | ❌ | ❌ |
 | Single-file offline HTML | ✅ | ✅ | partial | partial |
 | Spec/ADR semantic blocks | ✅ | ❌ | partial | ❌ |
 | Visual surfaces (deck/social/poster) | ❌ | ✅ | partial | ❌ |
@@ -147,7 +157,7 @@ Three layers:
 |---|---|
 | Single-doc rendering (MVP-0) | ✅ Implemented |
 | Pedagogy layer (P0/P1/P2) | ✅ Implemented |
-| Multi-doc dossier view (MVP-1) | ⏳ In design |
+| Multi-doc dossier view (MVP-1) | ✅ Implemented |
 | MCP server (MVP-2) | 📝 Spec'd |
 | Claude Code session adapter | 📝 Spec'd |
 

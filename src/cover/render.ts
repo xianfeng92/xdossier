@@ -197,6 +197,7 @@ export function renderCoverHtml(
     ${renderVerdictStrip(view)}
     ${renderActivityInbox(view, context)}
     ${renderPrivacyWarning(view)}
+    ${renderRelationGraphSection(view, context)}
     <section class="cover-grid">
       ${renderArtifactMap(view, context)}
       <div class="judgment-stack">
@@ -276,8 +277,16 @@ function renderPrivacyWarning(view: DossierCoverView): string {
 </section>`;
 }
 
-function renderArtifactMap(view: DossierCoverView, context: RenderContext): string {
+function renderRelationGraphSection(view: DossierCoverView, context: RenderContext): string {
   const graphSvg = renderRelationGraph(view, context);
+  if (!graphSvg) return "";
+  return `<section class="relation-graph-section" id="relation-graph">
+  <h2>Relation Graph</h2>
+  ${graphSvg}
+</section>`;
+}
+
+function renderArtifactMap(view: DossierCoverView, context: RenderContext): string {
   const visibleEdges = view.edges.filter((edge) => edge.confidence === "high" || edge.confidence === "medium");
   const edgeRows = visibleEdges.length > 0
     ? visibleEdges.map((edge) => renderEdgeRow(edge, view.artifacts, context)).join("\n")
@@ -289,7 +298,6 @@ function renderArtifactMap(view: DossierCoverView, context: RenderContext): stri
   return `<section class="artifact-map" id="artifact-map">
   <h2>Artifact Map</h2>
   ${graphMode}
-  ${graphSvg}
   <div class="edge-list">
     ${edgeRows}
   </div>
@@ -537,14 +545,16 @@ dt { color: #6f6a60; font-size: 12px; }
 dd { margin: 3px 0 0; font-weight: 700; }
 .next-action { grid-column: 1 / -1; margin: 0; border-top: 1px solid #e5dfd3; padding-top: 14px; }
 .cover-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 22px; margin-top: 22px; align-items: start; }
-.artifact-map, .judgment-stack, .reading-paths, .evidence-drawer, .activity-inbox, .rendered-document-bundle, .source-bundle { min-width: 0; }
-.artifact-map, .key-decisions, .open-questions, .reading-paths, .evidence-drawer, .activity-inbox, .privacy-warning, .rendered-document-bundle, .source-bundle {
+.artifact-map, .judgment-stack, .reading-paths, .evidence-drawer, .activity-inbox, .relation-graph-section, .rendered-document-bundle, .source-bundle { min-width: 0; }
+.artifact-map, .key-decisions, .open-questions, .reading-paths, .evidence-drawer, .activity-inbox, .privacy-warning, .relation-graph-section, .rendered-document-bundle, .source-bundle {
   border: 1px solid #ddd6ca;
   border-radius: 8px;
   background: #fffdf8;
   padding: 18px;
 }
 .activity-inbox, .privacy-warning { margin-top: 22px; }
+.relation-graph-section { margin-top: 22px; }
+.relation-graph-section .relation-graph { width: 100%; height: auto; max-width: 100%; display: block; }
 .activity-group + .activity-group { margin-top: 14px; }
 .privacy-warning { border-color: #d97706; background: #fff8eb; }
 .judgment-stack { display: grid; gap: 18px; }

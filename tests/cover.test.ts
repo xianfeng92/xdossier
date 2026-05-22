@@ -155,6 +155,7 @@ function syntheticView(input: {
   artifacts: CoverArtifact[];
   edges?: CoverEdge[];
   graphDisabled?: boolean;
+  privacyWarning?: string;
 }): DossierCoverView {
   return {
     dossier: {
@@ -173,6 +174,7 @@ function syntheticView(input: {
     reading_paths: [],
     evidence: [],
     graph_disabled: input.graphDisabled,
+    privacy_warning: input.privacyWarning,
   };
 }
 
@@ -980,7 +982,7 @@ describe("Cover-1 relation graph", () => {
     expect(svg).toContain('viewBox="0 0 236 372"');
   });
 
-  test("renderCoverHtml includes both the relation graph and edge-list supplement", () => {
+  test("renderCoverHtml places the relation graph full-width before the artifact-map edge list", () => {
     const spec = syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" });
     const changes = [1, 2].map((index) => syntheticArtifact({
       path: `docs/changes/phase-d-change-${index}.md`,
@@ -1007,12 +1009,21 @@ describe("Cover-1 relation graph", () => {
       },
     ];
 
-    const html = renderCoverHtml(syntheticView({ artifacts: [spec, ...changes, review], edges }));
+    const html = renderCoverHtml(syntheticView({
+      artifacts: [spec, ...changes, review],
+      edges,
+      privacyWarning: "Check before sharing.",
+    }));
+    const graphSection = html.match(/<section class="relation-graph-section"[\s\S]*?<\/section>/)?.[0] ?? "";
+    const artifactMap = html.match(/<section class="artifact-map"[\s\S]*?<\/section>/)?.[0] ?? "";
 
-    expect(html).toContain('<svg class="relation-graph"');
-    expect(html).toContain('<div class="edge-list">');
-    expect(html).toContain("Phase D Spec implements Phase D Change 1");
-    expect(html).toContain("Review checks spec");
+    expect(html.indexOf('<section class="privacy-warning"')).toBeLessThan(html.indexOf('<section class="relation-graph-section"'));
+    expect(html.indexOf('<section class="relation-graph-section"')).toBeLessThan(html.indexOf('<section class="cover-grid"'));
+    expect(graphSection).toContain('<svg class="relation-graph"');
+    expect(artifactMap).toContain('<div class="edge-list">');
+    expect(artifactMap).toContain("Phase D Spec implements Phase D Change 1");
+    expect(artifactMap).toContain("Review checks spec");
+    expect(artifactMap).not.toContain('<svg class="relation-graph"');
   });
 });
 
