@@ -12,6 +12,8 @@ import {
 } from "./manifest.js";
 import { scanArtifacts } from "./scan.js";
 import { writeMembershipLookup } from "./membership.js";
+import { memberHref } from "./href.js";
+import { renderRelationGraph } from "./relation-graph.js";
 import type {
   ArtifactRef,
   CoverArtifact,
@@ -114,7 +116,7 @@ type RenderCoverHtmlOptions = {
   hrefPrefix?: string;
 };
 
-type RenderContext = {
+export type RenderContext = {
   workspaceRoot?: string;
   hrefPrefix: string;
 };
@@ -252,6 +254,7 @@ function renderPrivacyWarning(view: DossierCoverView): string {
 }
 
 function renderArtifactMap(view: DossierCoverView, context: RenderContext): string {
+  const graphSvg = renderRelationGraph(view, context);
   const visibleEdges = view.edges.filter((edge) => edge.confidence === "high" || edge.confidence === "medium");
   const edgeRows = visibleEdges.length > 0
     ? visibleEdges.map((edge) => renderEdgeRow(edge, view.artifacts, context)).join("\n")
@@ -263,6 +266,7 @@ function renderArtifactMap(view: DossierCoverView, context: RenderContext): stri
   return `<section class="artifact-map" id="artifact-map">
   <h2>Artifact Map</h2>
   ${graphMode}
+  ${graphSvg}
   <div class="edge-list">
     ${edgeRows}
   </div>
@@ -564,14 +568,6 @@ function escapeAttribute(value: string): string {
 
 function sourceHref(path: string, context?: RenderContext): string {
   return memberHref(path, context?.workspaceRoot, context?.hrefPrefix ?? "../../");
-}
-
-function memberHref(path: string, workspaceRoot: string | undefined, hrefPrefix: string): string {
-  const htmlPath = path.replace(/\.md$/i, ".html");
-  const target = workspaceRoot && htmlPath !== path && existsSync(join(workspaceRoot, htmlPath))
-    ? htmlPath
-    : path;
-  return `${hrefPrefix}${target}`;
 }
 
 function rebaseHref(href: string, context: RenderContext): string {

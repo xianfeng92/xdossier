@@ -8,9 +8,10 @@ import { scanArtifacts } from "../src/cover/scan.js";
 import { buildCoverEdges } from "../src/cover/edges.js";
 import { buildCoverView } from "../src/cover/view-model.js";
 import { renderCoverHtml } from "../src/cover/render.js";
+import { renderRelationGraph } from "../src/cover/relation-graph.js";
 import { extractOpenQuestions } from "../src/cover/extract.js";
 import { parseFrontmatter } from "../src/parse/frontmatter.js";
-import type { CoverArtifact } from "../src/cover/types.js";
+import type { CoverArtifact, CoverEdge, DossierCoverView } from "../src/cover/types.js";
 
 async function makeWorkspace(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "dossier-cover-"));
@@ -129,6 +130,50 @@ function iframeSrcdocs(html: string): string[] {
 
 function activityInboxHtml(html: string): string {
   return html.match(/<section class="activity-inbox"[\s\S]*?<section class="cover-grid"/)?.[0] ?? "";
+}
+
+function syntheticArtifact(input: Partial<CoverArtifact> & Pick<CoverArtifact, "path" | "title" | "kind">): CoverArtifact {
+  return {
+    id: input.path,
+    path: input.path,
+    title: input.title,
+    kind: input.kind,
+    status: input.status ?? "ready",
+    frontmatter: input.frontmatter ?? {},
+    raw_content: input.raw_content ?? `# ${input.title}\n`,
+    content: input.content ?? `# ${input.title}\n`,
+    updated_at: input.updated_at ?? "2026-05-22",
+    implements: input.implements ?? [],
+    reviews: input.reviews ?? [],
+    reviews_target: input.reviews_target ?? [],
+    summary: input.summary,
+    rendered_html_path: input.rendered_html_path,
+  };
+}
+
+function syntheticView(input: {
+  artifacts: CoverArtifact[];
+  edges?: CoverEdge[];
+  graphDisabled?: boolean;
+}): DossierCoverView {
+  return {
+    dossier: {
+      id: "phase-d",
+      title: "Phase D",
+      status: "ready",
+      description: "Synthetic relation graph fixture",
+      updated_at: "2026-05-22",
+      confidence: "high",
+    },
+    activity: { new_artifacts: [], changed_artifacts: [], open_items: [] },
+    artifacts: input.artifacts,
+    edges: input.edges ?? [],
+    decisions: [],
+    open_questions: [],
+    reading_paths: [],
+    evidence: [],
+    graph_disabled: input.graphDisabled,
+  };
 }
 
 describe("Cover-0 artifact scanning", () => {
@@ -584,6 +629,131 @@ describe("Cover-1 rendering", () => {
     expect(html).toMatch(/<details class="evidence-drawer">/);
     expect(html).toMatch(/<summary>Evidence/);
     expect(html).not.toMatch(/<script src=|<link[^>]+href="http|@import|url\(http/);
+  });
+});
+
+describe("Cover-1 relation graph", () => {
+  test("renders an 8-member dossier as clickable SVG nodes and styled edges", () => {
+    const spec = syntheticArtifact({
+      path: "docs/specs/phase-d-spec.md",
+      title: "Phase D Spec",
+      kind: "spec",
+    });
+    const changes = Array.from({ length: 6 }, (_, index) => syntheticArtifact({
+      path: index === 0
+        ? "docs/changes/phase-d-change-1<&\".md"
+        : `docs/changes/phase-d-change-${index + 1}.md`,
+      title: index === 0 ? "Escaped <>&\" Change" : `Phase D Change ${index + 1}`,
+      kind: "change",
+    }));
+    const review = syntheticArtifact({
+      path: "docs/reviews/phase-d-review.md",
+      title: "Phase D Review",
+      kind: "review",
+    });
+    const artifacts = [spec, ...changes, review];
+    const edges: CoverEdge[] = [
+      ...changes.map((change) => ({
+        from: spec.path,
+        to: change.path,
+        relation: "implements" as const,
+        source: "frontmatter" as const,
+        confidence: "high" as const,
+        label: `${spec.title} implements ${change.title}`,
+      })),
+      {
+        from: review.path,
+        to: spec.path,
+        relation: "reviews",
+        source: "frontmatter",
+        confidence: "high",
+        label: "Review checks spec",
+      },
+    ];
+
+    const svg = renderRelationGraph(syntheticView({ artifacts, edges }), {
+      workspaceRoot: "/tmp/phase-d",
+      hrefPrefix: "../../",
+    });
+
+    expect(svg).toMatch(/<svg class="relation-graph"/);
+    expect(svg.match(/<a /g)).toHaveLength(8);
+    expect(svg.match(/<path d=/g)).toHaveLength(7);
+    expect(svg).toContain('data-kind="spec"');
+    expect(svg).toContain("docs/changes/phase-d-change-1&lt;&amp;&quot;.md");
+    expect(svg).not.toContain('href="../../docs/changes/phase-d-change-1<&"');
+    expect(svg).not.toContain('data-id="docs_changes_phase-d-change-1<&"');
+    expect(svg).toContain("Escaped &lt;&gt;&amp;&quot; Change");
+  });
+
+  test("degrades instead of rendering more than 12 members", () => {
+    const artifacts = [
+      syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" }),
+      ...Array.from({ length: 14 }, (_, index) => syntheticArtifact({
+        path: `docs/changes/phase-d-change-${index + 1}.md`,
+        title: `Phase D Change ${index + 1}`,
+        kind: "change",
+      })),
+    ];
+
+    expect(renderRelationGraph(syntheticView({ artifacts }), { hrefPrefix: "../../" })).toBe("");
+  });
+
+  test("returns empty when graph rendering is disabled by the view flag", () => {
+    const artifacts = [
+      syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" }),
+      syntheticArtifact({ path: "docs/changes/phase-d-change.md", title: "Phase D Change", kind: "change" }),
+    ];
+
+    expect(renderRelationGraph(syntheticView({ artifacts, graphDisabled: true }), { hrefPrefix: "../../" })).toBe("");
+  });
+
+  test("renders a single root node with no edges", () => {
+    const artifacts = [
+      syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" }),
+    ];
+
+    const svg = renderRelationGraph(syntheticView({ artifacts }), { hrefPrefix: "../../" });
+
+    expect(svg).toMatch(/<svg class="relation-graph"/);
+    expect(svg.match(/<a /g)).toHaveLength(1);
+    expect(svg.match(/<path d=/g) ?? []).toHaveLength(0);
+    expect(svg).toContain('viewBox="0 0 236 372"');
+  });
+
+  test("renderCoverHtml includes both the relation graph and edge-list supplement", () => {
+    const spec = syntheticArtifact({ path: "docs/specs/phase-d-spec.md", title: "Phase D Spec", kind: "spec" });
+    const changes = [1, 2].map((index) => syntheticArtifact({
+      path: `docs/changes/phase-d-change-${index}.md`,
+      title: `Phase D Change ${index}`,
+      kind: "change",
+    }));
+    const review = syntheticArtifact({ path: "docs/reviews/phase-d-review.md", title: "Phase D Review", kind: "review" });
+    const edges: CoverEdge[] = [
+      ...changes.map((change) => ({
+        from: spec.path,
+        to: change.path,
+        relation: "implements" as const,
+        source: "frontmatter" as const,
+        confidence: "high" as const,
+        label: `${spec.title} implements ${change.title}`,
+      })),
+      {
+        from: review.path,
+        to: spec.path,
+        relation: "reviews",
+        source: "frontmatter",
+        confidence: "medium",
+        label: "Review checks spec",
+      },
+    ];
+
+    const html = renderCoverHtml(syntheticView({ artifacts: [spec, ...changes, review], edges }));
+
+    expect(html).toContain('<svg class="relation-graph"');
+    expect(html).toContain('<div class="edge-list">');
+    expect(html).toContain("Phase D Spec implements Phase D Change 1");
+    expect(html).toContain("Review checks spec");
   });
 });
 
