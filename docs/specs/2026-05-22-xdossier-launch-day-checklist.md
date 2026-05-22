@@ -1,76 +1,94 @@
 ---
-title: xdossier launch-day checklist
+title: xdossier launch-day checklist (v0.2.0)
 status: ready
 kind: checklist
 created: 2026-05-22
 updated: 2026-05-22
 ---
 
-# xdossier Launch-Day Checklist
+# xdossier Launch-Day Checklist — v0.2.0
 
-## ✅ Pre-launch verification
+> Updated for v0.2.0 (multi-doc dossier view) launch. v0.1.0-era checklist items completed during the original release are kept here for traceability.
 
-- Thariq Shihipar's X handle verified as `@trq212`; launch thread credit updated from `@thariqs`.
-- README first-screen metadata completed with CI, npm version, and Apache 2.0 badges under the live demo badge.
-- GitHub Pages live demo check attempted twice with the requested `curl` loop; local shell networking is blocked by the configured `127.0.0.1:7891` proxy, so verify again from a normal networked shell before posting.
-- `pnpm pack --pack-destination /tmp` produced `/tmp/xdossier-0.1.0.tgz`.
-- Tarball size checked at 129K, under the 1 MB target.
-- Tarball contents checked: includes `bin/`, `dist/`, `README.md`, `LICENSE`, and `package.json`; does not include `docs/specs/`, `.git`, `tests`, or `node_modules`.
-- GitHub Release creation attempted with `gh release create v0.1.0`; local shell networking blocked the API request, so rerun from a normal networked shell.
+## ✅ Already done (v0.2.0 ship state)
 
-Release command to rerun:
+| Item | Status | Evidence |
+|---|---|---|
+| v0.2.0 git tag pushed | ✅ | `v0.2.0` on origin |
+| GitHub Release notes | ✅ | https://github.com/xianfeng92/xdossier/releases/tag/v0.2.0 |
+| CHANGELOG `[0.2.0]` section | ✅ | CHANGELOG.md |
+| CI green on Node 20 + 22 | ✅ | last run on commit `c55d8f3` |
+| Pages demo `/demo/dossier.html` deployed | ✅ | self-documenting MVP-0 dossier, 1.1 MB raw, ~216 KB gzipped |
+| Pages landing has 4 demo cards | ✅ | MVP-0 Dossier card prepended with "★ NEW — multi-doc view (v0.2.0)" |
+| README hero (`docs/assets/dossier-cover-hero.png`) | ✅ | full-width SVG relation graph |
+| README + README.zh-CN status row → "✅ Implemented" | ✅ | |
+| Quickstart includes `pnpm dev cover docs/` | ✅ | both READMEs |
+| 3 `good first issue` tickets filed | ✅ | issues #1 (closed), #2, #3 |
+| Discussions enabled | ✅ | repo settings |
+| Homepage URL set | ✅ | https://xianfeng92.github.io/xdossier/ |
 
-```bash
-gh release create v0.1.0 \
-  --title "v0.1.0 — Pedagogical HTML for AI specs" \
-  --notes-file <(awk '
-    /^## \[0\.1\.0\]/ { in_section=1 }
-    in_section && /^## \[/ && !/^## \[0\.1\.0\]/ { exit }
-    in_section { print }
-  ' CHANGELOG.md)
-```
+## ⏳ Open before launch
 
-## npm publish
+- [ ] **npm publish** — currently `npm install -g github:xianfeng92/xdossier`. Publishing to npm means the README install command can shrink to `npm install -g xdossier`. Run from a clean networked shell:
+  ```bash
+  pnpm login
+  pnpm pack --pack-destination /tmp   # final sanity check on tarball contents
+  pnpm publish --access public
+  ```
+- [ ] **launch screencast** (issue #2) — optional but lifts the README. Asciinema preferred (smallest, embeddable). Record:
+  1. `xdossier render docs/specs/foo.md` → open the HTML, toggle 零基础 → 速查.
+  2. `xdossier cover docs/` → open project index, click into a dossier, point at SVG, click into a member.
+  3. Edit a `.md`, save → highlight that the dossier auto-refreshes (PostToolUse hook).
+  ~90 seconds. Upload to asciinema.org, embed in README.
 
-Run manually after npm login and one final package check:
-
-```bash
-pnpm publish --access public
-```
-
-Do not run this from an automated agent session. Publishing `0.1.0` is the irreversible public package step.
-
-## Demo GIF
-
-1. Open QuickTime Player.
-2. Start a new screen recording.
-3. Open `https://xianfeng92.github.io/xdossier/demo/pedagogy.html`.
-4. Switch the reader mode through all three states: 零基础 -> 系统化 -> 速查.
-5. Stop recording and save as `demo.gif`.
-6. Upload the asset to `.github/assets/demo.gif` in the GitHub repo.
-7. Update `README.md` to reference `.github/assets/demo.gif` near the live demo section.
+Neither blocks the show-and-tell. Both are nice-to-have.
 
 ## Posting order
 
-1. Hacker News: post the Show HN title and body first.
-2. X / Twitter: post the thread after HN is live, so the thread can reference the HN discussion if useful.
-3. Reddit: post to `r/LocalLLaMA` and `r/ChatGPTCoding` after the first two surfaces are visible.
+1. **HN first** — Tue or Wed, 6:30–8:00 AM Pacific (= 21:30–23:00 Beijing).
+2. **Twitter thread** ~30 min after HN. Include HN link in T8 if HN is gaining traction.
+3. **r/ClaudeAI** ~2 hours after HN.
+4. **r/LocalLLaMA** same day evening Pacific.
+5. **r/programming** next day if HN/Twitter aren't still active.
 
-## Recommended launch window
-
-- US Eastern Tuesday through Thursday, 8-10am.
-- Avoid Friday afternoons, weekends, and major AI launch/news windows if they are obvious on the day.
-
-## Copy-paste sources
-
-- HN title and body: `docs/specs/2026-05-22-xdossier-launch-content-draft.md`, section `1. Show HN`.
-- X / Twitter thread: `docs/specs/2026-05-22-xdossier-launch-content-draft.md`, section `2. X / Twitter Thread`.
-- Reddit `r/LocalLLaMA`: `docs/specs/2026-05-22-xdossier-launch-content-draft.md`, section `3. Reddit Posts`, subsection `r/LocalLLaMA`.
-- Reddit `r/ChatGPTCoding`: `docs/specs/2026-05-22-xdossier-launch-content-draft.md`, section `3. Reddit Posts`, subsection `r/ChatGPTCoding`.
+Copy-paste sources are in `docs/specs/2026-05-22-xdossier-launch-content-draft.md`:
+- HN title + body: §1
+- Twitter thread (8 tweets, 3 images): §2
+- Reddit posts (3 subreddits, distinct bodies): §3
+- Strategy + don't-do list: §4
 
 ## Post-launch 24h watch
 
-- HN: ranking movement, comments that reveal positioning confusion, requests for examples, and any bug reports about the live demo.
-- GitHub: first-wave stars, issues, forks, and whether README/demo links are being clicked through.
-- npm: package page visibility and install metadata after publish.
-- Reddit/X: repeated objections, wording that resonates, and questions that should become README FAQ or issue labels.
+- **HN**: rank, comments revealing positioning confusion, repeated objections → README FAQ.
+- **GitHub Traffic Insights**: referrers (HN, Twitter, Reddit, …) → know which platform paid off.
+- **Twitter quote-tweets**: who quotes the thread → people to DM.
+- **Issues**: triage on arrival; first 24h shape the impression for everyone reading later.
+- **PostToolUse hook bug reports**: this is the area most likely to surface install/path issues; have the README `# verify settings.json keys with your Claude Code version` line ready to point at.
+
+## Recommended launch window (2026-05-23 ~ 2026-05-29)
+
+- **Best**: Tue 2026-05-26 or Wed 2026-05-27 morning Pacific (=  evening Beijing).
+- **Avoid**: Friday afternoon / weekend / any major AI launch announcement window.
+
+## Best / Realistic / Worst case
+
+- **Best**: HN front page 4–8h → 200–400 stars in 48h → first 3 issues filed.
+- **Realistic**: HN `/new` for 90 min → 30–60 stars → 1–2 thoughtful comments per platform.
+- **Worst**: silence. No damage; v0.2.0 evidence is on-record. Re-launch v0.3.0 (npm published + screencast) later with same content reframed.
+
+## Tooling used during draft
+
+Copy is in `docs/specs/2026-05-22-xdossier-launch-content-draft.md`. Hero images already in `docs/assets/`. Demo URL verified to load 9 SVG nodes / 9 edges / 9 inlined members.
+
+## Historical (v0.1.0 launch artifacts — kept for traceability)
+
+- Thariq Shihipar's X handle: `@trq212` (verified during v0.1.0 drafting).
+- v0.1.0 tarball at 129 KB, well under 1 MB target.
+- v0.1.0 release published 2026-05-21 14:44 UTC.
+- v0.1.0 launch posts never actually went out — drafted in `docs/specs/2026-05-22-xdossier-launch-content-draft.md` v1 but held for v0.2.0 to land the unique differentiator first.
+
+## Decision log
+
+- **Why v0.2.0 over v0.1.0 for first public launch?** Multi-doc dossier view is the actually-unique surface. v0.1.0 (reader-mode HTML) is a useful-but-commodity offering; HN would have asked "yet another markdown→HTML?" Launching with v0.2.0 means the front-page submission has a defensible answer.
+- **Why include a self-documenting demo?** Demoing xdossier on xdossier's own MVP-0 spec gives readers a recursive "aha" moment: the tool's own design process is the demo. Lower friction than mocking up synthetic content.
+- **Why not run a Product Hunt launch on the same day?** PH and HN cannibalize attention and dilute referrer signal. Stagger: HN/Twitter/Reddit week 1; Product Hunt week 2-3 once HN comments seed FAQ content.
