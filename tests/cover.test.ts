@@ -129,7 +129,8 @@ function iframeSrcdocs(html: string): string[] {
 }
 
 function activityInboxHtml(html: string): string {
-  return html.match(/<section class="activity-inbox"[\s\S]*?<section class="cover-grid"/)?.[0] ?? "";
+  // Anchor on the next sibling section (artifact-map in v0.2.5 IA; cover-grid pre-v0.2.5).
+  return html.match(/<section class="activity-inbox"[\s\S]*?(?=<section class="(?:artifact-map|cover-grid))/)?.[0] ?? "";
 }
 
 function syntheticArtifact(input: Partial<CoverArtifact> & Pick<CoverArtifact, "path" | "title" | "kind">): CoverArtifact {
