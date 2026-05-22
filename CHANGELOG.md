@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-05-22
+
+### Fixed
+
+- **Text contrast meets WCAG AA [P0]**: Updated `--ink-faint` and `--ink-muted` tokens (and their cover equivalents) to darker values (#76766f, #4b4b45) to ensure a 4.5:1 contrast ratio against the paper background.
+- **Mobile decorative left margins dropped [P0]**: Removed the 72px decorative left margins on mobile viewports (<1024px) for various section-level elements (checkpoints, summaries, traces), reclaiming ~22% of viewport width.
+- **Tooltip clipping on narrow screens [P1]**: Term tooltips now horizontally center themselves and clamp to the viewport width, with a fixed fallback for very small screens, preventing off-screen clipping.
+
+### Changed
+
+- **Reader toggle becomes native segmented control [P1]**: Redesigned the reader level toggle as a unified pill-shaped control with an active floating state, improving visual hierarchy.
+- **Calm tables [P1]**: Simplified table aesthetics by removing vertical borders and header fills, increasing cell padding to 14px 20px, and removing background noise from inline code within cells.
+- **Dossier IA: Artifact Map closer to Relation Graph [P1]**: Rearranged the dossier cover layout to place the artifact map immediately after the relation graph, and refactored the judgment stack into a 2-column grid for better scanning.
+
 ## [0.2.4] - 2026-05-22
 
 ### Fixed

@@ -1197,7 +1197,7 @@ describe("Cover-1 relation graph", () => {
     const artifactMap = html.match(/<section class="artifact-map"[\s\S]*?<\/section>/)?.[0] ?? "";
 
     expect(html.indexOf('<section class="privacy-warning"')).toBeLessThan(html.indexOf('<section class="relation-graph-section"'));
-    expect(html.indexOf('<section class="relation-graph-section"')).toBeLessThan(html.indexOf('<section class="cover-grid"'));
+    expect(html.indexOf('<section class="relation-graph-section"')).toBeLessThan(html.indexOf('<section class="judgment-stack"'));
     expect(graphSection).toContain('<svg class="relation-graph"');
     expect(artifactMap).not.toContain('<div class="edge-list">');
     expect(artifactMap).not.toContain("Phase D Spec implements Phase D Change 1");
