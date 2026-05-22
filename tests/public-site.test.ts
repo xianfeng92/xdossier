@@ -28,7 +28,8 @@ describe("public xdossier site", () => {
     const html = await readFile(resolve(repoRoot, "docs/index.html"), "utf8");
 
     expect(html).toMatch(/\.demo-card-preview\s*\{/);
-    expect(html.match(/class="demo-card-preview\b[^"]*"/g)).toHaveLength(3);
+    expect(html.match(/class="demo-card-preview\b[^"]*"/g)).toHaveLength(4);
+    expect(html).toContain('aria-label="Preview of MVP-0 dossier with relation graph"');
     expect(html).toContain('aria-label="Preview of Pedagogy Layer Spec"');
     expect(html).toContain('aria-label="Preview of Vision Spec"');
     expect(html).toContain('aria-label="Preview of OSS Launch Research"');
