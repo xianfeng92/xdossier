@@ -54,6 +54,7 @@ export type RenderInput = {
   annotations?: RenderAnnotations;
   reader?: ReaderProfile;
   contentModeOverride?: ContentMode;
+  dossierBannerHtml?: string;
 };
 
 export type ParsedFrontmatter = {

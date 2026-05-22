@@ -49,6 +49,7 @@ export async function render(input: RenderInput): Promise<string> {
     annotations,
     reader: input.reader ?? "beginner",
     contentModeOverride: input.contentModeOverride,
+    dossierBannerHtml: input.dossierBannerHtml,
   });
 }
 

@@ -10,6 +10,7 @@ import { createSectionSummaryScaffold } from "./enrich/section-summaries.js";
 import { parseFrontmatter } from "./parse/frontmatter.js";
 import { selectSkill } from "./skills/registry.js";
 import { buildDossierCover } from "./cover/render.js";
+import { renderDossierBannerForInput } from "./cover/membership.js";
 import type { ContentMode, ReaderProfile, RenderAnnotations } from "./types.js";
 
 const VERSION = "0.1.0";
@@ -454,6 +455,7 @@ export async function main(): Promise<void> {
 
   let html: string;
   try {
+    const dossierBannerHtml = await renderDossierBannerForInput(inputAbs);
     html = await render({
       markdown: md,
       skillId: selection.skillId,
@@ -461,6 +463,7 @@ export async function main(): Promise<void> {
       annotations,
       reader: parsed.reader,
       contentModeOverride: parsed.contentMode,
+      dossierBannerHtml,
     });
   } catch (e) {
     process.stderr.write(`error: render failed: ${(e as Error).message}\n`);

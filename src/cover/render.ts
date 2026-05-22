@@ -11,6 +11,7 @@ import {
   writeBuildManifest,
 } from "./manifest.js";
 import { scanArtifacts } from "./scan.js";
+import { writeMembershipLookup } from "./membership.js";
 import type {
   ArtifactRef,
   CoverArtifact,
@@ -96,6 +97,13 @@ export async function buildDossierCover(
     orphans,
   });
   await writeFile(indexPath, indexHtml, "utf8");
+  await writeMembershipLookup({
+    workspaceRoot,
+    outDir,
+    generatedAt: manifest.built_at,
+    dossiers,
+    orphans,
+  });
   await writeBuildManifest(workspaceRoot, manifest);
 
   return { indexPath, covers, orphans, trace };

@@ -10,6 +10,7 @@
 //   {{STYLE_CSS}}           — inlined CSS
 //   {{TOC_SCRIPT_JS}}       — inlined scroll-spy JS
 //   {{TOC_BLOCK}}           — TOC <aside> HTML, or "" when --no-toc
+//   {{DOSSIER_BANNER}}      — optional member → cover backlink banner
 //   {{FRONTMATTER_CARD}}    — frontmatter top card HTML
 //   {{CALLOUTS_BLOCK}}      — top-level callouts (⚠/📝/🎯 blockquotes) HTML
 //   {{SEMANTIC_LENS_BLOCK}} — annotation-driven overview / roadmap / decision blocks
@@ -74,6 +75,7 @@ export type EmitInput = {
   annotations?: RenderAnnotations;
   reader: ReaderProfile;
   contentModeOverride?: ContentMode;
+  dossierBannerHtml?: string;
 };
 
 export async function emit(input: EmitInput): Promise<string> {
@@ -131,6 +133,7 @@ export async function emit(input: EmitInput): Promise<string> {
     LEARNING_CHECKPOINTS: "",
     READER_TOGGLE_SCRIPT: readerToggleJs,
     TOC_BLOCK: input.toc ? renderToc(input.toc, effectiveAnnotations, Boolean(semanticLensHtml), labels) : "",
+    DOSSIER_BANNER: input.dossierBannerHtml ?? "",
     FRONTMATTER_CARD: renderFrontmatterCard(
       input.frontmatter,
       displayTitle,

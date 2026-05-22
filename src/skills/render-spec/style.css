@@ -59,6 +59,26 @@ section {
   overflow-wrap: anywhere;
 }
 
+.dossier-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 0 0 16px 0;
+  background: rgba(184, 92, 61, 0.06);
+  border-left: 3px solid rgba(184, 92, 61, 0.5);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--ink-muted, #6b6357);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+.dossier-banner:hover { background: rgba(184, 92, 61, 0.12); }
+.dossier-banner-arrow { font-size: 16px; }
+.dossier-banner-label { opacity: 0.8; }
+.dossier-banner-title { font-weight: 600; color: var(--ink, #1f1d18); }
+.dossier-banner-meta { opacity: 0.65; font-size: 13px; }
+
 .reading-progress {
   position: fixed;
   top: 0;

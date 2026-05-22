@@ -329,6 +329,66 @@ describe("Cover-0 CLI behavior", () => {
     expect(result.stdout.match(/\.dossier\/out\/[^/\n]+\/index\.html/g)).toHaveLength(2);
   });
 
+  test("xdossier cover writes membership.json for roots, members, and orphans", async () => {
+    const root = await makeWorkspace();
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "cover", root],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const membershipPath = join(root, ".dossier/out/membership.json");
+    expect(existsSync(membershipPath)).toBe(true);
+
+    const membership = JSON.parse(await readFile(membershipPath, "utf8")) as {
+      version: number;
+      workspace_root: string;
+      members: Record<string, {
+        dossier_id: string | null;
+        dossier_title?: string;
+        cover_href: string;
+        member_count?: number;
+        role: string;
+      }>;
+    };
+
+    expect(membership.version).toBe(1);
+    expect(membership.workspace_root).toBe(root);
+    expect(Object.keys(membership.members).sort()).toEqual([
+      "docs/changes/2026-05-18-dossier-mvp-0-impl-notes.md",
+      "docs/reviews/2026-05-18-mvp-0-review.md",
+      "docs/reviews/2026-05-18-vision-review.md",
+      "docs/specs/2026-05-17-dossier-vision-spec.md",
+      "docs/specs/2026-05-18-dossier-mvp-0-spec.md",
+    ]);
+    expect(membership.members["docs/specs/2026-05-17-dossier-vision-spec.md"]).toMatchObject({
+      dossier_id: "2026-05-17-dossier-vision",
+      role: "root",
+      cover_href: "../../.dossier/out/2026-05-17-dossier-vision/index.html",
+      member_count: 2,
+    });
+    expect(membership.members["docs/reviews/2026-05-18-vision-review.md"]).toMatchObject({
+      dossier_id: "2026-05-17-dossier-vision",
+      role: "member",
+    });
+    expect(membership.members["docs/specs/2026-05-18-dossier-mvp-0-spec.md"]).toMatchObject({
+      dossier_id: "2026-05-18-dossier-mvp-0",
+      role: "root",
+      member_count: 3,
+    });
+    expect(membership.members["docs/changes/2026-05-18-dossier-mvp-0-impl-notes.md"]).toMatchObject({
+      dossier_id: "2026-05-18-dossier-mvp-0",
+      role: "member",
+    });
+    expect(membership.members["docs/reviews/2026-05-18-mvp-0-review.md"]).toMatchObject({
+      dossier_id: "2026-05-18-dossier-mvp-0",
+      role: "member",
+    });
+  });
+
   test("project index lists all dossiers with link hrefs", async () => {
     const root = await makeWorkspace();
     const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
@@ -378,6 +438,129 @@ updated: 2026-05-20
     expect(html).toMatch(/No spec roots detected/);
     expect(html).toMatch(/Orphans/);
     expect(html).toMatch(/Orphan Change/);
+  });
+});
+
+describe("MVP-1 Phase C member banners", () => {
+  test("xdossier render injects a dossier banner when membership.json is present", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-c-banner-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-phase-c-spec.md"),
+      `---
+title: Phase C Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Phase C Spec
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+
+    const render = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", join(root, "docs/specs/2026-05-22-phase-c-spec.md")],
+      { cwd, encoding: "utf8" },
+    );
+    expect(render.status, render.stderr).toBe(0);
+
+    const html = await readFile(join(root, "docs/specs/2026-05-22-phase-c-spec.html"), "utf8");
+    expect(html).toContain('<a class="dossier-banner"');
+    expect(html).toContain('href="../../.dossier/out/2026-05-22-phase-c/index.html"');
+    expect(html).toContain('data-dossier-id="2026-05-22-phase-c"');
+    expect(html).toContain('data-role="root"');
+    expect(html).toContain('<span class="dossier-banner-title">Phase C Spec</span>');
+  });
+
+  test("xdossier render skips the banner when membership.json is absent", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-c-no-membership-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-standalone-spec.md"),
+      `---
+title: Standalone Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Standalone Spec
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", join(root, "docs/specs/2026-05-22-standalone-spec.md")],
+      { cwd: resolve(import.meta.dirname, ".."), encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const html = await readFile(join(root, "docs/specs/2026-05-22-standalone-spec.html"), "utf8");
+    expect(html).not.toContain('<a class="dossier-banner"');
+  });
+
+  test("orphan documents render a banner back to the project index", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dossier-phase-c-orphan-"));
+    await mkdir(join(root, "docs/specs"), { recursive: true });
+    await mkdir(join(root, "docs/changes"), { recursive: true });
+    await writeFile(
+      join(root, "docs/specs/2026-05-22-root-spec.md"),
+      `---
+title: Root Spec
+status: ready
+kind: spec
+updated: 2026-05-22
+---
+
+# Root Spec
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(root, "docs/changes/2026-05-22-unrelated-change.md"),
+      `---
+title: Unrelated Change
+status: ready
+kind: change
+updated: 2026-05-22
+---
+
+# Unrelated Change
+`,
+      "utf8",
+    );
+    const cliPath = resolve(import.meta.dirname, "../src/cli.ts");
+    const cwd = resolve(import.meta.dirname, "..");
+
+    const cover = spawnSync(process.execPath, ["--import", "tsx", cliPath, "cover", root], {
+      cwd,
+      encoding: "utf8",
+    });
+    expect(cover.status, cover.stderr).toBe(0);
+
+    const render = spawnSync(
+      process.execPath,
+      ["--import", "tsx", cliPath, "render", join(root, "docs/changes/2026-05-22-unrelated-change.md")],
+      { cwd, encoding: "utf8" },
+    );
+    expect(render.status, render.stderr).toBe(0);
+
+    const html = await readFile(join(root, "docs/changes/2026-05-22-unrelated-change.html"), "utf8");
+    expect(html).toContain('<a class="dossier-banner" href="../../.dossier/out/index.html" data-role="orphan">');
+    expect(html).toContain('<span class="dossier-banner-label">unassigned ·</span>');
+    expect(html).toContain('<span class="dossier-banner-title">project index</span>');
   });
 });
 
