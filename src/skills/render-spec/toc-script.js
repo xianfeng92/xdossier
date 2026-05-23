@@ -9,14 +9,23 @@
   const h3Els = Array.from(document.querySelectorAll("main h3[id]"));
   const headings = [...semanticNavEls, ...sectionEls, ...h3Els];
   const tocLinks = new Map();
+  const tocAside = document.querySelector("aside.toc");
+
   document.querySelectorAll("aside.toc a").forEach((a) => {
     const href = a.getAttribute("href");
     if (!href) return;
     tocLinks.set(href.slice(1), a);
   });
 
+  // Inject minimalist indicator
+  let indicator = null;
+  if (tocAside) {
+    indicator = document.createElement("div");
+    indicator.className = "toc-indicator";
+    tocAside.appendChild(indicator);
+  }
+
   const progressFill = document.querySelector(".reading-progress-fill");
-  const tocAside = document.querySelector("aside.toc");
   let lastActiveId = "";
   let isSyncingHashTarget = false;
 
@@ -32,6 +41,19 @@
       return document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
     } catch (_e) {
       return null;
+    }
+  };
+
+  const updateTocIndicator = () => {
+    if (!tocAside || !indicator) return;
+    const activeLink = tocAside.querySelector("a.active");
+    if (activeLink) {
+      const parentRect = tocAside.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      tocAside.style.setProperty("--toc-active-top", (linkRect.top - parentRect.top + tocAside.scrollTop) + "px");
+      tocAside.style.setProperty("--toc-active-height", linkRect.height + "px");
+    } else {
+      tocAside.style.setProperty("--toc-active-height", "0px");
     }
   };
 
@@ -88,6 +110,8 @@
         sectionItem.classList.toggle("is-current", isCurrentSection);
       }
     });
+
+    updateTocIndicator();
 
     if (activeId && activeId !== lastActiveId) {
       const activeLink = tocLinks.get(activeId) ?? (parentId ? tocLinks.get(parentId) : undefined);
